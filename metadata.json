@@ -1,0 +1,9 @@
+{
+  "name": "Pendo - Kenyan Dating",
+  "description": "A modern, AI-powered dating application tailored for Kenyans to find meaningful connections. Features AI profile enhancements and conversation starters.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
