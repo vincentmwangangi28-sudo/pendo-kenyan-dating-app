@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { 
+      allow read, write: if false; 
+    }
+    
+    function isValidId(id) { 
+        return id is string && id.size() <= 128; 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    
+    function isValidUserProfile(data) {
+       return data.uid == request.auth.uid;
+    }
+    
+    function isValidChatSession(data) {
+        return data.keys().hasAll(['participants', 'matchName', 'isGroup']) &&
+               data.participants is list && data.participants.size() > 0 && data.participants.size() <= 100 &&
+               data.participants[0] is string && data.participants[0].size() <= 128 &&
+               data.matchName is string && data.matchName.size() <= 100 &&
+               data.isGroup is bool &&
+               (!('isVenue' in data) || data.isVenue is bool) &&
+               (!('matchPhoto' in data) || (data.matchPhoto is string && data.matchPhoto.size() <= 2048)) &&
+               (!('lastMessage' in data) || (data.lastMessage is string && data.lastMessage.size() <= 1000)) &&
+               (!('updaterId' in data) || data.updaterId is string && data.updaterId.size() <= 128) &&
+               (!('updatedAt' in data) || data.updatedAt == request.time);
+    }
+    
+    function isValidChatMessage(data) {
+        return data.keys().hasAll(['senderId', 'text', 'timestamp']) &&
+               data.senderId == request.auth.uid &&
+               data.text is string && data.text.size() <= 2000 &&
+               data.timestamp == request.time &&
+               (!('senderName' in data) || (data.senderName is string && data.senderName.size() <= 100)) &&
+               (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
+               (!('audioUrl' in data) || (data.audioUrl is string && data.audioUrl.size() <= 2000)) &&
+               (!('status' in data) || (data.status is string && data.status.size() <= 20)) &&
+               (!('isSystem' in data) || data.isSystem is bool) &&
+               (!('translation' in data) || (data.translation is string && data.translation.size() <= 2000)) &&
+               (!('reactions' in data) || data.reactions is map);
+    }
+
+    match /users/{userId} {
+       allow read: if isSignedIn();
+       allow write: if isSignedIn() && userId == request.auth.uid && isValidUserProfile(incoming());
+    }
+
+    match /chatSessions/{sessionId} {
+       allow read: if isSignedIn() && isValidId(sessionId) && request.auth.uid in resource.data.participants;
+       allow list: if isSignedIn() && request.auth.uid in resource.data.participants;
+       
+       allow create: if isSignedIn() && isValidId(sessionId) && isValidChatSession(incoming()) && request.auth.uid in incoming().participants;
+       
+       allow update: if isSignedIn() && isValidId(sessionId) && request.auth.uid in existing().participants && isValidChatSession(incoming()) && request.auth.uid in incoming().participants &&
+         (
+           (incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'updaterId', 'updatedAt'])) ||
+           (incoming().diff(existing()).affectedKeys().hasOnly(['participants']))
+         );
+    }
+
+    match /chatSessions/{sessionId}/messages/{messageId} {
+       function isSessionMember() {
+           return request.auth.uid in get(/databases/$(database)/documents/chatSessions/$(sessionId)).data.participants;
+       }
+       
+       allow get: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember();
+       // Don't apply isValidId(messageId) to 'list'
+       allow list: if isSignedIn() && isValidId(sessionId) && isSessionMember();
+       
+       allow create: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember() && isValidChatMessage(incoming());
+       
+       allow update: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember() && isValidChatMessage(incoming()) &&
+         (
+           (incoming().diff(existing()).affectedKeys().hasOnly(['reactions', 'translation', 'timestamp', 'senderId', 'text', 'imageUrl', 'audioUrl', 'status'])) // allowing immutable things just for diff match
+         ) && 
+         // Enforce immutability
+         incoming().senderId == existing().senderId &&
+         incoming().text == existing().text &&
+         (!('imageUrl' in incoming()) || !('imageUrl' in existing()) || incoming().imageUrl == existing().imageUrl) &&
+         (!('audioUrl' in incoming()) || !('audioUrl' in existing()) || incoming().audioUrl == existing().audioUrl) &&
+         incoming().timestamp == existing().timestamp;
+       
+       allow delete: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember() && existing().senderId == request.auth.uid;
+    }
+  }
+}

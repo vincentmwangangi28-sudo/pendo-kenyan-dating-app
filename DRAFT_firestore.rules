@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Primitive Definition
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null && request.auth.uid != null; }
+
+    function isValidCoordinates(data) {
+      return data.keys().hasAll(['latitude', 'longitude']) &&
+             data.keys().size() == 2 &&
+             data.latitude is number &&
+             data.longitude is number;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['name', 'age', 'location', 'bio']) &&
+             data.name is string && data.name.size() <= 100 &&
+             data.age is number && data.age >= 18 &&
+             data.location is string && data.location.size() <= 100 &&
+             data.bio is string && data.bio.size() <= 1000 &&
+             (!('neighborhood' in data) || (data.neighborhood is string && data.neighborhood.size() <= 100)) &&
+             (!('gender' in data) || (data.gender is string && data.gender.size() <= 50)) &&
+             (!('lookingFor' in data) || (data.lookingFor is string && data.lookingFor.size() <= 50)) &&
+             (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 1000)) &&
+             (!('voiceUrl' in data) || (data.voiceUrl is string && data.voiceUrl.size() <= 1000)) &&
+             (!('boostExpiresAt' in data) || (data.boostExpiresAt is number)) &&
+             (!('isVerified' in data) || (data.isVerified is bool)) &&
+             (!('interests' in data) || (data.interests is list && data.interests.size() <= 20 && (data.interests.size() == 0 || data.interests[0] is string))) &&
+             (!('languages' in data) || (data.languages is list && data.languages.size() <= 10 && (data.languages.size() == 0 || data.languages[0] is string))) &&
+             (!('coordinates' in data) || (data.coordinates is map && isValidCoordinates(data.coordinates))) &&
+             (!('uid' in data) || (data.uid == request.auth.uid));
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      // Wait, is there list?
+      allow list: if isSignedIn() && isValidId(userId) && resource.data.uid == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       userId == request.auth.uid &&
+                       isValidUserProfile(incoming()) &&
+                       (!('isVerified' in incoming()) || incoming().isVerified == false); 
+                       // users shouldn't create verified profiles themselves, but App.tsx does it with isVerified = false.
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       userId == request.auth.uid &&
+                       isValidUserProfile(incoming()) &&
+                       (
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'age', 'location', 'bio', 'neighborhood', 'gender', 'lookingFor', 'photoUrl', 'voiceUrl', 'coordinates', 'interests', 'languages', 'boostExpiresAt'])
+                       ); 
+                       // Cannot update 'isVerified' themselves.
+                       
+      // Users shouldn't be deleted yet.
+      allow delete: if false;
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

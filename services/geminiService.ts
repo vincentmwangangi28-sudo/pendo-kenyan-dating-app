@@ -5,17 +5,40 @@ import { UserProfile, MatchProfile, HangoutSpot } from "../types";
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // Models Configuration
-const SEARCH_MODEL = "gemini-3-flash-preview";
-const MAPS_MODEL = "gemini-2.5-flash";
-const IMAGE_MODEL = "gemini-3-pro-image-preview";
-const FAST_MODEL = "gemini-2.5-flash-lite-preview-02-04";
-const THINKING_MODEL = "gemini-3-pro-preview";
-const TTS_MODEL = "gemini-2.5-flash-preview-tts";
-const VISION_MODEL = "gemini-2.5-flash-image";
+const SEARCH_MODEL = "gemini-3.5-flash";
+const MAPS_MODEL = "gemini-3.5-flash";
+const IMAGE_MODEL = "gemini-3.1-flash-image";
+const FAST_MODEL = "gemini-3.1-flash-lite";
+const THINKING_MODEL = "gemini-3.1-pro-preview";
+const TTS_MODEL = "gemini-3.1-flash-tts-preview";
+const VISION_MODEL = "gemini-3.1-flash-image";
 
 /**
  * Enhances a user's bio using AI.
  */
+export const generateHoroscope = async (userZodiac?: string, matchZodiac?: string, matchName?: string): Promise<string> => {
+  try {
+    if (!userZodiac) return "Update your profile with your zodiac sign to get a personalized compatibility reading!";
+    if (!matchZodiac) return `We don't know ${matchName || "this person"}'s zodiac sign yet, but the stars are aligning!`;
+
+    const prompt = `
+      Write a short, engaging, and fun daily zodiac compatibility astrology reading (max 3 sentences) 
+      for a relationship between a ${userZodiac} and a ${matchZodiac}. 
+      Make it romantic but playful.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: FAST_MODEL,
+      contents: prompt,
+    });
+
+    return response.text?.trim() || "The stars are perfectly aligned for you two today!";
+  } catch (error) {
+    console.error("Error generating horoscope:", error);
+    return "The stars are a bit cloudy today, check back later!";
+  }
+};
+
 export const enhanceBio = async (currentBio: string, interests: string[], name: string): Promise<string> => {
   try {
     const prompt = `
@@ -154,9 +177,6 @@ export const generateDateIdeas = async (location: string, userInterests: string[
     const response = await ai.models.generateContent({
       model: SEARCH_MODEL,
       contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }], // Use Search Grounding
-      }
     });
     
     // Extract sources if available
@@ -247,7 +267,6 @@ export const findRealtimeEvents = async (lat: number, lng: number): Promise<any[
             model: SEARCH_MODEL,
             contents: prompt,
             config: {
-                tools: [{ googleSearch: {} }],
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.ARRAY,

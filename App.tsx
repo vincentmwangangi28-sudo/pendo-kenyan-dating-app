@@ -6,8 +6,11 @@ import { ChatList, ChatRoom } from './components/ChatInterface';
 import { GroupCreation } from './components/GroupCreation';
 import { HangoutSpots } from './components/HangoutSpots';
 import { VoiceCoach } from './components/VoiceCoach';
-import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic } from 'lucide-react';
+import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2 } from 'lucide-react';
 import { findRealtimeEvents } from './services/geminiService';
+import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut } from './services/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
 
 // --- UTILS ---
 // Haversine formula to calculate distance in km
@@ -37,12 +40,14 @@ const MOCK_MATCHES: MatchProfile[] = [
     name: 'Wanjiku',
     age: 24,
     location: 'Nairobi',
+    zodiacSign: 'Leo',
     bio: 'Love hiking in Karura Forest and exploring new coffee spots. Looking for someone adventurous!',
     interests: ['Hiking', 'Coffee', 'Travel'],
     languages: ['English', 'Swahili'],
     photoUrl: 'https://picsum.photos/seed/wanjiku/400/600',
     distance: 5,
     isVerified: true,
+    badges: ['Verified', 'Top Pick'],
     coordinates: { latitude: -1.2921, longitude: 36.8219 } // Nairobi
   },
   {
@@ -50,12 +55,14 @@ const MOCK_MATCHES: MatchProfile[] = [
     name: 'Achieng',
     age: 26,
     location: 'Kisumu',
+    zodiacSign: 'Taurus',
     bio: 'Techie by day, foodie by night. Let’s grab some fish by the lakeside.',
     interests: ['Tech', 'Cooking', 'Music'],
     languages: ['English', 'Luo', 'Swahili'],
     photoUrl: 'https://picsum.photos/seed/achieng/400/600',
     distance: 12,
     isVerified: false,
+    badges: ['Newbie'],
     coordinates: { latitude: -0.0917, longitude: 34.7680 } // Kisumu
   },
   {
@@ -63,12 +70,14 @@ const MOCK_MATCHES: MatchProfile[] = [
     name: 'Zainab',
     age: 23,
     location: 'Mombasa',
+    zodiacSign: 'Scorpio',
     bio: 'Ocean lover. Swahili vibes. I appreciate good conversation and sunset walks.',
     interests: ['Beach', 'Art', 'Reading'],
     languages: ['Swahili', 'English'],
     photoUrl: 'https://picsum.photos/seed/zainab/400/600',
     distance: 450,
     isVerified: true,
+    badges: ['Verified'],
     coordinates: { latitude: -4.0435, longitude: 39.6682 } // Mombasa
   },
    {
@@ -76,6 +85,7 @@ const MOCK_MATCHES: MatchProfile[] = [
     name: 'Nimo',
     age: 25,
     location: 'Nairobi',
+    zodiacSign: 'Libra',
     bio: 'Fashion designer. Always creating. Looking for my muse.',
     interests: ['Fashion', 'Art', 'Photography'],
     languages: ['English', 'Sheng'],
@@ -136,7 +146,8 @@ const MOCK_VENUES: HangoutSpot[] = [
     location: 'Westlands, Nairobi',
     photoUrl: 'https://picsum.photos/seed/alchemist/400/300',
     activeCount: 245,
-    trending: true
+    trending: true,
+    coordinates: { latitude: -1.2667, longitude: 36.8042 }
   },
   {
     id: 'v2',
@@ -145,7 +156,8 @@ const MOCK_VENUES: HangoutSpot[] = [
     location: 'Thika Road, Nairobi',
     photoUrl: 'https://picsum.photos/seed/quiver/400/300',
     activeCount: 312,
-    trending: true
+    trending: true,
+    coordinates: { latitude: -1.2333, longitude: 36.8667 }
   },
   {
     id: 'v3',
@@ -154,7 +166,8 @@ const MOCK_VENUES: HangoutSpot[] = [
     location: 'Thika Road, Nairobi',
     photoUrl: 'https://picsum.photos/seed/garden/400/300',
     activeCount: 850,
-    trending: false
+    trending: false,
+    coordinates: { latitude: -1.2361, longitude: 36.8789 }
   },
   {
     id: 'v4',
@@ -163,7 +176,8 @@ const MOCK_VENUES: HangoutSpot[] = [
     location: 'Valley Road, Nairobi',
     photoUrl: 'https://picsum.photos/seed/citam/400/300',
     activeCount: 120,
-    trending: false
+    trending: false,
+    coordinates: { latitude: -1.2921, longitude: 36.8150 }
   },
   {
     id: 'v5',
@@ -172,7 +186,8 @@ const MOCK_VENUES: HangoutSpot[] = [
     location: 'Limuru Road, Nairobi',
     photoUrl: 'https://picsum.photos/seed/karura/400/300',
     activeCount: 56,
-    trending: false
+    trending: false,
+    coordinates: { latitude: -1.2389, longitude: 36.8244 }
   },
   {
     id: 'v6',
@@ -181,7 +196,8 @@ const MOCK_VENUES: HangoutSpot[] = [
     location: 'Ruaka, Nairobi',
     photoUrl: 'https://picsum.photos/seed/tworivers/400/300',
     activeCount: 1200,
-    trending: true
+    trending: true,
+    coordinates: { latitude: -1.2069, longitude: 36.7900 }
   },
   {
     id: 'v7',
@@ -190,7 +206,8 @@ const MOCK_VENUES: HangoutSpot[] = [
     location: 'Mlolongo',
     photoUrl: 'https://picsum.photos/seed/mavuno/400/300',
     activeCount: 45,
-    trending: false
+    trending: false,
+    coordinates: { latitude: -1.3967, longitude: 36.9378 }
   },
   {
     id: 'v8',
@@ -199,15 +216,17 @@ const MOCK_VENUES: HangoutSpot[] = [
     location: 'Parklands, Nairobi',
     photoUrl: 'https://picsum.photos/seed/k1/400/300',
     activeCount: 180,
-    trending: false
+    trending: false,
+    coordinates: { latitude: -1.2721, longitude: 36.8143 }
   }
 ];
 
 const INITIAL_PROFILE: UserProfile = {
   name: '',
-  age: 0,
+  age: 18,
+  zodiacSign: '',
   location: 'Nairobi',
-  bio: '',
+  bio: 'Just looking for meaningful connections.',
   interests: [],
   languages: [],
   gender: '',
@@ -224,44 +243,121 @@ const App: React.FC = () => {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [typingStatus, setTypingStatus] = useState<Record<string, string[]>>({});
   
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  // Connection Test
+  useEffect(() => {
+    async function testConnection() {
+      try {
+        await getDocFromServer(doc(db, 'test', 'connection'));
+      } catch (error) {
+        if(error instanceof Error && error.message.includes('the client is offline')) {
+          console.error("Please check your Firebase configuration.");
+        }
+      }
+    }
+    testConnection();
+  }, []);
+
+  // Auth Listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setAuthUser(user);
+      if (user) {
+        // fetch user profile
+        try {
+          const profileDoc = await getDoc(doc(db, 'users', user.uid));
+          if (profileDoc.exists()) {
+             setUserProfile(profileDoc.data() as UserProfile);
+             setView(AppView.DISCOVERY);
+          } else {
+             setUserProfile(prev => ({ ...prev, name: user.displayName || '', photoUrl: user.photoURL || prev.photoUrl }));
+             setView(AppView.PROFILE_SETUP);
+          }
+        } catch (e) {
+          handleFirestoreError(e, OperationType.GET, 'users');
+        }
+      } else {
+        setView(AppView.LANDING);
+      }
+      setIsAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  
   // Ref to prevent double fetching
   const hasFetchedEvents = useRef(false);
 
-  // Auto-fetch real events for the public group
+  // Auto-fetch real events for the public group with caching and retry logic
   useEffect(() => {
     if (hasFetchedEvents.current) return;
 
-    const fetchEvents = async () => {
+    const fetchEvents = async (retryCount = 0) => {
         // Use user location if available, else default to Nairobi Central
         const lat = userProfile.coordinates?.latitude || -1.2921;
         const lng = userProfile.coordinates?.longitude || 36.8219;
         
         hasFetchedEvents.current = true;
-        console.log("Fetching events for Public Group...");
+        console.log(`Fetching events for Public Group... (Attempt ${retryCount + 1})`);
         
-        const events = await findRealtimeEvents(lat, lng);
-        
-        if (events && events.length > 0) {
-             const newMessages: ChatMessage[] = events.map((event, idx) => ({
-                 id: `event_bot_${Date.now()}_${idx}`,
-                 senderId: 'bot',
-                 senderName: 'Nairobi Bot 🤖',
-                 text: `📅 **${event.name}**\n\n📍 ${event.location}\n⏰ ${event.date || 'Check link for time'}\n\nℹ️ ${event.description}\n\n🔗 ${event.mapsUri || 'No link available'}`,
-                 timestamp: new Date()
-             }));
+        const CACHE_KEY = `cachedEvents_${lat}_${lng}`;
+        const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour
+        const cachedData = localStorage.getItem(CACHE_KEY);
 
-             setChats(prev => prev.map(chat => {
-                 if (chat.matchId === PUBLIC_EVENTS_GROUP_ID) {
-                     return {
-                         ...chat,
-                         messages: [...chat.messages, ...newMessages],
-                         lastMessage: `Latest: ${events[0].name}`,
-                         unreadCount: newMessages.length
-                     };
-                 }
-                 return chat;
-             }));
+        if (cachedData) {
+            try {
+                const { events, timestamp } = JSON.parse(cachedData);
+                if (Date.now() - timestamp < CACHE_EXPIRY) {
+                    console.log("Using cached events");
+                    handleFetchedEvents(events);
+                    return;
+                }
+            } catch (e) {
+                console.error("Failed to parse cached events", e);
+            }
         }
+
+        try {
+            const events = await findRealtimeEvents(lat, lng);
+            if (events && events.length > 0) {
+                localStorage.setItem(CACHE_KEY, JSON.stringify({ events, timestamp: Date.now() }));
+                handleFetchedEvents(events);
+            } else if (retryCount < 2) {
+                console.log("No events found, retrying...");
+                hasFetchedEvents.current = false;
+                setTimeout(() => fetchEvents(retryCount + 1), 2000);
+            }
+        } catch (error) {
+            console.error("Error fetching events:", error);
+            if (retryCount < 2) {
+                 hasFetchedEvents.current = false;
+                 setTimeout(() => fetchEvents(retryCount + 1), 2000);
+            }
+        }
+    };
+
+    const handleFetchedEvents = (events: any[]) => {
+         const newMessages: ChatMessage[] = events.map((event, idx) => ({
+             id: `event_bot_${Date.now()}_${idx}`,
+             senderId: 'bot',
+             senderName: 'Nairobi Bot 🤖',
+             text: `📅 **${event.name}**\n\n📍 ${event.location}\n⏰ ${event.date || 'Check link for time'}\n\nℹ️ ${event.description}\n\n🔗 ${event.mapsUri || 'No link available'}`,
+             timestamp: new Date()
+         }));
+
+         setChats(prev => prev.map(chat => {
+             if (chat.matchId === PUBLIC_EVENTS_GROUP_ID) {
+                 return {
+                     ...chat,
+                     messages: [...chat.messages, ...newMessages],
+                     lastMessage: `Latest: ${events[0].name}`,
+                     unreadCount: newMessages.length
+                 };
+             }
+             return chat;
+         }));
     };
 
     fetchEvents();
@@ -289,13 +385,52 @@ const App: React.FC = () => {
 
   // --- Handlers ---
 
-  const handleStartApp = () => {
-    setView(AppView.PROFILE_SETUP);
+  const handleStartApp = async () => {
+    try {
+      const user = await signInWithGoogle();
+      if (user) {
+        // We will fetch from Firestore in useEffect or after login
+        setView(AppView.PROFILE_SETUP);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Login failed');
+    }
   };
 
-  const handleProfileSave = (profile: UserProfile) => {
-    setUserProfile(profile);
-    setView(AppView.DISCOVERY);
+  const handleProfileSave = async (profile: UserProfile) => {
+    if (!authUser) return;
+    try {
+      const profileToSave = {
+          uid: authUser.uid,
+          name: profile.name || 'New User',
+          age: profile.age >= 18 ? profile.age : 18,
+          location: profile.location || 'Nairobi',
+          bio: profile.bio || 'New member',
+          ...((profile.neighborhood && profile.neighborhood.length > 0) && { neighborhood: profile.neighborhood }),
+          ...((profile.interests && profile.interests.length > 0) && { interests: profile.interests }),
+          ...((profile.languages && profile.languages.length > 0) && { languages: profile.languages }),
+          ...((profile.gender && profile.gender.length > 0) && { gender: profile.gender }),
+          ...((profile.lookingFor && profile.lookingFor.length > 0) && { lookingFor: profile.lookingFor }),
+          ...((profile.photoUrl && profile.photoUrl.length > 0) && { photoUrl: profile.photoUrl }),
+          ...((profile.voiceUrl && profile.voiceUrl.length > 0) && { voiceUrl: profile.voiceUrl }),
+          ...((profile.coordinates) && { coordinates: profile.coordinates })
+      };
+      // explicitly define isVerified per our rules requirement during create
+      const docRef = doc(db, 'users', authUser.uid);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+         Object.assign(profileToSave, { isVerified: false });
+      } else {
+         Object.assign(profileToSave, { isVerified: profile.isVerified });
+      }
+
+      await setDoc(docRef, profileToSave, { merge: true });
+      setUserProfile(profile);
+      setView(AppView.DISCOVERY);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'users');
+    }
   };
 
   const handleLike = (match: MatchProfile) => {
@@ -389,7 +524,17 @@ const App: React.FC = () => {
     setView(AppView.CHAT_ROOM);
   };
 
-  const handleSendMessage = (text: string) => {
+  const handleBlockUser = (matchId: string) => {
+    // Remove the chat
+    setChats(prev => prev.filter(c => c.matchId !== matchId));
+    // Remove from matches
+    setMatches(prev => prev.filter(m => m.id !== matchId));
+    // Return to chat list
+    setView(AppView.CHAT_LIST);
+    setActiveChatId(null);
+  };
+
+  const handleSendMessage = (text: string, imageUrl?: string, audioUrl?: string) => {
     if (!activeChatId) return;
     
     const chatId = activeChatId;
@@ -399,19 +544,52 @@ const App: React.FC = () => {
       id: Date.now().toString(),
       senderId: 'me',
       text,
-      timestamp: new Date()
+      timestamp: new Date(),
+      status: 'sent'
     };
+    if (imageUrl) {
+      newMessage.imageUrl = imageUrl;
+    }
+    if (audioUrl) {
+      newMessage.audioUrl = audioUrl;
+    }
 
     setChats(prev => prev.map(chat => {
       if (chat.matchId === chatId) {
         return {
           ...chat,
           messages: [...chat.messages, newMessage],
-          lastMessage: text
+          lastMessage: text ? text : (imageUrl ? 'Sent a photo' : 'Sent a voice note')
         };
       }
       return chat;
     }));
+
+    // Simulate "Delivered" and "Read"
+    setTimeout(() => {
+       setChats(prev => prev.map(chat => {
+          if (chat.matchId === chatId) {
+            return {
+              ...chat,
+              messages: chat.messages.map(m => m.id === newMessage.id ? { ...m, status: 'delivered' } : m)
+            };
+          }
+          return chat;
+       }));
+       
+       setTimeout(() => {
+         setChats(prev => prev.map(chat => {
+            if (chat.matchId === chatId) {
+              return {
+                ...chat,
+                messages: chat.messages.map(m => m.id === newMessage.id ? { ...m, status: 'read' } : m)
+              };
+            }
+            return chat;
+         }));
+       }, 1500);
+
+    }, 500);
 
     // Simulate Typing
     setTimeout(() => {
@@ -516,6 +694,14 @@ const App: React.FC = () => {
 
   // --- Render Components ---
 
+  if (isAuthLoading) {
+      return (
+          <div className="h-screen flex items-center justify-center bg-white">
+              <Loader2 size={48} className="animate-spin text-rose-500" />
+          </div>
+      );
+  }
+
   const renderContent = () => {
     switch (view) {
       case AppView.LANDING:
@@ -561,6 +747,13 @@ const App: React.FC = () => {
               </h1>
               <div className="flex items-center gap-3">
                  <button 
+                    onClick={async () => { await signOut(); setView(AppView.LANDING); }}
+                    className="p-2 text-slate-400 hover:text-slate-600 rounded-full"
+                    title="Log Out"
+                 >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                 </button>
+                 <button 
                     onClick={() => setView(AppView.VOICE_COACH)}
                     className="p-2 bg-rose-100 text-rose-600 rounded-full animate-pulse-slow shadow-sm"
                     title="AI Coach"
@@ -574,7 +767,8 @@ const App: React.FC = () => {
             </div>
             <Discovery 
               userProfile={userProfile}
-              matches={matches} 
+              matches={matches}
+              hangoutSpots={MOCK_VENUES}
               onLike={handleLike} 
               onPass={handlePass} 
               onBoost={handleBoost}
@@ -627,6 +821,7 @@ const App: React.FC = () => {
               onBack={() => setView(AppView.CHAT_LIST)}
               onSendMessage={handleSendMessage}
               onDeleteMessage={handleDeleteMessage}
+              onBlockUser={handleBlockUser}
               typingUsers={typingStatus[activeSession.matchId]}
             />
           </div>

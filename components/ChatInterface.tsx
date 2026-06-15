@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, ChatMessage, MatchProfile, UserProfile } from '../types';
 import { generateIcebreaker, generateDateIdeas, explainMessage } from '../services/geminiService';
-import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, Users as UsersIcon, Plus as Plus, PlusCircle, User, Crown, X, SmilePlus } from 'lucide-react';
+import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, Users as UsersIcon, Plus as Plus, PlusCircle, User, Crown, X, SmilePlus, Camera } from 'lucide-react';
 
 // --- Video Call Component ---
 interface VideoCallProps {
@@ -573,12 +573,13 @@ interface ChatRoomProps {
   userProfile: UserProfile; 
   matchProfile?: MatchProfile;
   onBack: () => void;
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string, imageUrl?: string, audioUrl?: string) => void;
   onDeleteMessage: (matchId: string, msgId: string) => void;
+  onBlockUser?: (matchId: string) => void;
   typingUsers?: string[]; // New prop for typing indicators
 }
 
-export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchProfile, onBack, onSendMessage, onDeleteMessage, typingUsers }) => {
+export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchProfile, onBack, onSendMessage, onDeleteMessage, onBlockUser, typingUsers }) => {
   const [inputText, setInputText] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
@@ -589,6 +590,15 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
   const [loadingTranslation, setLoadingTranslation] = useState<string | null>(null);
   const [showGroupMembers, setShowGroupMembers] = useState(false);
   const [isInCall, setIsInCall] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+
+  // Audio Recording State
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Reaction State
   const [reactionMenuMsgId, setReactionMenuMsgId] = useState<string | null>(null);
@@ -596,6 +606,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
   const [localUserReactions, setLocalUserReactions] = useState<Record<string, string>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const REACTION_EMOJIS = ['❤️', '👍', '😂', '😮', '😢', '🔥'];
 
@@ -621,6 +632,72 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
     onSendMessage(inputText);
     setInputText('');
     setAiSuggestion(null);
+  };
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      onSendMessage('', imageUrl);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Error accessing microphone", err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    }
+  };
+
+  const cancelRecording = () => {
+    stopRecording();
+    setAudioBlob(null);
+  };
+
+  const sendAudioMessage = () => {
+    if (audioBlob) {
+      const audioUrl = URL.createObjectURL(audioBlob);
+      onSendMessage('', undefined, audioUrl);
+      setAudioBlob(null);
+    }
+  };
+
+  const formatTime = (time: number) => {
+      const mins = Math.floor(time / 60);
+      const secs = time % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleAskAI = async () => {
@@ -760,10 +837,22 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 relative">
           {!isGroup && <><button onClick={() => setIsInCall(true)} className="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-full transition-colors"><Video size={20} /></button><button onClick={() => handleDateIdeas(false)} className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"><Calendar size={20} /></button></>}
           {isGroup && <button onClick={() => setShowGroupMembers(true)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"><UsersIcon size={20} /></button>}
-          <button className="p-2 text-slate-400 hover:text-slate-600 rounded-full"><MoreVertical size={20} /></button>
+          <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="p-2 text-slate-400 hover:text-slate-600 rounded-full"><MoreVertical size={20} /></button>
+          
+          {/* Options Dropdown */}
+          {showOptionsMenu && !isGroup && (
+            <div className="absolute top-12 right-0 w-48 bg-white border border-slate-100 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+               <button 
+                  onClick={() => { setShowOptionsMenu(false); if(matchProfile && onBlockUser) onBlockUser(matchProfile.id); }}
+                  className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
+               >
+                  <Hand size={16} /> Block & Report
+               </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -811,7 +900,19 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                     onClick={() => { if (msg.senderId !== 'me' && !translationMap[msg.id]) { handleTranslate(msg.id, msg.text); } }} 
                     className={`flex flex-col shadow-sm rounded-2xl overflow-hidden transition-all duration-300 relative ${msg.senderId === 'me' ? 'bg-rose-600 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none cursor-pointer hover:bg-slate-50 active:scale-95'}`}
                   >
-                      <div className={`px-4 py-3 text-sm leading-relaxed ${msg.text.includes('\n') ? 'whitespace-pre-wrap' : ''}`}>{msg.text}{loadingTranslation === msg.id && <span className="inline-block ml-2 align-middle"><Loader2 size={12} className="animate-spin text-rose-500" /></span>}</div>
+                      {msg.imageUrl && (
+                        <div className="w-full max-w-[240px] max-h-[300px] overflow-hidden bg-slate-100 rounded-t-2xl">
+                          <img src={msg.imageUrl} alt="Uploaded photo" className="w-full h-full object-cover rounded-t-2xl" />
+                        </div>
+                      )}
+                      {msg.audioUrl && (
+                        <div className="px-3 py-2 w-[220px]">
+                          <audio controls src={msg.audioUrl} className="w-full h-10" />
+                        </div>
+                      )}
+                      {msg.text && (
+                        <div className={`px-4 py-3 text-sm leading-relaxed ${msg.text.includes('\n') ? 'whitespace-pre-wrap' : ''}`}>{msg.text}{loadingTranslation === msg.id && <span className="inline-block ml-2 align-middle"><Loader2 size={12} className="animate-spin text-rose-500" /></span>}</div>
+                      )}
                       
                       {translationMap[msg.id] && (
                         <div className="bg-slate-50 border-t border-slate-100 px-3 py-2.5 animate-in slide-in-from-top-2 duration-300">
@@ -823,6 +924,17 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                       )}
                   </div>
 
+                  <div className={`flex items-center gap-2 mt-1 ${msg.senderId === 'me' ? 'justify-end' : 'justify-start'}`}>
+                     <span className="text-[10px] text-slate-400">
+                       {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                     </span>
+                     {msg.senderId === 'me' && msg.status && (
+                       <span className="text-[10px] text-slate-400">
+                         {msg.status === 'read' ? '✓✓' : msg.status === 'delivered' ? '✓✓' : '✓'}
+                       </span>
+                     )}
+                  </div>
+                  
                   {/* Reactions Display */}
                   {showReactions && (
                     <div className={`flex gap-1 mt-1 ${msg.senderId === 'me' ? 'justify-end' : 'justify-start'}`}>
@@ -878,12 +990,58 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-3 bg-white border-t border-slate-100">
-        <div className="flex items-center gap-2">
-          {!isGroup && session.messages.length === 0 && <button onClick={handleAskAI} disabled={loadingAi} className="p-3 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors flex-shrink-0">{loadingAi ? <div className="animate-spin w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full" /> : <Sparkles size={20} />}</button>}
-          <div className="flex-1 relative"><input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="w-full pl-4 pr-4 py-3 bg-slate-100 rounded-full border-transparent focus:bg-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none text-sm transition-all" /></div>
-          <button onClick={handleSend} disabled={!inputText.trim()} className="p-3 bg-rose-600 text-white rounded-full hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-rose-200"><Send size={20} /></button>
-        </div>
+      <div className="p-3 bg-white border-t border-slate-100 min-h-[72px] flex items-center">
+        {isRecording ? (
+          <div className="flex-1 flex items-center justify-between bg-red-50 rounded-full px-4 py-2">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-red-500 font-medium text-sm">{formatTime(recordingTime)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={cancelRecording} className="p-2 text-slate-500 hover:text-slate-700 bg-white rounded-full">
+                <Trash2 size={16} />
+              </button>
+              <button onClick={sendAudioMessage} className="p-2 bg-rose-600 text-white rounded-full hover:bg-rose-700 transform hover:scale-105 transition-all shadow-md shadow-rose-200">
+                <Send size={16} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 w-full">
+            {!isGroup && session.messages.length === 0 && <button onClick={handleAskAI} disabled={loadingAi} className="p-3 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors flex-shrink-0">{loadingAi ? <div className="animate-spin w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full" /> : <Sparkles size={20} />}</button>}
+            
+            <input 
+              type="file" 
+              accept="image/*" 
+              capture="environment" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handlePhotoSelect} 
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()} 
+              className="p-3 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors flex-shrink-0"
+            >
+              <Camera size={20} />
+            </button>
+
+            <div className="flex-1 relative">
+              <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="w-full pl-4 pr-10 py-3 bg-slate-100 rounded-full border-transparent focus:bg-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none text-sm transition-all" />
+              <button 
+                 onClick={startRecording}
+                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-rose-500 transition-colors"
+              >
+                 <Mic size={18} />
+              </button>
+            </div>
+            
+            {inputText.trim() ? (
+                <button onClick={handleSend} className="p-3 bg-rose-600 text-white rounded-full hover:bg-rose-700 transition-all shadow-md shadow-rose-200 animate-in zoom-in spin-in-12"><Send size={20} /></button>
+            ) : (
+                <button onClick={startRecording} className="p-3 bg-rose-100 text-rose-600 rounded-full hover:bg-rose-200 transition-all"><Mic size={20} /></button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "userProfile": {
+      "title": "User Profile",
+      "description": "Information about a user.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "User's full name" },
+        "age": { "type": "number", "description": "User's age" },
+        "location": { "type": "string", "description": "User's location" },
+        "neighborhood": { "type": "string", "description": "User's neighborhood" },
+        "bio": { "type": "string" },
+        "interests": { "type": "array", "items": { "type": "string" } },
+        "languages": { "type": "array", "items": { "type": "string" } },
+        "gender": { "type": "string" },
+        "lookingFor": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "voiceUrl": { "type": "string" },
+        "boostExpiresAt": { "type": "number" },
+        "isVerified": { "type": "boolean" },
+        "coordinates": {
+          "type": "object",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" }
+          }
+        }
+      },
+      "required": ["name", "age", "location", "bio"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/userProfile" },
+      "description": "User profiles. Users can only edit their own profile."
+    },
+    "/test/connection": {
+      "schema": "any",
+      "description": "Test connection document."
+    }
+  }
+}

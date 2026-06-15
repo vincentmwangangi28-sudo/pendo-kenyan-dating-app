@@ -83,7 +83,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
 
   const handleInterestToggle = (interest: string) => {
     setProfile(prev => {
-      const exists = prev.interests.includes(interest);
+      const exists = (prev.interests || []).includes(interest);
       if (exists) {
         return { ...prev, interests: prev.interests.filter(i => i !== interest) };
       }
@@ -94,7 +94,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
 
   const handleLanguageToggle = (lang: string) => {
     setProfile(prev => {
-      const exists = prev.languages.includes(lang);
+      const exists = (prev.languages || []).includes(lang);
       if (exists) {
         return { ...prev, languages: prev.languages.filter(l => l !== lang) };
       }
@@ -413,6 +413,20 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Zodiac Sign</label>
+            <select 
+              value={profile.zodiacSign || ''}
+              onChange={(e) => setProfile({...profile, zodiacSign: e.target.value})}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none bg-white"
+            >
+              <option value="">Select Zodiac...</option>
+              {['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'].map(z => (
+                <option key={z} value={z}>{z}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Enhanced Location Section */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
             <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -617,7 +631,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
                 key={lang}
                 onClick={() => handleLanguageToggle(lang)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                  profile.languages.includes(lang)
+                  (profile.languages || []).includes(lang)
                     ? 'bg-slate-800 text-white border-slate-800'
                     : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
                 }`}
@@ -637,7 +651,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
                 key={interest}
                 onClick={() => handleInterestToggle(interest)}
                 className={`px-4 py-2 rounded-full text-sm transition-all ${
-                  profile.interests.includes(interest)
+                  (profile.interests || []).includes(interest)
                     ? 'bg-rose-600 text-white shadow-md'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}

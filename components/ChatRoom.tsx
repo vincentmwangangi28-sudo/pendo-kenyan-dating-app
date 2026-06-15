@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, ChatMessage, MatchProfile, UserProfile } from '../types';
 import { generateIcebreaker, generateDateIdeas, explainMessage } from '../services/geminiService';
-import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, X, Crown, Shield, SmilePlus } from 'lucide-react';
+import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, X, Crown, Shield, SmilePlus, Share } from 'lucide-react';
 
 // --- Mock Data for Group Members ---
 const MOCK_GROUP_MEMBERS = [
@@ -319,6 +319,9 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
   const [isInCall, setIsInCall] = useState(false);
   const hasRequestedIcebreaker = useRef(false);
 
+  // Error boundary state for API requests
+  const [apiError, setApiError] = useState<{message: string; action: () => void} | null>(null);
+
   // Reaction State
   const [reactionMenuMsgId, setReactionMenuMsgId] = useState<string | null>(null);
   const [localReactions, setLocalReactions] = useState<Record<string, ChatMessage['reactions']>>({}); 
@@ -349,9 +352,20 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
   const handleAskAI = async () => {
     if (!matchProfile) return; // Only for 1-1 matches
     setLoadingAi(true);
-    const suggestion = await generateIcebreaker(matchProfile, userProfile.interests);
-    setAiSuggestion(suggestion);
-    setLoadingAi(false);
+    setApiError(null);
+    try {
+        const suggestion = await generateIcebreaker(matchProfile, userProfile.interests);
+        if (!suggestion) throw new Error("Could not generate icebreaker at this time. Please try again.");
+        setAiSuggestion(suggestion);
+    } catch (error) {
+        console.error("Icebreaker Error:", error);
+        setApiError({ 
+            message: "Failed to load icebreaker. The AI engine might be busy.", 
+            action: handleAskAI 
+        });
+    } finally {
+        setLoadingAi(false);
+    }
   };
 
   useEffect(() => {
@@ -360,6 +374,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                         matchProfile && 
                         !aiSuggestion && 
                         !loadingAi && 
+                        !apiError &&
                         !hasRequestedIcebreaker.current;
 
     if (shouldFetch) {
@@ -382,6 +397,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
     onSendMessage(inputText);
     setInputText('');
     setAiSuggestion(null);
+    setApiError(null);
   };
   
   const handleDateIdeas = async (forceRefresh = false) => {
@@ -390,17 +406,53 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
     if (dateIdeas && !forceRefresh) return;
     
     setLoadingDate(true);
-    const ideas = await generateDateIdeas(matchProfile.location, userProfile.interests, matchProfile.interests);
-    setDateIdeas(ideas);
-    setLoadingDate(false);
+    setApiError(null);
+    try {
+        const ideas = await generateDateIdeas(matchProfile.location, userProfile.interests, matchProfile.interests);
+        if (!ideas || ideas.length === 0) throw new Error("Could not generate ideas.");
+        setDateIdeas(ideas);
+    } catch (error) {
+        console.error("Date Ideas Error:", error);
+        setApiError({ 
+            message: "Failed to generate date ideas. The AI engine might be busy.", 
+            action: () => handleDateIdeas(true) 
+        });
+        setShowDateModal(false); // Close modal on error to show error message
+    } finally {
+        setLoadingDate(false);
+    }
   };
 
   const handleTranslate = async (msgId: string, text: string) => {
     if (translationMap[msgId]) return; // Already translated
     setLoadingTranslation(msgId);
-    const translation = await explainMessage(text);
-    setTranslationMap(prev => ({ ...prev, [msgId]: translation }));
-    setLoadingTranslation(null);
+    try {
+        const translation = await explainMessage(text);
+        if (!translation) throw new Error("Translation failed.");
+        setTranslationMap(prev => ({ ...prev, [msgId]: translation }));
+    } catch (error) {
+        console.error("Translation Error:", error);
+        setApiError({ 
+            message: "Failed to translate message. The AI engine might be busy.", 
+            action: () => handleTranslate(msgId, text)
+        });
+    } finally {
+        setLoadingTranslation(null);
+    }
+  };
+
+  const handleShareProfile = () => {
+    const url = `${window.location.origin}/profile/${session.matchId}`;
+    if (navigator.share) {
+      navigator.share({
+        title: `Check out ${session.matchName}'s profile!`,
+        text: `I matched with ${session.matchName} on Pendo, check out their profile here:`,
+        url: url
+      }).catch(err => console.log('Error sharing:', err));
+    } else {
+      navigator.clipboard.writeText(`Check out ${session.matchName}'s profile on Pendo! ${url}`);
+      alert("Profile link copied to clipboard!");
+    }
   };
 
   const handleReaction = (msgId: string, emoji: string) => {
@@ -624,6 +676,13 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
           {!isGroup && (
             <>
               <button 
+                onClick={handleShareProfile}
+                className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
+                title="Share Profile"
+              >
+                <Share size={20} />
+              </button>
+              <button 
                 onClick={() => setIsInCall(true)}
                 className="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-full transition-colors"
                 title="Video Call"
@@ -655,6 +714,31 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50 overflow-x-hidden">
+        
+        {/* API Error Message */}
+        {apiError && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl flex items-center justify-between text-sm shadow-sm animate-fade-in">
+                <div className="flex items-center gap-2">
+                    <span className="font-semibold">Oops!</span>
+                    <span>{apiError.message}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={apiError.action}
+                        className="px-3 py-1 bg-red-100 hover:bg-red-200 rounded-lg font-medium transition-colors"
+                    >
+                        Retry
+                    </button>
+                    <button 
+                        onClick={() => setApiError(null)}
+                        className="p-1 hover:bg-red-100 rounded-lg transition-colors"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+            </div>
+        )}
+
         {session.messages.length === 0 && (
           <div className="flex flex-col items-center justify-center mt-8 px-6 animate-fade-in">
              {/* Avatar/Icon */}

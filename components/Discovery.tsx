@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { MatchProfile, UserProfile } from '../types';
-import { X, Heart, MapPin, Info, Sparkles, Loader2, SlidersHorizontal, Check, Mic, Volume2, Zap, ShieldCheck } from 'lucide-react';
-import { analyzeCompatibility, generateSpeech } from '../services/geminiService';
+import { MatchProfile, UserProfile, HangoutSpot } from '../types';
+import { X, Heart, MapPin, Info, Sparkles, Loader2, SlidersHorizontal, Check, Mic, Volume2, Zap, ShieldCheck, MessageSquarePlus, Map as MapIcon, Users, Moon } from 'lucide-react';
+import { analyzeCompatibility, generateSpeech, generateHoroscope } from '../services/geminiService';
 import { INTERESTS_LIST } from './ProfileSetup';
+import { Map as PigeonMap, Marker, Overlay } from 'pigeon-maps';
 
 interface DiscoveryProps {
   userProfile: UserProfile;
   matches: MatchProfile[];
+  hangoutSpots?: HangoutSpot[];
   onLike: (match: MatchProfile) => void;
   onPass: (matchId: string) => void;
   onBoost: () => void;
@@ -19,11 +21,14 @@ interface FilterState {
   interests: string[];
 }
 
-export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLike, onPass, onBoost }) => {
+export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hangoutSpots = [], onLike, onPass, onBoost }) => {
+  const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
   const [vibeCheck, setVibeCheck] = useState<string | null>(null);
   const [loadingVibe, setLoadingVibe] = useState(false);
+  const [horoscope, setHoroscope] = useState<string | null>(null);
+  const [loadingHoroscope, setLoadingHoroscope] = useState(false);
   
   // TTS State
   const [isPlayingBio, setIsPlayingBio] = useState(false);
@@ -41,6 +46,9 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
   // Boost State
   const [showBoostModal, setShowBoostModal] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
+  
+  // Daily Spark State
+  const [showDailySpark, setShowDailySpark] = useState(true);
   
   // Swipe State
   const [dragX, setDragX] = useState(0);
@@ -77,7 +85,7 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
       if (filters.interests.length > 0) {
         // Show if match has at least one common interest
         const hasCommonInterest = match.interests.some(interest => 
-          filters.interests.includes(interest)
+          (filters.interests || []).includes(interest)
         );
         if (!hasCommonInterest) return false;
       }
@@ -88,10 +96,19 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
 
   const currentMatch = filteredMatches[currentIndex];
 
+  const sharedInterestsCount = useMemo(() => {
+    if (!userProfile?.interests || !currentMatch?.interests) return 0;
+    return currentMatch.interests.filter(i => userProfile.interests.includes(i)).length;
+  }, [userProfile, currentMatch]);
+
+  const isCompatible = sharedInterestsCount >= 3;
+
   useEffect(() => {
     // Reset state when card changes
     setVibeCheck(null);
     setLoadingVibe(false);
+    setHoroscope(null);
+    setLoadingHoroscope(false);
     setShowInfo(false);
     setDragX(0);
     setIsDragging(false);
@@ -133,6 +150,17 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
     const result = await analyzeCompatibility(userProfile, currentMatch);
     setVibeCheck(result);
     setLoadingVibe(false);
+    setShowInfo(true);
+  };
+  
+  const handleHoroscope = async (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    if (horoscope) return;
+
+    setLoadingHoroscope(true);
+    const result = await generateHoroscope(userProfile.zodiacSign, currentMatch.zodiacSign, currentMatch.name);
+    setHoroscope(result);
+    setLoadingHoroscope(false);
     setShowInfo(true);
   };
   
@@ -239,7 +267,7 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
 
   const toggleInterestFilter = (interest: string) => {
     setFilters(prev => {
-      if (prev.interests.includes(interest)) {
+      if ((prev.interests || []).includes(interest)) {
         return { ...prev, interests: prev.interests.filter(i => i !== interest) };
       }
       return { ...prev, interests: [...prev.interests, interest] };
@@ -312,8 +340,28 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white no-swipe">
           <div className="flex items-end justify-between mb-2">
             <div>
+              {((currentMatch.badges && currentMatch.badges.length > 0) || isCompatible) && (
+                <div className="flex flex-wrap gap-1.5 mb-2 pointer-events-none">
+                  {[...(currentMatch.badges || []), ...(isCompatible && !(currentMatch.badges || []).includes('Compatible') ? ['Compatible' as const] : [])].map(badge => {
+                    let bgColor = "bg-rose-500/80";
+                    if (badge === 'Verified') bgColor = "bg-blue-500/80";
+                    else if (badge === 'Top Pick') bgColor = "bg-amber-500/80 text-amber-50";
+                    else if (badge === 'Newbie') bgColor = "bg-emerald-500/80";
+                    else if (badge === 'Compatible') bgColor = "bg-purple-500/80";
+
+                    return (
+                      <span key={badge} className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm ${bgColor}`}>
+                        {badge}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
               <h2 className="text-3xl font-bold flex items-center gap-2 pointer-events-none">
                 {currentMatch.name}, {currentMatch.age}
+                {currentMatch.zodiacSign && (
+                  <span className="text-xl ml-1 text-purple-200 opacity-90">{currentMatch.zodiacSign}</span>
+                )}
                 {currentMatch.isVerified && (
                   <ShieldCheck size={24} className="text-blue-400" fill="currentColor" stroke="white" title="Verified Profile" />
                 )}
@@ -328,6 +376,16 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
             </div>
             
             <div className="flex gap-2">
+              <button 
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onClick={handleHoroscope}
+                className={`p-3 rounded-full backdrop-blur-md transition-all ${horoscope ? 'bg-purple-600 text-white' : 'bg-white/20 hover:bg-white/30'}`}
+                title="Daily Horoscope"
+              >
+                {loadingHoroscope ? <Loader2 size={24} className="animate-spin" /> : <Moon size={24} />}
+              </button>
+
               <button 
                 onMouseDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => e.stopPropagation()}
@@ -349,11 +407,20 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
             </div>
           </div>
           
-          {(showInfo || vibeCheck) && (
+          {(showInfo || vibeCheck || horoscope) && (
              <div className="animate-fade-in pt-4 border-t border-white/20 mt-4 max-h-[35vh] overflow-y-auto no-scrollbar cursor-default"
                   onMouseDown={(e) => e.stopPropagation()} 
                   onTouchStart={(e) => e.stopPropagation()}
              >
+               {horoscope && (
+                 <div className="mb-4 bg-purple-900/60 backdrop-blur-sm p-3 rounded-xl border border-purple-400/30">
+                   <div className="flex items-center gap-2 text-purple-200 text-xs font-bold uppercase mb-1">
+                     <Moon size={12} /> Daily Horoscope
+                   </div>
+                   <p className="text-sm text-purple-50 leading-relaxed">{horoscope}</p>
+                 </div>
+               )}
+
                {vibeCheck && (
                  <div className="mb-4 bg-indigo-900/60 backdrop-blur-sm p-3 rounded-xl border border-indigo-400/30">
                    <div className="flex items-center gap-2 text-indigo-200 text-xs font-bold uppercase mb-1">
@@ -437,6 +504,27 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
         </div>
       )}
       
+      {/* Daily Spark Notification */}
+      {showDailySpark && !showFilters && !showBoostModal && (
+        <div className="absolute top-24 left-6 right-6 z-30 animate-fade-in no-swipe">
+          <div className="bg-gradient-to-r from-rose-500 to-indigo-600 rounded-2xl p-4 text-white shadow-xl flex items-center gap-4">
+            <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+              <MessageSquarePlus size={24} className="text-white" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-bold text-sm">Daily Spark ✨</h4>
+              <p className="text-xs text-white/90 mt-0.5">Check your chats! AI has generated new personalized icebreakers for your recent matches.</p>
+            </div>
+            <button 
+              onClick={() => setShowDailySpark(false)}
+              className="p-2 hover:bg-white/20 rounded-full transition-colors flex-shrink-0"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Boost Modal */}
       {showBoostModal && (
         <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in no-swipe">
@@ -553,7 +641,7 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
               <p className="text-xs text-slate-500">Show people who have at least one of these interests.</p>
               <div className="flex flex-wrap gap-2">
                 {INTERESTS_LIST.map(interest => {
-                  const isSelected = filters.interests.includes(interest);
+                  const isSelected = (filters.interests || []).includes(interest);
                   return (
                     <button
                       key={interest}
@@ -584,9 +672,29 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
         </div>
       )}
 
-      {!showFilters && !showBoostModal && renderCard()}
+      {/* View Mode Toggle */}
+      {!showFilters && !showBoostModal && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 no-swipe">
+          <div className="bg-white/80 backdrop-blur-md rounded-full shadow-md flex p-1 border border-white/50">
+            <button 
+              onClick={() => setViewMode('cards')}
+              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${viewMode === 'cards' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              Cards
+            </button>
+            <button 
+              onClick={() => setViewMode('map')}
+              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all flex items-center gap-1 ${viewMode === 'map' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <MapIcon size={14} /> Map
+            </button>
+          </div>
+        </div>
+      )}
 
-      {!showFilters && !showBoostModal && currentMatch && (
+      {!showFilters && !showBoostModal && viewMode === 'cards' && renderCard()}
+
+      {!showFilters && !showBoostModal && viewMode === 'cards' && currentMatch && (
         <div className="flex justify-center items-center gap-8 mb-4">
           <button 
             onClick={() => handleAction('pass')}
@@ -601,6 +709,79 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, onLi
           >
             <Heart size={40} fill="currentColor" />
           </button>
+        </div>
+      )}
+
+      {!showFilters && !showBoostModal && viewMode === 'map' && (
+        <div className="flex-1 rounded-3xl overflow-hidden shadow-xl mb-4 relative bg-slate-100 z-10 p-1 border-4 border-white">
+          <PigeonMap 
+            defaultCenter={[userProfile.coordinates?.latitude || -1.2921, userProfile.coordinates?.longitude || 36.8219]} 
+            defaultZoom={11}
+          >
+            {/* User Location */}
+            {userProfile.coordinates && (
+              <Marker anchor={[userProfile.coordinates.latitude, userProfile.coordinates.longitude]} width={40} color="#e11d48">
+                 <div className="w-4 h-4 bg-rose-600 rounded-full border-2 border-white shadow-[0_0_10px_rgba(225,29,72,0.6)] animate-pulse"></div>
+              </Marker>
+            )}
+            
+            {/* Hangout Spots */}
+            {hangoutSpots.map(spot => spot.coordinates && (
+              <Overlay key={'spot-'+spot.id} anchor={[spot.coordinates.latitude, spot.coordinates.longitude]} offset={[15, 30]}>
+                <div className="relative group cursor-pointer" onClick={() => console.log('Clicked spot:', spot.name)}>
+                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white border-2 border-white shadow-md">
+                     <Users size={16} />
+                   </div>
+                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white px-2 py-1 rounded shadow-lg text-xs font-bold text-slate-800 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+                     {spot.name}
+                     <div className="text-[10px] text-blue-600 font-normal">🔥 {spot.activeCount} here</div>
+                   </div>
+                </div>
+              </Overlay>
+            ))}
+
+            {/* Matches */}
+            {filteredMatches.map(match => match.coordinates && (
+              <Overlay key={'match-'+match.id} anchor={[match.coordinates.latitude, match.coordinates.longitude]} offset={[20, 40]}>
+                <div 
+                   className="relative group cursor-pointer" 
+                   onClick={() => {
+                     // Find index and flip to card view
+                     const idx = filteredMatches.findIndex(m => m.id === match.id);
+                     if (idx !== -1) {
+                         setCurrentIndex(idx);
+                         setViewMode('cards');
+                     }
+                   }}
+                >
+                   <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-lg">
+                     <img src={match.photoUrl} alt={match.name} className="w-full h-full object-cover" />
+                   </div>
+                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white px-2 py-1 rounded shadow-lg text-xs font-bold text-slate-800 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity flex items-center gap-1">
+                     {match.name}, {match.age} 
+                     <Heart size={10} className="text-rose-500 fill-rose-500" />
+                   </div>
+                </div>
+              </Overlay>
+            ))}
+          </PigeonMap>
+          
+          {/* Map Legend */}
+          <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-sm p-3 rounded-2xl shadow-lg flex justify-start gap-4 text-xs font-medium border border-white">
+            <div className="flex items-center gap-1.5 text-slate-700">
+               <div className="w-3 h-3 bg-rose-600 rounded-full"></div> You
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-700">
+               <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+                 <Users size={8} className="text-white" />
+               </div> Hotspots
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-700">
+               <div className="w-4 h-4 rounded-full border border-slate-300 bg-slate-200 overflow-hidden">
+                  <Heart size={8} className="m-auto mt-0.5 text-slate-400" />
+               </div> Matches
+            </div>
+          </div>
         </div>
       )}
     </div>

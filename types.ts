@@ -3,6 +3,7 @@ export interface UserProfile {
   age: number;
   location: string;
   neighborhood?: string;
+  zodiacSign?: string;
   bio: string;
   interests: string[];
   languages: string[];
@@ -24,6 +25,7 @@ export interface MatchProfile {
   age: number;
   location: string;
   neighborhood?: string;
+  zodiacSign?: string;
   bio: string;
   interests: string[];
   languages: string[];
@@ -31,6 +33,7 @@ export interface MatchProfile {
   voiceUrl?: string; // New field for audio intro
   distance: number; // in km
   isVerified?: boolean; // Profile verification status
+  badges?: ('Verified' | 'Top Pick' | 'Newbie' | 'Compatible')[];
   coordinates?: {
     latitude: number;
     longitude: number;
@@ -55,6 +58,10 @@ export interface HangoutSpot {
   activeCount: number; // How many people are there now
   trending: boolean;
   mapsUri?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export interface ChatMessage {
@@ -62,8 +69,11 @@ export interface ChatMessage {
   senderId: 'me' | string;
   senderName?: string; // Added for groups
   text: string;
+  imageUrl?: string;
+  audioUrl?: string; // Voice note
   timestamp: Date;
   isSystem?: boolean; 
+  status?: 'sent' | 'delivered' | 'read'; // Read receipt
   translation?: string; // To store AI explanation of the message
   reactions?: { [emoji: string]: number }; // Map of emoji to count
   userReaction?: string; // The emoji reaction of the current user
