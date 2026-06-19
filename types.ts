@@ -99,4 +99,5 @@ export enum AppView {
   CHAT_ROOM = 'CHAT_ROOM',
   GROUP_CREATION = 'GROUP_CREATION',
   VOICE_COACH = 'VOICE_COACH',
+  MEET = 'MEET',
 }

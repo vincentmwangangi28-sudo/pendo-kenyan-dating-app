@@ -1,29 +1,42 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut } from 'firebase/auth';
-import { initializeFirestore } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-let firestoreDb;
-try {
-  firestoreDb = initializeFirestore(app, {}, firebaseConfig.firestoreDatabaseId); 
-} catch (e) {
-  console.error("Firestore Init Error:", e);
-  console.error("firebaseConfig in use:", firebaseConfig);
-  // fallback
-  firestoreDb = initializeFirestore(app, {});
-}
-
-export const db = firestoreDb;
+// Initialize Firestore with the database ID from config
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
+// Add Google Meet scopes
+provider.addScope('https://www.googleapis.com/auth/meetings.space.created');
+provider.addScope('https://www.googleapis.com/auth/meetings.space.readonly');
+provider.addScope('https://www.googleapis.com/auth/meetings.space.settings');
+
+// In-memory token cache
+let cachedAccessToken: string | null = null;
+
+// Listen to auth state to clear token on logout
+auth.onAuthStateChanged((user) => {
+  if (!user) {
+    cachedAccessToken = null;
+  }
+});
+
+export const getCachedAccessToken = () => cachedAccessToken;
+
+export const setCachedAccessToken = (token: string | null) => {
+  cachedAccessToken = token;
+};
 
 export const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, provider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    cachedAccessToken = credential?.accessToken || null;
     return result.user;
   } catch (error) {
     console.error("Error signing in", error);
@@ -31,8 +44,24 @@ export const signInWithGoogle = async () => {
   }
 };
 
+export const signInForGoogleMeet = async (): Promise<string> => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (!credential?.accessToken) {
+      throw new Error("Failed to get Google Meet access token");
+    }
+    cachedAccessToken = credential.accessToken;
+    return cachedAccessToken;
+  } catch (error) {
+    console.error("Error getting Google Meet token", error);
+    throw error;
+  }
+};
+
 export const signOut = async () => {
   try {
+    cachedAccessToken = null;
     await fbSignOut(auth);
   } catch (error) {
     console.error("Error signing out", error);

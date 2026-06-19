@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, ChatMessage, MatchProfile, UserProfile } from '../types';
 import { generateIcebreaker, generateDateIdeas, explainMessage } from '../services/geminiService';
+import { signInForGoogleMeet, getCachedAccessToken } from '../services/firebase';
 import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, X, Crown, Shield, SmilePlus, Share } from 'lucide-react';
 
 // --- Mock Data for Group Members ---
@@ -317,6 +318,10 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
   const [loadingTranslation, setLoadingTranslation] = useState<string | null>(null);
   const [showGroupMembers, setShowGroupMembers] = useState(false);
   const [isInCall, setIsInCall] = useState(false);
+  const [showVideoOptionsModal, setShowVideoOptionsModal] = useState(false);
+  const [isCreatingMeet, setIsCreatingMeet] = useState(false);
+  const [meetError, setMeetError] = useState<string | null>(null);
+  const [createdMeetUrl, setCreatedMeetUrl] = useState<string | null>(null);
   const hasRequestedIcebreaker = useRef(false);
 
   // Error boundary state for API requests
@@ -487,6 +492,54 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
     setReactionMenuMsgId(null);
   };
 
+  const handleCreateGoogleMeet = async () => {
+    setMeetError(null);
+    setCreatedMeetUrl(null);
+    setIsCreatingMeet(true);
+    try {
+      let token = getCachedAccessToken();
+      if (!token) {
+        token = await signInForGoogleMeet();
+      }
+
+      if (!token) {
+        throw new Error("Unable to obtain Google Meet authorization token.");
+      }
+
+      const resSpace = await fetch('https://meet.googleapis.com/v2/spaces', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!resSpace.ok) {
+        const errorData = await resSpace.json().catch(() => ({}));
+        console.error("Google Meet API Error:", errorData);
+        throw new Error(errorData.error?.message || `Google Meet creation failed with code ${resSpace.status}`);
+      }
+
+      const data = await resSpace.json();
+      const meetUrl = data.meetingUri;
+      if (!meetUrl) {
+        throw new Error("Google Meet API response did not contain a valid meeting URI.");
+      }
+
+      setCreatedMeetUrl(meetUrl);
+      
+      // Post the Google Meet Link to the chat automatically
+      const greeting = matchProfile ? `Hey ${matchProfile.name}, let's meet on Google Meet! 🎥✨` : "Let's meet on Google Meet! 🎥✨";
+      onSendMessage(`${greeting} Join our virtual date room here:\n\n${meetUrl}`);
+    } catch (err: any) {
+      console.error("Error creating Google Meet space:", err);
+      setMeetError(err.message || "Failed to create Google Meet room. Please make sure Google Meet integration permissions are authorized.");
+    } finally {
+      setIsCreatingMeet(false);
+    }
+  };
+
   const useSuggestion = () => {
     if (aiSuggestion) {
       setInputText(aiSuggestion);
@@ -578,6 +631,137 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                  Close
                </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Date Options Modal */}
+      {showVideoOptionsModal && (
+        <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in animate-duration-200">
+          <div className="bg-white w-full max-w-sm rounded-[24px] p-6 shadow-2xl relative animate-slide-up max-h-[90vh] overflow-y-auto no-scrollbar">
+            <button 
+              onClick={() => {
+                setShowVideoOptionsModal(false);
+                setMeetError(null);
+                setCreatedMeetUrl(null);
+              }}
+              className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="flex items-center gap-3 mb-5">
+              <div className="bg-rose-100 p-3 rounded-full text-rose-600">
+                <Video size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 leading-none">Choose Video Date</h3>
+                <p className="text-xs text-slate-500 mt-1">Select how you'd like to connect on video</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Option A: Google Meet (Real API integration) */}
+              <div className="border border-purple-100 rounded-2xl p-4 bg-gradient-to-b from-purple-50/50 to-white hover:border-purple-200 transition-all relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-purple-100 text-purple-700 font-bold text-[9px] px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">
+                  Official
+                </div>
+                
+                <h4 className="font-bold text-slate-900 text-sm flex items-center gap-1.5 text-purple-900">
+                  <Globe size={16} className="text-purple-600" />
+                  Google Meet Video Date
+                </h4>
+                <p className="text-xs text-slate-600 mt-1 mb-3 leading-relaxed">
+                  Start a real, live video call room using Google Meet. Perfect for scheduling actual remote date sessions.
+                </p>
+
+                {meetError && (
+                  <div className="mb-3 p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs flex items-start gap-1.5">
+                    <span className="font-bold text-red-800">Error:</span>
+                    <span className="flex-1 text-[11px] leading-tight text-red-700">{meetError}</span>
+                  </div>
+                )}
+
+                {createdMeetUrl ? (
+                  <div className="space-y-2">
+                    <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-2.5 rounded-xl text-xs font-medium flex items-center justify-between">
+                      <span className="truncate mr-2">Link shared in chat!</span>
+                      <span className="text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold text-center">Shared</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <a 
+                        href={createdMeetUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-center text-white py-2 px-3 rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1"
+                      >
+                        Join Workspace Room <Share size={12} />
+                      </a>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(createdMeetUrl);
+                          alert("Meeting link copied to clipboard!");
+                        }}
+                        className="px-3 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold transition-colors"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleCreateGoogleMeet}
+                    disabled={isCreatingMeet}
+                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white py-2.5 rounded-xl text-xs font-semibold shadow-lg shadow-purple-200 flex items-center justify-center gap-1.5 transition-all outline-none"
+                  >
+                    {isCreatingMeet ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin text-purple-200" />
+                        Setting up room...
+                      </>
+                    ) : (
+                      <>
+                        <Globe size={14} />
+                        {getCachedAccessToken() ? "Create & Share Meet Space" : "Authorize & Create Meet Space"}
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Option B: Simulated Video Call */}
+              <div className="border border-slate-100 rounded-2xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                <h4 className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                  <Video size={16} className="text-rose-500" />
+                  Pendo Quick Chat Video
+                </h4>
+                <p className="text-xs text-slate-600 mt-1 mb-3 leading-relaxed">
+                  Try out a quick mock calling room straight inside the app. Includes screen share and mic controls.
+                </p>
+                
+                <button
+                  onClick={() => {
+                    setShowVideoOptionsModal(false);
+                    setIsInCall(true);
+                  }}
+                  className="w-full bg-rose-600 hover:bg-rose-700 text-white py-2.5 rounded-xl text-xs font-semibold shadow-lg shadow-rose-200 flex items-center justify-center gap-1.5 transition-all outline-none"
+                >
+                  <Video size={14} />
+                  Start In-App Video Call
+                </button>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => {
+                setShowVideoOptionsModal(false);
+                setMeetError(null);
+                setCreatedMeetUrl(null);
+              }}
+              className="w-full mt-4 bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold py-3 rounded-xl text-xs transition-colors"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
@@ -683,9 +867,9 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                 <Share size={20} />
               </button>
               <button 
-                onClick={() => setIsInCall(true)}
+                onClick={() => setShowVideoOptionsModal(true)}
                 className="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-full transition-colors"
-                title="Video Call"
+                title="Video Date"
               >
                 <Video size={20} />
               </button>

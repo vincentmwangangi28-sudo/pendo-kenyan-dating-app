@@ -409,3 +409,53 @@ export const verifyPhotoGesture = async (imageBase64: string, gesture: string): 
     return false;
   }
 };
+
+/**
+ * Generates a highly engaging theme-specific plan for a virtual video date.
+ */
+export const generateVidDateThemePlan = async (themeName: string, partnerName: string): Promise<string> => {
+  try {
+    const prompt = `
+      Create an incredibly fun, romantic, and engaging action-plan for a virtual 1-on-1 video date with "${partnerName}".
+      The selected theme is: "${themeName}".
+      Suggest details for:
+      1. Preparation (e.g. drinks, setup, dressing vibe).
+      2. 3 actionable micro-activities to do live over video.
+      3. A signature "Daring Question" to ask each other.
+      Make the content warm, youthful, customized for Kenyan daters, and formatted in clear, bite-sized sections. Max 140 words.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: FAST_MODEL,
+      contents: prompt,
+    });
+
+    return response.text?.trim() || "Get ready to have an amazing online date! Bring your good energy, grab your favorite snacks, and enjoy!";
+  } catch (error) {
+    console.error("Error generating date plan:", error);
+    return "Error creating live plan. Set up your screen, prepare a refreshing drink, and let the conversation flow naturally!";
+  }
+};
+
+/**
+ * Generates a random, engaging icebreaker question based on a selected category.
+ */
+export const generateLiveIcebreakerQuestion = async (category: string): Promise<string> => {
+  try {
+    const prompt = `
+      Generate one single highly engaging, deep, or fun conversation-starter question for a video dating couple.
+      Category vibe: "${category}".
+      Keep the question under 18 words. No introductory text. Just output the question.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: FAST_MODEL,
+      contents: prompt,
+    });
+
+    return response.text?.trim() || "What was your very first impression of my profile?";
+  } catch (error) {
+    console.error("Error generating icebreaker question:", error);
+    return "What is your absolute dream venue for a first physical meetup?";
+  }
+};

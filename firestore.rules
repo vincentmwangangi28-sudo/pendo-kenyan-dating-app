@@ -13,7 +13,10 @@ service cloud.firestore {
     function isSignedIn() { return request.auth != null; }
     
     function isValidUserProfile(data) {
-       return data.uid == request.auth.uid;
+       return data.name is string && data.name.size() <= 128 &&
+              data.age is number &&
+              data.location is string && data.location.size() <= 128 &&
+              data.bio is string && data.bio.size() <= 2000;
     }
     
     function isValidChatSession(data) {

@@ -6,7 +6,8 @@ import { ChatList, ChatRoom } from './components/ChatInterface';
 import { GroupCreation } from './components/GroupCreation';
 import { HangoutSpots } from './components/HangoutSpots';
 import { VoiceCoach } from './components/VoiceCoach';
-import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2 } from 'lucide-react';
+import { MeetHub } from './components/MeetHub';
+import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video } from 'lucide-react';
 import { findRealtimeEvents } from './services/geminiService';
 import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -139,6 +140,7 @@ const MOCK_GROUPS: ChatSession[] = [
 ];
 
 const MOCK_VENUES: HangoutSpot[] = [
+  // --- NAIROBI ---
   {
     id: 'v1',
     name: 'The Alchemist',
@@ -203,7 +205,7 @@ const MOCK_VENUES: HangoutSpot[] = [
     id: 'v7',
     name: 'Mavuno Church',
     type: 'CHURCH',
-    location: 'Mlolongo',
+    location: 'Mlolongo, Nairobi',
     photoUrl: 'https://picsum.photos/seed/mavuno/400/300',
     activeCount: 45,
     trending: false,
@@ -218,6 +220,194 @@ const MOCK_VENUES: HangoutSpot[] = [
     activeCount: 180,
     trending: false,
     coordinates: { latitude: -1.2721, longitude: 36.8143 }
+  },
+
+  // --- MOMBASA ---
+  {
+    id: 'v_msa_1',
+    name: 'Char-Choma Beach Restaurant',
+    type: 'PUB',
+    location: 'Nyali Beach, Mombasa',
+    photoUrl: 'https://picsum.photos/seed/charchoma/400/300',
+    activeCount: 198,
+    trending: true,
+    coordinates: { latitude: -4.0298, longitude: 39.7145 }
+  },
+  {
+    id: 'v_msa_2',
+    name: 'Nyali Centre',
+    type: 'MALL',
+    location: 'Links Road, Mombasa',
+    photoUrl: 'https://picsum.photos/seed/nyalicentre/400/300',
+    activeCount: 650,
+    trending: false,
+    coordinates: { latitude: -4.0180, longitude: 39.7118 }
+  },
+  {
+    id: 'v_msa_3',
+    name: 'Fort Jesus Historical Grounds',
+    type: 'NATURE',
+    location: 'Old Town, Mombasa',
+    photoUrl: 'https://picsum.photos/seed/fortjesus/400/300',
+    activeCount: 88,
+    trending: false,
+    coordinates: { latitude: -4.0628, longitude: 39.6783 }
+  },
+  {
+    id: 'v_msa_4',
+    name: 'Mombasa Memorial Cathedral',
+    type: 'CHURCH',
+    location: 'Nkrumah Road, Mombasa',
+    photoUrl: 'https://picsum.photos/seed/memorialcath/400/300',
+    activeCount: 54,
+    trending: false,
+    coordinates: { latitude: -4.0610, longitude: 39.6745 }
+  },
+  {
+    id: 'v_msa_5',
+    name: 'Tapas Cielo Club',
+    type: 'PUB',
+    location: 'Nyali, Mombasa',
+    photoUrl: 'https://picsum.photos/seed/tapascielo/400/300',
+    activeCount: 154,
+    trending: true,
+    coordinates: { latitude: -4.0210, longitude: 39.7122 }
+  },
+
+  // --- KISUMU ---
+  {
+    id: 'v_kis_1',
+    name: 'Dunga Hill Camp',
+    type: 'NATURE',
+    location: 'Lakeside Road, Kisumu',
+    photoUrl: 'https://picsum.photos/seed/dungahill/400/300',
+    activeCount: 220,
+    trending: true,
+    coordinates: { latitude: -0.1384, longitude: 34.7394 }
+  },
+  {
+    id: 'v_kis_2',
+    name: 'West End Shopping Mall',
+    type: 'MALL',
+    location: 'Got Alila, Kisumu',
+    photoUrl: 'https://picsum.photos/seed/westend/400/300',
+    activeCount: 420,
+    trending: false,
+    coordinates: { latitude: -0.1035, longitude: 34.7578 }
+  },
+  {
+    id: 'v_kis_3',
+    name: 'Kisumu Impala Sanctuary',
+    type: 'NATURE',
+    location: 'Seme Road, Kisumu',
+    photoUrl: 'https://picsum.photos/seed/impala/400/300',
+    activeCount: 75,
+    trending: false,
+    coordinates: { latitude: -0.1215, longitude: 34.7490 }
+  },
+  {
+    id: 'v_kis_4',
+    name: 'Kibuye Catholic Cathedral',
+    type: 'CHURCH',
+    location: 'Jomo Kenyatta Highway, Kisumu',
+    photoUrl: 'https://picsum.photos/seed/kibuyecath/400/300',
+    activeCount: 110,
+    trending: false,
+    coordinates: { latitude: -0.0905, longitude: 34.7675 }
+  },
+  {
+    id: 'v_kis_5',
+    name: 'Kiboko Bay Resort Lounge',
+    type: 'PUB',
+    location: 'Dunga Road, Kisumu',
+    photoUrl: 'https://picsum.photos/seed/kibokobay/400/300',
+    activeCount: 135,
+    trending: false,
+    coordinates: { latitude: -0.1288, longitude: 34.7431 }
+  },
+
+  // --- NAKURU ---
+  {
+    id: 'v_nak_1',
+    name: 'Lake Nakuru National Park',
+    type: 'NATURE',
+    location: 'Lake Road, Nakuru',
+    photoUrl: 'https://picsum.photos/seed/lakenakuru/400/300',
+    activeCount: 185,
+    trending: true,
+    coordinates: { latitude: -0.3601, longitude: 36.0822 }
+  },
+  {
+    id: 'v_nak_2',
+    name: 'Westside Mall Nakuru',
+    type: 'MALL',
+    location: 'Kenyatta Avenue, Nakuru',
+    photoUrl: 'https://picsum.photos/seed/westsidenak/400/300',
+    activeCount: 510,
+    trending: false,
+    coordinates: { latitude: -0.2855, longitude: 36.0620 }
+  },
+  {
+    id: 'v_nak_3',
+    name: 'Christ The King Cathedral',
+    type: 'CHURCH',
+    location: 'Cathedral Way, Nakuru',
+    photoUrl: 'https://picsum.photos/seed/nakurucathedral/400/300',
+    activeCount: 125,
+    trending: false,
+    coordinates: { latitude: -0.2882, longitude: 36.0718 }
+  },
+  {
+    id: 'v_nak_4',
+    name: 'Tausi Grill & Lounge',
+    type: 'PUB',
+    location: 'Court Road, Nakuru',
+    photoUrl: 'https://picsum.photos/seed/tausigrill/400/300',
+    activeCount: 145,
+    trending: true,
+    coordinates: { latitude: -0.2911, longitude: 36.0705 }
+  },
+
+  // --- ELDORET ---
+  {
+    id: 'v_eld_1',
+    name: 'Poa Place Resort',
+    type: 'NATURE',
+    location: 'Kaptagat Road, Eldoret',
+    photoUrl: 'https://picsum.photos/seed/poaplace/400/300',
+    activeCount: 310,
+    trending: true,
+    coordinates: { latitude: 0.5188, longitude: 35.2922 }
+  },
+  {
+    id: 'v_eld_2',
+    name: 'Rupais Mall',
+    type: 'MALL',
+    location: 'Malaba Road, Eldoret',
+    photoUrl: 'https://picsum.photos/seed/rupasmall/400/300',
+    activeCount: 780,
+    trending: true,
+    coordinates: { latitude: 0.5218, longitude: 35.2862 }
+  },
+  {
+    id: 'v_eld_3',
+    name: 'Sacred Heart Cathedral Eldoret',
+    type: 'CHURCH',
+    location: 'Cathedral Road, Eldoret',
+    photoUrl: 'https://picsum.photos/seed/eldoretcath/400/300',
+    activeCount: 142,
+    trending: false,
+    coordinates: { latitude: 0.5105, longitude: 35.2750 }
+  },
+  {
+    id: 'v_eld_4',
+    name: 'The Blackwood Club Lounge',
+    type: 'PUB',
+    location: 'Nandi Road, Eldoret',
+    photoUrl: 'https://picsum.photos/seed/blackwood/400/300',
+    activeCount: 220,
+    trending: true,
+    coordinates: { latitude: 0.5135, longitude: 35.2738 }
   }
 ];
 
@@ -692,6 +882,26 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleShareMeetLinkInChat = (chatId: string, text: string) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      senderId: 'me',
+      text,
+      timestamp: new Date(),
+      status: 'sent'
+    };
+    setChats(prev => prev.map(chat => {
+      if (chat.matchId === chatId) {
+        return {
+          ...chat,
+          messages: [...chat.messages, newMessage],
+          lastMessage: text
+        };
+      }
+      return chat;
+    }));
+  };
+
   // --- Render Components ---
 
   if (isAuthLoading) {
@@ -831,11 +1041,20 @@ const App: React.FC = () => {
           return (
               <VoiceCoach onClose={() => setView(AppView.DISCOVERY)} />
           );
+
+      case AppView.MEET:
+          return (
+              <MeetHub 
+                chats={chats}
+                onBack={() => setView(AppView.DISCOVERY)}
+                onShareLinkInChat={handleShareMeetLinkInChat}
+              />
+          );
     }
   };
 
   // --- Bottom Navigation (Conditional) ---
-  const showNav = [AppView.DISCOVERY, AppView.HANGOUTS, AppView.CHAT_LIST].includes(view);
+  const showNav = [AppView.DISCOVERY, AppView.HANGOUTS, AppView.CHAT_LIST, AppView.MEET].includes(view);
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden">
@@ -857,6 +1076,15 @@ const App: React.FC = () => {
           >
             <MapPin size={24} fill={view === AppView.HANGOUTS ? "currentColor" : "none"} />
             <span className="text-[10px] font-medium">Hangouts</span>
+          </button>
+
+          <button 
+            onClick={() => setView(AppView.MEET)}
+            className={`flex flex-col items-center gap-1 transition-colors ${view === AppView.MEET ? 'text-purple-600' : 'text-slate-400 hover:text-slate-600'}`}
+            title="Video Date Hub (Google Meet)"
+          >
+            <Video size={24} fill={view === AppView.MEET ? "currentColor" : "none"} className={view === AppView.MEET ? 'text-purple-600' : 'text-purple-400'} />
+            <span className={`text-[10px] font-bold ${view === AppView.MEET ? 'text-purple-600' : 'text-slate-400'}`}>VidDate</span>
           </button>
           
           <button 
