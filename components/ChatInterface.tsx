@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, ChatMessage, MatchProfile, UserProfile } from '../types';
 import { generateIcebreaker, generateDateIdeas, explainMessage } from '../services/geminiService';
-import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, Users as UsersIcon, Plus as Plus, PlusCircle, User, Crown, X, SmilePlus, Camera } from 'lucide-react';
+import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, Users as UsersIcon, Plus as Plus, PlusCircle, User, Crown, X, SmilePlus, Camera, Gift } from 'lucide-react';
 
 // --- Video Call Component ---
 interface VideoCallProps {
@@ -579,6 +579,14 @@ interface ChatRoomProps {
   typingUsers?: string[]; // New prop for typing indicators
 }
 
+export const KENYAN_GIFTS = [
+  { id: 'tusker', name: 'Cold Tusker 🍻', price: '150 KES', desc: 'Buy them a legendary cold round of Kenya\'s finest brew.', color: 'from-amber-400 to-yellow-600', icon: '🍻' },
+  { id: 'choma', name: 'Nyama Choma 🥩', price: '450 KES', desc: 'A succulent, hot plate of charcoal-roasted goat meat.', color: 'from-orange-500 to-red-700', icon: '🥩' },
+  { id: 'rose', name: 'Nairobi Rose 🌹', price: '200 KES', desc: 'A premium, fresh red rose from the hills of Naivasha.', color: 'from-rose-400 to-pink-600', icon: '🌹' },
+  { id: 'chai', name: 'Vikombe vya Chai ☕', price: '80 KES', desc: 'A rich pot of authentic hot milk tea with ginger.', color: 'from-amber-600 to-amber-700', icon: '☕' },
+  { id: 'safari', name: 'Safari Voucher 🦁', price: '1,000 KES', desc: 'A virtual game drive pass to the beautiful Game Parks.', color: 'from-emerald-400 to-teal-700', icon: '🦁' },
+];
+
 export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchProfile, onBack, onSendMessage, onDeleteMessage, onBlockUser, typingUsers }) => {
   const [inputText, setInputText] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
@@ -591,6 +599,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
   const [showGroupMembers, setShowGroupMembers] = useState(false);
   const [isInCall, setIsInCall] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [showGiftModal, setShowGiftModal] = useState(false);
 
   // Audio Recording State
   const [isRecording, setIsRecording] = useState(false);
@@ -807,6 +816,51 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
         </div>
       )}
 
+      {showGiftModal && matchProfile && (
+        <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl relative animate-slide-up max-h-[85vh] flex flex-col">
+            <button onClick={() => setShowGiftModal(false)} className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full text-slate-400">
+              <X size={20} />
+            </button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-rose-100 p-2.5 rounded-full text-rose-600"><Gift size={22} /></div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 leading-none">Zawadi Courtship Kit</h3>
+                <p className="text-xs text-slate-500 mt-1">Send a charming traditional gift to express interest!</p>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 py-1 no-scrollbar">
+              {KENYAN_GIFTS.map(gift => (
+                <button
+                  key={gift.id}
+                  onClick={() => {
+                    onSendMessage(`🎁 [gift:${gift.id}] Sent you a ${gift.name}!`);
+                    setShowGiftModal(false);
+                  }}
+                  className="w-full flex items-center gap-4 p-3 bg-slate-50 hover:bg-rose-50 rounded-2xl border border-slate-100 hover:border-rose-100 transition-all text-left group active:scale-[0.98]"
+                >
+                  <span className="text-4xl filter drop-shadow group-hover:scale-110 transition-transform">{gift.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-bold text-slate-800 text-sm">{gift.name}</span>
+                      <span className="text-xs bg-slate-100 text-slate-600 group-hover:bg-rose-100 group-hover:text-rose-700 font-extrabold px-2 py-0.5 rounded-md transition-colors">{gift.price}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 line-clamp-2">{gift.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <button onClick={() => setShowGiftModal(false)} className="w-full bg-slate-100 text-slate-700 font-semibold py-3 rounded-xl hover:bg-slate-200 transition-colors text-sm">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showDateModal && matchProfile && (
         <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative animate-slide-up">
@@ -897,8 +951,14 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                   
                   {/* Message Bubble */}
                   <div 
-                    onClick={() => { if (msg.senderId !== 'me' && !translationMap[msg.id]) { handleTranslate(msg.id, msg.text); } }} 
-                    className={`flex flex-col shadow-sm rounded-2xl overflow-hidden transition-all duration-300 relative ${msg.senderId === 'me' ? 'bg-rose-600 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none cursor-pointer hover:bg-slate-50 active:scale-95'}`}
+                    onClick={() => { if (msg.senderId !== 'me' && !msg.text?.startsWith('🎁 [gift:') && !translationMap[msg.id]) { handleTranslate(msg.id, msg.text); } }} 
+                    className={`flex flex-col shadow-sm rounded-2xl overflow-hidden transition-all duration-300 relative ${
+                      msg.text && msg.text.startsWith('🎁 [gift:')
+                        ? 'p-0 text-white rounded-2xl'
+                        : msg.senderId === 'me' 
+                          ? 'bg-rose-600 text-white rounded-tr-none' 
+                          : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none cursor-pointer hover:bg-slate-50 active:scale-95'
+                    }`}
                   >
                       {msg.imageUrl && (
                         <div className="w-full max-w-[240px] max-h-[300px] overflow-hidden bg-slate-100 rounded-t-2xl">
@@ -910,7 +970,31 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                           <audio controls src={msg.audioUrl} className="w-full h-10" />
                         </div>
                       )}
-                      {msg.text && (
+                      {msg.text && msg.text.startsWith('🎁 [gift:') ? (
+                        (() => {
+                          const giftId = msg.text.match(/\[gift:([a-z]+)\]/)?.[1] || 'tusker';
+                          const gift = KENYAN_GIFTS.find(g => g.id === giftId) || KENYAN_GIFTS[0];
+                          return (
+                            <div className={`p-4 bg-gradient-to-br ${gift.color} text-white rounded-2xl shadow-xl min-w-[240px] max-w-[280px] border border-white/20`}>
+                              <div className="flex items-center gap-3">
+                                <span className="text-4xl filter drop-shadow animate-bounce">{gift.icon}</span>
+                                <div className="text-left">
+                                  <span className="text-[9px] font-black tracking-widest uppercase text-white/75 bg-black/20 px-1.5 py-0.5 rounded-md inline-block mb-1">Courtship Zawadi</span>
+                                  <h4 className="font-extrabold text-sm leading-tight text-white mb-0.5">{gift.name}</h4>
+                                  <span className="text-[10px] text-white/90 font-medium">Value: {gift.price}</span>
+                                </div>
+                              </div>
+                              <p className="text-xs text-white/90 mt-3 border-t border-white/20 pt-2 italic text-left leading-normal">
+                                "{gift.desc}"
+                              </p>
+                              <div className="flex items-center justify-between text-[9px] font-semibold tracking-wider uppercase text-white/65 mt-2.5 pt-1.5 border-t border-white/10">
+                                <span>Sent via Pendo</span>
+                                <span className="bg-white/10 px-1.5 py-0.5 rounded text-white font-bold">Unlocked ❤️</span>
+                              </div>
+                            </div>
+                          );
+                        })()
+                      ) : msg.text && (
                         <div className={`px-4 py-3 text-sm leading-relaxed ${msg.text.includes('\n') ? 'whitespace-pre-wrap' : ''}`}>{msg.text}{loadingTranslation === msg.id && <span className="inline-block ml-2 align-middle"><Loader2 size={12} className="animate-spin text-rose-500" /></span>}</div>
                       )}
                       
@@ -1021,9 +1105,20 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
             <button 
               onClick={() => fileInputRef.current?.click()} 
               className="p-3 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors flex-shrink-0"
+              title="Camera"
             >
               <Camera size={20} />
             </button>
+
+            {!isGroup && (
+              <button 
+                onClick={() => setShowGiftModal(true)} 
+                className="p-3 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors flex-shrink-0"
+                title="Send Zawadi Gift"
+              >
+                <Gift size={20} />
+              </button>
+            )}
 
             <div className="flex-1 relative">
               <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="w-full pl-4 pr-10 py-3 bg-slate-100 rounded-full border-transparent focus:bg-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none text-sm transition-all" />
