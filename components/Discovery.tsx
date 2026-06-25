@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { motion } from 'motion/react';
 import { MatchProfile, UserProfile, HangoutSpot } from '../types';
 import { X, Heart, MapPin, Info, Sparkles, Loader2, SlidersHorizontal, Check, Mic, Volume2, Zap, ShieldCheck, MessageSquarePlus, Map as MapIcon, Users, Moon } from 'lucide-react';
 import { analyzeCompatibility, generateSpeech, generateHoroscope } from '../services/geminiService';
@@ -293,19 +294,24 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
       );
     }
 
-    const rotateStyle = {
-      transform: `translateX(${dragX}px) rotate(${dragX * 0.05}deg)`,
-      transition: isDragging ? 'none' : 'transform 0.3s ease',
-      cursor: isDragging ? 'grabbing' : 'grab'
-    };
-
     const likeOpacity = Math.min(Math.max(dragX / 100, 0), 1);
     const nopeOpacity = Math.min(Math.max(-dragX / 100, 0), 1);
 
     return (
-      <div 
-        className="relative flex-1 bg-white rounded-3xl shadow-2xl mb-6 group w-full"
-        style={rotateStyle}
+      <motion.div 
+        key={currentMatch.id}
+        className="relative flex-1 bg-white rounded-3xl shadow-2xl mb-6 group w-full touch-none select-none overflow-hidden"
+        initial={{ scale: 0.95, opacity: 0.8 }}
+        animate={{ 
+          x: dragX, 
+          rotate: dragX * 0.05,
+          scale: isDragging ? 1.02 : 1.0,
+          opacity: 1
+        }}
+        transition={isDragging 
+          ? { type: 'tween', duration: 0 } 
+          : { type: 'spring', stiffness: 300, damping: 20 }
+        }
         onMouseDown={onDragStart}
         onMouseMove={onDragMove}
         onMouseUp={onDragEnd}
@@ -463,10 +469,10 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
                     </div>
                   )}
                </div>
-             </div>
-          )}
+            </div>
+         )}
         </div>
-      </div>
+      </motion.div>
     );
   };
 

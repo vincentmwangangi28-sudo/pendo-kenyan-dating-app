@@ -7,11 +7,13 @@ import { GroupCreation } from './components/GroupCreation';
 import { HangoutSpots } from './components/HangoutSpots';
 import { VoiceCoach } from './components/VoiceCoach';
 import { MeetHub } from './components/MeetHub';
+import { AuntieShosh } from './components/AuntieShosh';
 import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video } from 'lucide-react';
 import { findRealtimeEvents } from './services/geminiService';
 import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
+import { safeStorage } from './services/storage';
 
 // --- UTILS ---
 // Haversine formula to calculate distance in km
@@ -221,6 +223,36 @@ const MOCK_VENUES: HangoutSpot[] = [
     trending: false,
     coordinates: { latitude: -1.2721, longitude: 36.8143 }
   },
+  {
+    id: 'v_nbo_9',
+    name: 'Sarit Centre',
+    type: 'MALL',
+    location: 'Westlands, Nairobi',
+    photoUrl: 'https://picsum.photos/seed/sarit/400/300',
+    activeCount: 620,
+    trending: true,
+    coordinates: { latitude: -1.2644, longitude: 36.8028 }
+  },
+  {
+    id: 'v_nbo_10',
+    name: 'Nairobi National Park Tour',
+    type: 'NATURE',
+    location: 'Langata Road, Nairobi',
+    photoUrl: 'https://picsum.photos/seed/nnp/400/300',
+    activeCount: 115,
+    trending: true,
+    coordinates: { latitude: -1.3721, longitude: 36.8329 }
+  },
+  {
+    id: 'v_nbo_11',
+    name: 'Brew Bistro Rooftop Lounge',
+    type: 'PUB',
+    location: 'Ngong Road, Nairobi',
+    photoUrl: 'https://picsum.photos/seed/brewbistro/400/300',
+    activeCount: 205,
+    trending: false,
+    coordinates: { latitude: -1.3005, longitude: 36.7812 }
+  },
 
   // --- MOMBASA ---
   {
@@ -272,6 +304,36 @@ const MOCK_VENUES: HangoutSpot[] = [
     activeCount: 154,
     trending: true,
     coordinates: { latitude: -4.0210, longitude: 39.7122 }
+  },
+  {
+    id: 'v_msa_6',
+    name: 'City Mall Nyali',
+    type: 'MALL',
+    location: 'Malindi Road, Mombasa',
+    photoUrl: 'https://picsum.photos/seed/citymall/400/300',
+    activeCount: 420,
+    trending: false,
+    coordinates: { latitude: -4.0195, longitude: 39.7135 }
+  },
+  {
+    id: 'v_msa_7',
+    name: 'Haller Park Sanctuary',
+    type: 'NATURE',
+    location: 'Malindi Road, Mombasa',
+    photoUrl: 'https://picsum.photos/seed/haller/400/300',
+    activeCount: 95,
+    trending: true,
+    coordinates: { latitude: -4.0185, longitude: 39.7155 }
+  },
+  {
+    id: 'v_msa_8',
+    name: 'Moonshine Beach Bar',
+    type: 'PUB',
+    location: 'Nyali Reef Hotel, Mombasa',
+    photoUrl: 'https://picsum.photos/seed/moonshine/400/300',
+    activeCount: 175,
+    trending: true,
+    coordinates: { latitude: -4.0255, longitude: 39.7198 }
   },
 
   // --- KISUMU ---
@@ -325,6 +387,36 @@ const MOCK_VENUES: HangoutSpot[] = [
     trending: false,
     coordinates: { latitude: -0.1288, longitude: 34.7431 }
   },
+  {
+    id: 'v_kis_6',
+    name: 'Mega Plaza Mall',
+    type: 'MALL',
+    location: 'Oginga Odinga Street, Kisumu',
+    photoUrl: 'https://picsum.photos/seed/megaplaza/400/300',
+    activeCount: 380,
+    trending: false,
+    coordinates: { latitude: -0.1012, longitude: 34.7511 }
+  },
+  {
+    id: 'v_kis_7',
+    name: 'Hippo Point Lookout',
+    type: 'NATURE',
+    location: 'Hippo Point Road, Kisumu',
+    photoUrl: 'https://picsum.photos/seed/hippopoint/400/300',
+    activeCount: 112,
+    trending: true,
+    coordinates: { latitude: -0.1245, longitude: 34.7405 }
+  },
+  {
+    id: 'v_kis_8',
+    name: 'Club Signature',
+    type: 'PUB',
+    location: 'Kisumu CBD, Kisumu',
+    photoUrl: 'https://picsum.photos/seed/signature/400/300',
+    activeCount: 190,
+    trending: true,
+    coordinates: { latitude: -0.1005, longitude: 34.7562 }
+  },
 
   // --- NAKURU ---
   {
@@ -367,6 +459,36 @@ const MOCK_VENUES: HangoutSpot[] = [
     trending: true,
     coordinates: { latitude: -0.2911, longitude: 36.0705 }
   },
+  {
+    id: 'v_nak_5',
+    name: 'Menengai Crater Lookout',
+    type: 'NATURE',
+    location: 'Crater Road, Nakuru',
+    photoUrl: 'https://picsum.photos/seed/menengai/400/300',
+    activeCount: 94,
+    trending: true,
+    coordinates: { latitude: -0.2033, longitude: 36.0792 }
+  },
+  {
+    id: 'v_nak_6',
+    name: 'Golden Palace Mall',
+    type: 'MALL',
+    location: 'Nakuru CBD, Nakuru',
+    photoUrl: 'https://picsum.photos/seed/goldenpalace/400/300',
+    activeCount: 290,
+    trending: false,
+    coordinates: { latitude: -0.2885, longitude: 36.0681 }
+  },
+  {
+    id: 'v_nak_7',
+    name: 'Chilis Bar and Grill',
+    type: 'PUB',
+    location: 'Kenyatta Avenue, Nakuru',
+    photoUrl: 'https://picsum.photos/seed/nakuruchilis/400/300',
+    activeCount: 160,
+    trending: true,
+    coordinates: { latitude: -0.2872, longitude: 36.0655 }
+  },
 
   // --- ELDORET ---
   {
@@ -408,6 +530,161 @@ const MOCK_VENUES: HangoutSpot[] = [
     activeCount: 220,
     trending: true,
     coordinates: { latitude: 0.5135, longitude: 35.2738 }
+  },
+  {
+    id: 'v_eld_5',
+    name: 'Eldoret Club Grounds',
+    type: 'NATURE',
+    location: 'Off Elgeyo Road, Eldoret',
+    photoUrl: 'https://picsum.photos/seed/eldoretclub/400/300',
+    activeCount: 125,
+    trending: false,
+    coordinates: { latitude: 0.5181, longitude: 35.2985 }
+  },
+  {
+    id: 'v_eld_6',
+    name: 'Zion Mall',
+    type: 'MALL',
+    location: 'Ronald Ngala Street, Eldoret',
+    photoUrl: 'https://picsum.photos/seed/zion/400/300',
+    activeCount: 450,
+    trending: false,
+    coordinates: { latitude: 0.5192, longitude: 35.2718 }
+  },
+  {
+    id: 'v_eld_7',
+    name: 'Tamasha Lounge Eldoret',
+    type: 'PUB',
+    location: 'Kapsoya, Eldoret',
+    photoUrl: 'https://picsum.photos/seed/tamashaeld/400/300',
+    activeCount: 285,
+    trending: true,
+    coordinates: { latitude: 0.5265, longitude: 35.2915 }
+  },
+  // --- KAMPALA, UGANDA ---
+  {
+    id: 'v_kam_1',
+    name: 'Mythos Lounge & Restaurant',
+    type: 'PUB',
+    location: 'Kololo, Kampala',
+    photoUrl: 'https://picsum.photos/seed/mythos/400/300',
+    activeCount: 195,
+    trending: true,
+    coordinates: { latitude: 0.3344, longitude: 32.5936 }
+  },
+  {
+    id: 'v_kam_2',
+    name: 'Acacia Mall',
+    type: 'MALL',
+    location: 'Kisementi, Kampala',
+    photoUrl: 'https://picsum.photos/seed/acacia/400/300',
+    activeCount: 540,
+    trending: true,
+    coordinates: { latitude: 0.3370, longitude: 32.5891 }
+  },
+  {
+    id: 'v_kam_3',
+    name: 'Rubaga Cathedral',
+    type: 'CHURCH',
+    location: 'Rubaga Hill, Kampala',
+    photoUrl: 'https://picsum.photos/seed/rubagacath/400/300',
+    activeCount: 160,
+    trending: false,
+    coordinates: { latitude: 0.3013, longitude: 32.5522 }
+  },
+  {
+    id: 'v_kam_4',
+    name: 'Kabaka\'s Palace & Lake',
+    type: 'NATURE',
+    location: 'Mengo, Kampala',
+    photoUrl: 'https://picsum.photos/seed/kabakalake/400/300',
+    activeCount: 72,
+    trending: false,
+    coordinates: { latitude: 0.3005, longitude: 32.5694 }
+  },
+
+  // --- DAR ES SALAAM, TANZANIA ---
+  {
+    id: 'v_dar_1',
+    name: 'High Spirit Lounge',
+    type: 'PUB',
+    location: 'Posta, Dar es Salaam',
+    photoUrl: 'https://picsum.photos/seed/highspirit/400/300',
+    activeCount: 220,
+    trending: true,
+    coordinates: { latitude: -6.8164, longitude: 39.2908 }
+  },
+  {
+    id: 'v_dar_2',
+    name: 'Mlimani City Mall',
+    type: 'MALL',
+    location: 'Mwenge, Dar es Salaam',
+    photoUrl: 'https://picsum.photos/seed/mlimani/400/300',
+    activeCount: 780,
+    trending: true,
+    coordinates: { latitude: -6.7725, longitude: 39.2226 }
+  },
+  {
+    id: 'v_dar_3',
+    name: 'St. Joseph\'s Cathedral',
+    type: 'CHURCH',
+    location: 'Sokoine Drive, Dar es Salaam',
+    photoUrl: 'https://picsum.photos/seed/stjoseph/400/300',
+    activeCount: 140,
+    trending: false,
+    coordinates: { latitude: -6.8173, longitude: 39.2891 }
+  },
+  {
+    id: 'v_dar_4',
+    name: 'Coco Beach Seaside',
+    type: 'NATURE',
+    location: 'Oysterbay, Dar es Salaam',
+    photoUrl: 'https://picsum.photos/seed/cocobeach/400/300',
+    activeCount: 450,
+    trending: true,
+    coordinates: { latitude: -6.7681, longitude: 39.2934 }
+  },
+
+  // --- KIGALI, RWANDA ---
+  {
+    id: 'v_kig_1',
+    name: 'Cadillac Club VIP',
+    type: 'PUB',
+    location: 'Kimihurura, Kigali',
+    photoUrl: 'https://picsum.photos/seed/cadillacking/400/300',
+    activeCount: 165,
+    trending: true,
+    coordinates: { latitude: -1.9542, longitude: 30.0825 }
+  },
+  {
+    id: 'v_kig_2',
+    name: 'Kigali Heights Mall',
+    type: 'MALL',
+    location: 'Kacyiru, Kigali',
+    photoUrl: 'https://picsum.photos/seed/kigaliheights/400/300',
+    activeCount: 410,
+    trending: true,
+    coordinates: { latitude: -1.9535, longitude: 30.0908 }
+  },
+  {
+    id: 'v_kig_3',
+    name: 'Regina Pacis Catholic Church',
+    type: 'CHURCH',
+    location: 'Remera, Kigali',
+    photoUrl: 'https://picsum.photos/seed/reginapacis/400/300',
+    activeCount: 95,
+    trending: false,
+    coordinates: { latitude: -1.9587, longitude: 30.1162 }
+  },
+  {
+    id: 'v_kig_4',
+    name: 'Nyandungu Eco-Tourism Park',
+    type: 'NATURE',
+    location: 'Remera-Ndera, Kigali',
+    photoUrl: 'https://picsum.photos/seed/nyandungu/400/300',
+    activeCount: 110,
+    trending: false,
+    coordinates: { latitude: -1.9680, longitude: 30.1554 }
   }
 ];
 
@@ -437,6 +714,7 @@ const App: React.FC = () => {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const [isOffline, setIsOffline] = useState(false);
+  const [isAuntieShoshOpen, setIsAuntieShoshOpen] = useState(false);
 
   // Connection Test
   useEffect(() => {
@@ -515,7 +793,7 @@ const App: React.FC = () => {
         
         const CACHE_KEY = `cachedEvents_${lat}_${lng}`;
         const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour
-        const cachedData = localStorage.getItem(CACHE_KEY);
+        const cachedData = safeStorage.getItem(CACHE_KEY);
 
         if (cachedData) {
             try {
@@ -533,7 +811,7 @@ const App: React.FC = () => {
         try {
             const events = await findRealtimeEvents(lat, lng);
             if (events && events.length > 0) {
-                localStorage.setItem(CACHE_KEY, JSON.stringify({ events, timestamp: Date.now() }));
+                safeStorage.setItem(CACHE_KEY, JSON.stringify({ events, timestamp: Date.now() }));
                 handleFetchedEvents(events);
             } else if (retryCount < 2) {
                 console.log("No events found, retrying...");
@@ -985,6 +1263,14 @@ const App: React.FC = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                  </button>
                  <button 
+                    onClick={() => setIsAuntieShoshOpen(true)}
+                    className="px-2.5 py-1 bg-amber-100 hover:bg-amber-150 text-amber-900 border border-amber-200 rounded-full font-black text-[11px] flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
+                    title="Auntie Shosh's Baraza"
+                 >
+                    <span>👵</span>
+                    <span>Baraza</span>
+                 </button>
+                 <button 
                     onClick={() => setView(AppView.VOICE_COACH)}
                     className="p-2 bg-rose-100 text-rose-600 rounded-full animate-pulse-slow shadow-sm"
                     title="AI Coach"
@@ -1085,9 +1371,16 @@ const App: React.FC = () => {
           Resilient Local Sandbox Mode (Offline Fallback)
         </div>
       )}
-      <div className="flex-1 relative overflow-hidden flex flex-col">
+      <div className="flex-1 relative overflow-hidden flex flex-col font-sans">
         {renderContent()}
       </div>
+
+      {isAuntieShoshOpen && (
+        <AuntieShosh 
+          userProfile={userProfile} 
+          onClose={() => setIsAuntieShoshOpen(false)} 
+        />
+      )}
 
       {showNav && (
         <div className="fixed bottom-0 w-full max-w-md bg-white border-t border-slate-100 flex justify-around items-center py-4 px-2 z-40 pb-6">

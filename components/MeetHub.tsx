@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getCachedAccessToken, signInForGoogleMeet } from '../services/firebase';
+import { safeStorage } from '../services/storage';
+import { safeCopyToClipboard, safeGetMediaStream } from '../services/compat';
 import { ChatSession } from '../types';
 import { generateVidDateThemePlan, generateLiveIcebreakerQuestion } from '../services/geminiService';
 import { 
@@ -132,7 +134,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
     const t = getCachedAccessToken();
     if (t) setToken(t);
 
-    const localSaved = localStorage.getItem('pendo_saved_meet_rooms');
+    const localSaved = safeStorage.getItem('pendo_saved_meet_rooms');
     if (localSaved) {
       try {
         setSavedMeets(JSON.parse(localSaved));
@@ -141,7 +143,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
       }
     }
 
-    const localScheduled = localStorage.getItem('pendo_scheduled_video_dates');
+    const localScheduled = safeStorage.getItem('pendo_scheduled_video_dates');
     if (localScheduled) {
       try {
         setScheduledDates(JSON.parse(localScheduled));
@@ -231,7 +233,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
 
       const updatedMeets = [newMeet, ...savedMeets].slice(0, 15);
       setSavedMeets(updatedMeets);
-      localStorage.setItem('pendo_saved_meet_rooms', JSON.stringify(updatedMeets));
+      safeStorage.setItem('pendo_saved_meet_rooms', JSON.stringify(updatedMeets));
 
     } catch (err: any) {
       console.error("Meeting creation failed", err);
@@ -242,7 +244,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
   };
 
   const handleCopyLink = (url: string, id: string) => {
-    navigator.clipboard.writeText(url);
+    safeCopyToClipboard(url);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
@@ -267,14 +269,14 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
       return item;
     });
     setSavedMeets(updatedMeets);
-    localStorage.setItem('pendo_saved_meet_rooms', JSON.stringify(updatedMeets));
+    safeStorage.setItem('pendo_saved_meet_rooms', JSON.stringify(updatedMeets));
 
     setShareSuccess(`Successfully shared with ${destinationName}!`);
     setTimeout(() => setShareSuccess(null), 3000);
   };
 
   const handleClearHistory = () => {
-    localStorage.removeItem('pendo_saved_meet_rooms');
+    safeStorage.removeItem('pendo_saved_meet_rooms');
     setSavedMeets([]);
     setActiveMeetUrl(null);
   };
@@ -309,7 +311,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
 
     const newScheduleList = [newSched, ...scheduledDates];
     setScheduledDates(newScheduleList);
-    localStorage.setItem('pendo_scheduled_video_dates', JSON.stringify(newScheduleList));
+    safeStorage.setItem('pendo_scheduled_video_dates', JSON.stringify(newScheduleList));
 
     // Clear inputs
     setSchedNotes('');
@@ -333,7 +335,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
   const handleDeleteSchedule = (id: string) => {
     const filtered = scheduledDates.filter(s => s.id !== id);
     setScheduledDates(filtered);
-    localStorage.setItem('pendo_scheduled_video_dates', JSON.stringify(filtered));
+    safeStorage.setItem('pendo_scheduled_video_dates', JSON.stringify(filtered));
   };
 
   // Countdown formatter
@@ -407,7 +409,10 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
 
     try {
       const userMediaConstraints = { audio: true, video: { width: 320, height: 240 } };
-      const stream = await navigator.mediaDevices.getUserMedia(userMediaConstraints);
+      const stream = await safeGetMediaStream(userMediaConstraints);
+      if (!stream) {
+        throw new Error("Could not access camera or microphone. Standard verification blocked in this iframe. Try inside a full browser tab!");
+      }
       streamRef.current = stream;
 
       // Assign to video element if standard rendering
@@ -1112,7 +1117,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
             {currentCardQuestion && !isAIQuestionLoading && (
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(currentCardQuestion);
+                  safeCopyToClipboard(currentCardQuestion);
                   setShareSuccess("Copied prompt to clipboard!");
                   setTimeout(() => setShareSuccess(null), 3500);
                 }}

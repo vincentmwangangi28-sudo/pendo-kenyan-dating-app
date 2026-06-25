@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { UserProfile } from '../types';
 import { Button } from './Button';
 import { enhanceBio, verifyPhotoGesture } from '../services/geminiService';
+import { safeGetMediaStream } from '../services/compat';
 import { Sparkles, MapPin, Camera, Navigation, Mic, Square, Trash2, ShieldCheck, X, Loader2, CheckCircle2, RefreshCw, Info } from 'lucide-react';
 
 interface ProfileSetupProps {
@@ -221,7 +222,10 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
   // --- Audio Handlers ---
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await safeGetMediaStream({ audio: true });
+      if (!stream) {
+        throw new Error("Could not acquire microphone channel. Permissions blocked in sandboxed preview.");
+      }
       const recorder = new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
@@ -269,7 +273,10 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
     setShowVerificationModal(true);
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      const stream = await safeGetMediaStream({ video: { facingMode: 'user' } });
+      if (!stream) {
+        throw new Error("Could not acquire video feed. Video channels are locked in sandboxed preview.");
+      }
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, ChatMessage, MatchProfile, UserProfile } from '../types';
 import { generateIcebreaker, generateDateIdeas, explainMessage } from '../services/geminiService';
 import { signInForGoogleMeet, getCachedAccessToken } from '../services/firebase';
+import { safeCopyToClipboard, safeGetMediaStream, safeGetDisplayMedia } from '../services/compat';
 import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, X, Crown, Shield, SmilePlus, Share } from 'lucide-react';
 
 // --- Mock Data for Group Members ---
@@ -40,10 +41,14 @@ const VideoCallInterface: React.FC<VideoCallProps> = ({ matchName, matchPhoto, o
 
     const startCall = async () => {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        const mediaStream = await safeGetMediaStream({ 
             video: { facingMode: 'user' }, 
             audio: true 
         });
+        
+        if (!mediaStream) {
+            throw new Error("Could not access camera/microphone channels. Hardware endpoints are blocked or disabled in this iframe context.");
+        }
         
         if (!isMounted) {
             // Cleanup if component unmounted during request
@@ -114,8 +119,10 @@ const VideoCallInterface: React.FC<VideoCallProps> = ({ matchName, matchPhoto, o
         localStream.getTracks().forEach(track => track.stop());
       }
       try {
-        const cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
-        setLocalStream(cameraStream);
+        const cameraStream = await safeGetMediaStream({ video: { facingMode: 'user' }, audio: true });
+        if (cameraStream) {
+          setLocalStream(cameraStream);
+        }
         setIsScreenSharing(false);
         setIsVideoOff(false); // Ensure video is on when reverting
       } catch (error) {
@@ -128,14 +135,18 @@ const VideoCallInterface: React.FC<VideoCallProps> = ({ matchName, matchPhoto, o
           video: true,
           audio: false // Usually don't want system audio for a chat app
         };
-        // @ts-ignore - getDisplayMedia might not be in all TS environments
-        const screenStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+        const screenStream = await safeGetDisplayMedia(displayMediaOptions);
+        if (!screenStream) {
+          throw new Error("Screen share not available or cancelled.");
+        }
         
         // Handle user stopping share via browser UI
         screenStream.getVideoTracks()[0].onended = async () => {
            try {
-              const cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
-              setLocalStream(cameraStream);
+              const cameraStream = await safeGetMediaStream({ video: { facingMode: 'user' }, audio: true });
+              if (cameraStream) {
+                setLocalStream(cameraStream);
+              }
               setIsScreenSharing(false);
            } catch(e) { console.error(e); }
         };
@@ -455,8 +466,13 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
         url: url
       }).catch(err => console.log('Error sharing:', err));
     } else {
-      navigator.clipboard.writeText(`Check out ${session.matchName}'s profile on Pendo! ${url}`);
-      alert("Profile link copied to clipboard!");
+      safeCopyToClipboard(`Check out ${session.matchName}'s profile on Pendo! ${url}`).then(ok => {
+         if (ok) {
+           alert("Profile link copied to clipboard!");
+         } else {
+           console.warn("Could not copy link automatically.");
+         }
+      });
     }
   };
 
@@ -699,8 +715,11 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                       </a>
                       <button 
                         onClick={() => {
-                          navigator.clipboard.writeText(createdMeetUrl);
-                          alert("Meeting link copied to clipboard!");
+                          safeCopyToClipboard(createdMeetUrl).then(ok => {
+                            if (ok) {
+                              alert("Meeting link copied to clipboard!");
+                            }
+                          });
                         }}
                         className="px-3 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold transition-colors"
                       >

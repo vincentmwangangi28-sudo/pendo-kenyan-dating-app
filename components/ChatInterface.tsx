@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, ChatMessage, MatchProfile, UserProfile } from '../types';
 import { generateIcebreaker, generateDateIdeas, explainMessage } from '../services/geminiService';
+import { safeGetMediaStream, safeGetDisplayMedia, safeCopyToClipboard } from '../services/compat';
 import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, Users as UsersIcon, Plus as Plus, PlusCircle, User, Crown, X, SmilePlus, Camera, Gift } from 'lucide-react';
 
 // --- Video Call Component ---
@@ -28,10 +29,14 @@ const VideoCallInterface: React.FC<VideoCallProps> = ({ matchName, matchPhoto, o
 
     const startCall = async () => {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        const mediaStream = await safeGetMediaStream({ 
             video: { facingMode: 'user' }, 
             audio: true 
         });
+        
+        if (!mediaStream) {
+            throw new Error("Could not acquire video or audio channels inside the sandbox iframe.");
+        }
         
         if (!isMounted) {
             // Cleanup if component unmounted during request
@@ -102,8 +107,10 @@ const VideoCallInterface: React.FC<VideoCallProps> = ({ matchName, matchPhoto, o
         localStream.getTracks().forEach(track => track.stop());
       }
       try {
-        const cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
-        setLocalStream(cameraStream);
+        const cameraStream = await safeGetMediaStream({ video: { facingMode: 'user' }, audio: true });
+        if (cameraStream) {
+          setLocalStream(cameraStream);
+        }
         setIsScreenSharing(false);
         setIsVideoOff(false); // Ensure video is on when reverting
       } catch (error) {
@@ -116,14 +123,18 @@ const VideoCallInterface: React.FC<VideoCallProps> = ({ matchName, matchPhoto, o
           video: true,
           audio: false // Usually don't want system audio for a chat app
         };
-        // @ts-ignore - getDisplayMedia might not be in all TS environments
-        const screenStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+        const screenStream = await safeGetDisplayMedia(displayMediaOptions);
+        if (!screenStream) {
+          throw new Error("Screen share not available or cancelled.");
+        }
         
         // Handle user stopping share via browser UI
         screenStream.getVideoTracks()[0].onended = async () => {
            try {
-              const cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
-              setLocalStream(cameraStream);
+              const cameraStream = await safeGetMediaStream({ video: { facingMode: 'user' }, audio: true });
+              if (cameraStream) {
+                setLocalStream(cameraStream);
+              }
               setIsScreenSharing(false);
            } catch(e) { console.error(e); }
         };
@@ -654,7 +665,10 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await safeGetMediaStream({ audio: true });
+      if (!stream) {
+        throw new Error("Could not acquire microphone channel. Permissions blocked in sandboxed preview.");
+      }
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
