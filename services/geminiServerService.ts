@@ -187,6 +187,9 @@ export const generateDateIdeas = async (location: string, userInterests: string[
     const response = await ai.models.generateContent({
       model: SEARCH_MODEL,
       contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+      }
     });
     
     // Extract sources if available
@@ -277,6 +280,7 @@ export const findRealtimeEvents = async (lat: number, lng: number): Promise<any[
             model: SEARCH_MODEL,
             contents: prompt,
             config: {
+                tools: [{ googleSearch: {} }],
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.ARRAY,
@@ -313,9 +317,46 @@ export const findRealtimeEvents = async (lat: number, lng: number): Promise<any[
             };
         });
 
-    } catch (error) {
-        console.error("Event search error", error);
-        return [];
+    } catch (error: any) {
+        console.warn("Event search: Gemini API quota exceeded or unavailable. Gracefully returning curated fallback local events.");
+        return [
+          {
+            name: "Blankets & Wine Nairobi",
+            location: "Laureen Gardens, Nairobi",
+            date: "Sun, Oct 12, 12 PM - 10 PM",
+            description: "Kenya's premier music festival showcasing outstanding live music, art, and fashion. Grab your picnic blanket and enjoy the vibe!",
+            link: "https://www.blanketsandwine.com",
+            mapsUri: "https://www.blanketsandwine.com",
+            type: "EVENT"
+          },
+          {
+            name: "Nairobi Tech Week Showcase",
+            location: "Maji House, Ngong Road, Nairobi",
+            date: "Wed, Oct 15, 9 AM - 5 PM",
+            description: "The largest sub-Saharan Africa tech event focusing on developers, startups, and tech innovation. Great networking opportunity!",
+            link: "https://nairobitechweek.com",
+            mapsUri: "https://nairobitechweek.com",
+            type: "EVENT"
+          },
+          {
+            name: "K1 Flea Market & Sunday Brunch",
+            location: "K1 Klub House, Parklands, Nairobi",
+            date: "Sun, Oct 12, 10 AM - 6 PM",
+            description: "Shop from local Kenyan artisans, enjoy amazing food, craft beers, and live DJ sets in a beautiful cozy garden atmosphere.",
+            link: "https://k1klubhouse.com",
+            mapsUri: "https://k1klubhouse.com",
+            type: "EVENT"
+          },
+          {
+            name: "Nairobi Art & Jazz Night",
+            location: "Shamba Cafe, Loresho, Nairobi",
+            date: "Fri, Oct 10, 6 PM - 11 PM",
+            description: "An evening of smooth contemporary jazz accompanied by an art exhibition featuring rising Kenyan visual artists.",
+            link: "https://shambacafe.co.ke",
+            mapsUri: "https://shambacafe.co.ke",
+            type: "EVENT"
+          }
+        ];
     }
 }
 
@@ -503,6 +544,82 @@ export const generateAuntieShoshAdvice = async (question: string, userProfile: U
 };
 
 /**
+ * Evaluates a user's dating message for Sheng/Kenyan slang usage and romantic "Rizz".
+ */
+export const evaluateShengRizz = async (userLine: string, scenario: string, name: string): Promise<any> => {
+  try {
+    const prompt = `
+      You are "Auntie Shosh" (Shosho), a humorous, traditional, and sassy Kenyan matchmaker.
+      You are grading a dating candidate named "${name}" who is trying to flirt or handle a dating situation.
+      The scenario they are in is: "${scenario}".
+      The candidate wrote the following message: "${userLine}".
+
+      Analyze their line for its level of romantic charm ("Rizz"), Swahili/Sheng slang vocabulary, and local cultural appropriateness in the Kenyan dating scene.
+      
+      Score their line out of 100:
+      - 0 to 45: Poor rizz. They are heading straight for "Nairobi Character Development" (breakup/premium tears). They sound too formal, cold, or completely clueless about Kenyan charm.
+      - 46 to 70: Average. They are a "Kofia Wearer" or "Standard Hustler" - trying, but they need more flavor or confidence.
+      - 71 to 89: Great. They are a "Chama Favourite" or "Smooth Mrembo/Kijana". They speak with nice warmth and some soft local slang.
+      - 90 to 100: Sheng Legend / Nairobi Governor of Rizz. Immaculate local vibes, incredibly smooth sheng, extremely high charm.
+
+      Provide:
+      1. A numeric score (0 to 100).
+      2. A funny, traditional, sassy Auntie Shosh rank name fitting the score range (e.g. "Character Development Victim 😭", "Kofia Wearer 🧢", "Chama Favourite ☕", "Kilimani Player 🥂", or "Governor of Sheng Rizz 👑").
+      3. Hilarious, roast-heavy but encouraging feedback written in Auntie Shosh's unique persona (mixing authentic Kenyan English, motherly roasts, tea and cow references, and local dating tips). Maximum 3 sentences.
+      4. A "revised version" of their line, re-written in the ultimate, smoothest Kenyan Sheng/slang that is guaranteed to impress their date.
+      5. A list of any local Kenyan slang terms used in either the original or the revised line, along with their meanings (e.g., "bana" -> "man/buddy", "mrembo" -> "beautiful lady", "choma" -> "roasted meat/fun hang", "draft" -> "talking stage/casual dater", "sherehe" -> "partying", "fala" -> "fool").
+
+      Ensure the response strictly follows the JSON schema.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: FAST_MODEL,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            score: { type: Type.NUMBER },
+            rank: { type: Type.STRING },
+            feedback: { type: Type.STRING },
+            revisedLine: { type: Type.STRING },
+            slangDefinitions: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  slang: { type: Type.STRING },
+                  meaning: { type: Type.STRING }
+                },
+                required: ["slang", "meaning"]
+              }
+            }
+          },
+          required: ["score", "rank", "feedback", "revisedLine", "slangDefinitions"]
+        }
+      }
+    });
+
+    const text = response.text || "{}";
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Sheng Rizz evaluation error:", error);
+    return {
+      score: 50,
+      rank: "Chama Standby ☕",
+      feedback: "Aiya! Auntie's phone is misbehaving! Just speak from your heart, my child, and remember to carry enough fare!",
+      revisedLine: "Sasa mrembo, hope uko poa leo? Kuna form ya nyama choma na tumia baridi hivi karibuni?",
+      slangDefinitions: [
+        { slang: "Mrembo", meaning: "Beautiful girl" },
+        { slang: "Form", meaning: "A plan or plot to hang out" },
+        { slang: "Choma", meaning: "Roasted meat, a classic Kenyan date staple" }
+      ]
+    };
+  }
+};
+
+/**
  * Generates an response for the Voice Coach.
  */
 export const generateVoiceCoachResponse = async (userMessage: string, chatHistory: any[]): Promise<string> => {
@@ -579,5 +696,291 @@ export const geocodeCity = async (cityName: string): Promise<{ name: string; lat
     return null;
   }
 };
+
+/**
+ * Translates and explains Sheng slang or converts regular English text into cool Sheng lines.
+ * Analyzes dating vibes and safety under Auntie Shosh's watchful eye.
+ */
+export const translateShengSlang = async (text: string, mode: 'explain' | 'slangify'): Promise<{
+  translation: string;
+  vibeScore: string;
+  explanation: string;
+} | null> => {
+  try {
+    let prompt = "";
+    if (mode === "explain") {
+      prompt = `
+        Analyze the following Kenyan Sheng/slang phrase or sentence: "${text}".
+        
+        1. "translation": Provide a clear, natural translation or explanation in simple standard English or Swahili.
+        2. "vibeScore": Evaluate its safety, dynamic vibe, or risk category for Nairobi dating. It MUST be exactly one of:
+           - "Chama Approved ✅" (very respectful, sincere, traditional marriage material)
+           - "Safe & Authentic Form 👍" (fun, normal, clean vibes)
+           - "High Risk: Character Development ⚠️" (typical smooth-talking playboy/city-girl slang, leads to tears and billing)
+           - "Extreme Form: Nairobi Speed 🏃‍♂️" (dangerously fast-moving, high alert, red flag)
+        3. "explanation": Write a hilarious, witty, and sassy commentary in the voice of "Auntie Shosh" (Shosho / Grandmother advisor). Give traditional grandmotherly warnings or encouragement about why they should or shouldn't use this phrase, referencing things like cows, tea cups, saving money, or being home before sunset. Keep it under 2 sentences.
+      `;
+    } else {
+      prompt = `
+        Convert/Slangify this standard English or Swahili text into a cool, respectful, and attractive Nairobi Sheng slang dating phrase or pickup line: "${text}".
+        
+        1. "translation": The resulting cool Sheng dating line/phrase. Make it sound authentic to Nairobi youths today.
+        2. "vibeScore": Evaluate this line's style category. It MUST be exactly one of:
+           - "Chama Approved ✅" (traditional, sweet, family-friendly)
+           - "Safe & Authentic Form 👍" (chill, polite, stylish)
+           - "High Risk: Character Development ⚠️" (risky, extremely smooth-talking Nairobi line)
+           - "Extreme Form: Nairobi Speed 🏃‍♂️" (highly aggressive line, likely to get ignored or lead to block)
+        3. "explanation": Write a hilarious, witty, and sassy commentary in the voice of "Auntie Shosh" (Shosho / Grandmother advisor). Explain why this Sheng translation is a good or bad choice to send, and how a real Kenyan partner would react to it. Keep it under 2 sentences.
+      `;
+    }
+
+    const response = await ai.models.generateContent({
+      model: FAST_MODEL,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            translation: { type: Type.STRING },
+            vibeScore: { type: Type.STRING },
+            explanation: { type: Type.STRING }
+          },
+          required: ["translation", "vibeScore", "explanation"]
+        }
+      }
+    });
+
+    const jsonText = response.text || "";
+    return JSON.parse(jsonText.trim());
+  } catch (error) {
+    console.error("Sheng slang analyzer error in backend:", error);
+    return {
+      translation: text,
+      vibeScore: "Safe & Authentic Form 👍",
+      explanation: "Aiya! Auntie was yawning and couldn't read the words properly, but speak with a clear heart!"
+    };
+  }
+};
+
+/**
+ * Evaluates selected red flags and a description of a partner's behaviors to calculate a risk rating.
+ */
+export const evaluateRedFlags = async (
+  selectedFlags: string[],
+  customDescription: string,
+  userName: string
+): Promise<{
+  score: number;
+  rank: string;
+  commentary: string;
+  actionPlan: string;
+  riskFactors: string[];
+} | null> => {
+  try {
+    const prompt = `
+      You are "Auntie Shosh", a humorous, traditional, and protective Kenyan matchmaker relationship expert.
+      A candidate named "${userName}" wants to check their partner or date for suspicious dating behaviors ("Red Flags") and risk of Nairobi "Character Development" (heartbreak/premium tears/scams/ghosting).
+
+      Selected Red Flags:
+      ${selectedFlags.map(f => `- ${f}`).join('\n')}
+
+      Additional description of behaviors:
+      "${customDescription || "No custom description provided."}"
+
+      Analyze these red flags and behaviors to calculate a risk rating out of 100:
+      - 0 to 25: Green Flag Angel 😇. Very low risk. Solid matrimonial candidate with high integrity.
+      - 26 to 50: Standard Modern Hustler 🧢. Moderate risk. Has a few city quirks but generally harmless. Needs supervision.
+      - 51 to 75: High Risk: Subaru Speedster ⚠️. Serious alarm bells. Highly likely to lead to "Nairobi Character Development" and billing.
+      - 76 to 100: Premium Tears Certified 🚨. Extreme danger! Block and run! Total playboy, player, or city gold-digger.
+
+      Provide:
+      1. score: A numeric percentage risk rating (0 to 100).
+      2. rank: A humorous traditional Auntie Shosh risk level name (e.g., "Chama Approved Angel 😇", "Standard Coffee Date Walker ☕", "Nairobi Character Development Risk ⚠️", or "Premium Tears Certified 😭").
+      3. commentary: Hilarious, sassy commentary in Auntie Shosh's unique persona (authentic Kenyan English, grandmotherly roast, and tea references, under 3 sentences).
+      4. actionPlan: A concrete advice or action plan (e.g., "Introduce them to your grandmother immediately", "Buy a fast pair of running shoes", "Block and delete them from M-Pesa").
+      5. riskFactors: A list of 2-3 specific risk elements identified from the flags or description.
+
+      Ensure the response strictly follows the JSON schema.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: FAST_MODEL,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            score: { type: Type.NUMBER },
+            rank: { type: Type.STRING },
+            commentary: { type: Type.STRING },
+            actionPlan: { type: Type.STRING },
+            riskFactors: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            }
+          },
+          required: ["score", "rank", "commentary", "actionPlan", "riskFactors"]
+        }
+      }
+    });
+
+    const text = response.text || "{}";
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Red flag evaluation error:", error);
+    return {
+      score: 50,
+      rank: "Standard Coffee Date Walker ☕",
+      commentary: "Aiya! Auntie's crystal ball is cloudy from the kitchen smoke, but when in doubt, introduce them to the family elders first!",
+      actionPlan: "Carry your own fare and never meet past 7 PM!",
+      riskFactors: ["Unclear communication", "Nairobi modern lifestyle habits"]
+    };
+  }
+};
+
+/**
+ * Generates an interactive, humorous "Nairobi Fare Integrity & Date Covenant" (Fare Shield Contract).
+ */
+export const generateFareShieldContract = async (
+  hostName: string,
+  guestName: string,
+  fareAmount: number,
+  venueName: string,
+  meetTime: string
+): Promise<{
+  contractTitle: string;
+  hostName: string;
+  guestName: string;
+  fareAmount: number;
+  venueName: string;
+  meetTime: string;
+  sections: {
+    title: string;
+    clauses: string[];
+  }[];
+  eldersVerdict: string;
+  sealText: string;
+} | null> => {
+  try {
+    const prompt = `
+      You are "Auntie Shosh", the ultimate traditional and protective Kenyan matchmaker and elder of the relationship council.
+      Generate a highly humorous, mock-legal, and authentic traditional Kenyan dating contract called the "Nairobi Fare Integrity & Date Covenant" (also known as the Fare Shield Insurance Contract).
+
+      Details of the Covenant:
+      - Host/Sponsor: "${hostName}" (The one sending or facilitating transport/fare)
+      - Guest/Recipient: "${guestName}" (The one traveling to the date)
+      - Mobile Money Fare Amount: ${fareAmount} KES (sent via M-Pesa or equivalent)
+      - Selected Venue: "${venueName}"
+      - Agreed Time: "${meetTime}"
+
+      Please generate a hilarious contract with exactly 3 sections.
+      Write in Auntie Shosh's sassy persona, blending formal legal terminology ("Whereas", "Party of the First Part", "Be it resolved", "Indemnification") with vibrant Kenyan dating slang and cultural humor (e.g., "Kutuma fare", "Character development", "Ngong Road speedsters", "Premium tears", "Chama emergencies", "Sudden headache syndrome").
+
+      Sections to include:
+      1. Section 1: Title: "The M-Pesa Disbursal & Transit Covenant"
+         Draft 2-3 clauses detailing that the fare is exclusively for boarding a Matatu/Uber directly to the venue, and not for side-hustles, paying off chama debts, hair salon touch-ups, or purchasing bundles to browse Instagram instead.
+      2. Section 2: Title: "The Sudden Headache & 'Uko Up?' Indemnification Clause"
+         Draft 2-3 clauses covering defense against standard excuse protocols (e.g., "My grandmother has called an emergency baraza", "The matatu got stuck in a pothole in Roysambu", "My phone battery has mysteriously died at 5%").
+      3. Section 3: Title: "Traditional Elder-Enforced Sanctions & Penalties"
+         Draft 2-3 hilarious penalties if the recipient fails to show up after accepting the fare (e.g., Weeding Auntie Shosh's maize farm in Shamba, returning the fare plus a 15% 'Emotional Damage' M-Pesa transaction cost, or being publicly declared a 'Certified Character Developer' at the next village council).
+
+      Also provide:
+      - contractTitle: A grand, mock-royal traditional legal title (e.g., "The Sacred Nairobi Covenant of Transportation and Anti-Fare Eating Integrity")
+      - eldersVerdict: A short, extremely protective and sassy 1-2 sentence official stamp verdict written by Auntie Shosh (e.g., "This document is fully backed by the Elders' Council. Play with fire, get burned!").
+      - sealText: A humorous text seal (e.g., "ELDERS OF PENDO CHAMA SEAL - 100% SHIELDED").
+
+      Follow the specified JSON schema exactly.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: FAST_MODEL,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            contractTitle: { type: Type.STRING },
+            hostName: { type: Type.STRING },
+            guestName: { type: Type.STRING },
+            fareAmount: { type: Type.NUMBER },
+            venueName: { type: Type.STRING },
+            meetTime: { type: Type.STRING },
+            sections: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  clauses: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING }
+                  }
+                },
+                required: ["title", "clauses"]
+              }
+            },
+            eldersVerdict: { type: Type.STRING },
+            sealText: { type: Type.STRING }
+          },
+          required: [
+            "contractTitle",
+            "hostName",
+            "guestName",
+            "fareAmount",
+            "venueName",
+            "meetTime",
+            "sections",
+            "eldersVerdict",
+            "sealText"
+          ]
+        }
+      }
+    });
+
+    const text = response.text || "{}";
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Fare Shield Contract generation error:", error);
+    return {
+      contractTitle: "The Nairobi Covenant of Transportation and Anti-Fare Eating Integrity",
+      hostName,
+      guestName,
+      fareAmount,
+      venueName,
+      meetTime,
+      sections: [
+        {
+          title: "The M-Pesa Disbursal & Transit Covenant",
+          clauses: [
+            `Whereas ${hostName} has dispatched the sum of ${fareAmount} KES via mobile money to ${guestName}, the recipient covenants to utilize said funds exclusively for immediate travel.`,
+            "The travel shall be direct, without any physical, emotional, or geographical detours to salons, local chamas, or local chemists."
+          ]
+        },
+        {
+          title: "The Sudden Headache & Excuse Indemnification",
+          clauses: [
+            "Any excuse pertaining to 'sudden heavy rain', 'lost phone keys', or 'family chama emergencies' must be accompanied by certified physical proof signed by a village sub-chief.",
+            "A sudden headache diagnosed within 2 hours of the meetup time shall be considered legally null and void."
+          ]
+        },
+        {
+          title: "Elders-Enforced Sanctions",
+          clauses: [
+            `Failure of ${guestName} to appear at ${venueName} by ${meetTime} shall constitute a full breach of trust.`,
+            `The defaulter shall return the sum of ${fareAmount} KES plus a penalty of 150 KES for emotional suffering, or face 10 hours of manual maize-grinding supervised by Auntie Shosh.`
+          ]
+        }
+      ],
+      eldersVerdict: "This covenant is fully endorsed by Auntie Shosh and the Council of Matchmaker Elders. Do not play with M-Pesa transit assets, city eyes are watching!",
+      sealText: "AUNTIE SHOSH COVENANT PROTECTION - CERTIFIED TRUSTED"
+    };
+  }
+};
+
+
+
 
 

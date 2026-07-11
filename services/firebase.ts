@@ -1,12 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore cleanly and bypass persistent cache to avoid IndexedDB iframe sandbox security blocks
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// Initialize Firestore cleanly with memory local cache and force long polling to bypass iframe/proxy blocks
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  localCache: memoryLocalCache(),
+}, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);
 

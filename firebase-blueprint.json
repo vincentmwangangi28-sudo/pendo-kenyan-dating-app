@@ -27,12 +27,42 @@
         }
       },
       "required": ["name", "age", "location", "bio"]
+    },
+    "voiceRoom": {
+      "title": "Voice Room",
+      "description": "Information about a temporary, ephemeral voice room.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "creatorId": { "type": "string" },
+        "creatorName": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "expiresAt": { "type": "number" },
+        "participants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "userId": { "type": "string" },
+              "name": { "type": "string" },
+              "isMuted": { "type": "boolean" },
+              "isSpeaking": { "type": "boolean" },
+              "joinedAt": { "type": "number" }
+            }
+          }
+        }
+      },
+      "required": ["name", "creatorId", "creatorName", "createdAt", "expiresAt", "participants"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/userProfile" },
       "description": "User profiles. Users can only edit their own profile."
+    },
+    "/voiceRooms/{roomId}": {
+      "schema": { "$ref": "#/entities/voiceRoom" },
+      "description": "Ephemeral voice rooms. Anyone signed in can read and join, host can delete."
     },
     "/test/connection": {
       "schema": "any",

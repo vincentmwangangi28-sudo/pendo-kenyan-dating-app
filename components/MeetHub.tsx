@@ -3,17 +3,20 @@ import { getCachedAccessToken, signInForGoogleMeet } from '../services/firebase'
 import { safeStorage } from '../services/storage';
 import { safeCopyToClipboard, safeGetMediaStream } from '../services/compat';
 import { ChatSession } from '../types';
-import { generateVidDateThemePlan, generateLiveIcebreakerQuestion } from '../services/geminiService';
+import { generateVidDateThemePlan, generateLiveIcebreakerQuestion, generateFareShieldContract } from '../services/geminiService';
 import { 
   Video, Share2, Copy, Plus, Calendar, ArrowRight, Lock, Globe, Sparkles, 
   Clock, ExternalLink, Check, Loader2, ArrowLeft, Trash2, Camera, Mic, 
-  MicOff, VideoOff, Heart, Smile, Compass, ShieldCheck, RefreshCw, Award
+  MicOff, VideoOff, Heart, Smile, Compass, ShieldCheck, RefreshCw, Award, Shield,
+  Radio
 } from 'lucide-react';
+import { VoiceLounge } from './VoiceLounge';
 
 interface MeetHubProps {
   chats: ChatSession[];
   onBack: () => void;
   onShareLinkInChat: (chatId: string, text: string) => void;
+  userProfile?: { name: string; photoUrl?: string } | null;
 }
 
 interface SavedMeet {
@@ -73,7 +76,7 @@ const THEMES_LIST = [
   { name: "Retro Trivia & Pop Culture Showdown 🧠", desc: "Quiz each other on music, movies, and historical trivia." }
 ];
 
-export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInChat }) => {
+export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInChat, userProfile }) => {
   // General auth & Meet creation states
   const [token, setToken] = useState<string | null>(null);
   const [isAuthorizing, setIsAuthorizing] = useState(false);
@@ -86,7 +89,36 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
   const [shareSuccess, setShareSuccess] = useState<string | null>(null);
 
   // Dynamic Navigation tab state inside MeetHub
-  const [activeSubTab, setActiveSubTab] = useState<'create' | 'schedule' | 'icebreakers' | 'hardware'>('create');
+  const [activeSubTab, setActiveSubTab] = useState<'create' | 'schedule' | 'icebreakers' | 'hardware' | 'fareShield' | 'voiceLounge'>('create');
+
+  // --- Nairobi Date Planner & Fare Shield States ---
+  const [fareShieldMatchId, setFareShieldMatchId] = useState<string>('');
+  const [hostInputName, setHostInputName] = useState<string>('Me');
+  const [guestInputName, setGuestInputName] = useState<string>('Dating Partner');
+  const [fareShieldVenue, setFareShieldVenue] = useState<string>('The Alchemist');
+  const [fareShieldTravelType, setFareShieldTravelType] = useState<string>('uber');
+  const [fareShieldStartingPoint, setFareShieldStartingPoint] = useState<string>('Roysambu');
+  const [selectedFoodItems, setSelectedFoodItems] = useState<string[]>([]);
+  const [billSplitOption, setBillSplitOption] = useState<string>('host');
+  const [customMpesaFare, setCustomMpesaFare] = useState<number>(500);
+  const [fareShieldTime, setFareShieldTime] = useState<string>('Saturday 7:00 PM');
+  const [generatingContract, setGeneratingContract] = useState<boolean>(false);
+  const [contractResult, setContractResult] = useState<{
+    contractTitle: string;
+    hostName: string;
+    guestName: string;
+    fareAmount: number;
+    venueName: string;
+    meetTime: string;
+    sections: {
+      title: string;
+      clauses: string[];
+    }[];
+    eldersVerdict: string;
+    sealText: string;
+  } | null>(null);
+  const [contractCopied, setContractCopied] = useState<boolean>(false);
+  const [contractShareSuccess, setContractShareSuccess] = useState<string | null>(null);
 
   // --- 1. Scheduling Feature States ---
   const [scheduledDates, setScheduledDates] = useState<ScheduledDate[]>([]);
@@ -158,8 +190,31 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
       setSelectedChatId(firstChat);
       setSchedMatchId(firstChat);
       setSelectedAgendaMatch(firstChat);
+      setFareShieldMatchId(firstChat);
     }
   }, [chats]);
+
+  // Synchronize guest name from selected chat match
+  useEffect(() => {
+    const selectedChat = chats.find(c => c.matchId === fareShieldMatchId);
+    if (selectedChat) {
+      setGuestInputName(selectedChat.matchName);
+    }
+  }, [fareShieldMatchId, chats]);
+
+  // Synchronize dynamic transportation cost to custom M-Pesa fare
+  useEffect(() => {
+    const travelCosts: Record<string, Record<string, number>> = {
+      boda: { Roysambu: 250, Kilimani: 150, Westlands: 200, Langata: 300, Kileleshwa: 150, "South B": 200 },
+      matatu: { Roysambu: 100, Kilimani: 50, Westlands: 70, Langata: 100, Kileleshwa: 60, "South B": 80 },
+      uber: { Roysambu: 750, Kilimani: 450, Westlands: 500, Langata: 850, Kileleshwa: 400, "South B": 550 },
+      walking: { Roysambu: 0, Kilimani: 0, Westlands: 0, Langata: 0, Kileleshwa: 0, "South B": 0 },
+    };
+    
+    const costMap = travelCosts[fareShieldTravelType] || travelCosts.uber;
+    const cost = costMap[fareShieldStartingPoint] !== undefined ? costMap[fareShieldStartingPoint] : 500;
+    setCustomMpesaFare(cost);
+  }, [fareShieldTravelType, fareShieldStartingPoint]);
 
   // Clean up media streams if testing is turned off or on unmount
   useEffect(() => {
@@ -336,6 +391,59 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
     const filtered = scheduledDates.filter(s => s.id !== id);
     setScheduledDates(filtered);
     safeStorage.setItem('pendo_scheduled_video_dates', JSON.stringify(filtered));
+  };
+
+  // --- Nairobi Date Planner & Fare Shield Handlers ---
+  const handleGenerateFareShield = async () => {
+    setError(null);
+    setGeneratingContract(true);
+    setContractResult(null);
+    setContractShareSuccess(null);
+    try {
+      if (!fareShieldMatchId) {
+        throw new Error("Please select a dating partner from your chats first!");
+      }
+      
+      const result = await generateFareShieldContract(
+        hostInputName || "Sponsor",
+        guestInputName || "Dating Partner",
+        customMpesaFare,
+        fareShieldVenue,
+        fareShieldTime
+      );
+      
+      if (result) {
+        setContractResult(result);
+      } else {
+        throw new Error("The Elders Council was silent. Please try asking again.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Elders consultation failed. Try again!");
+    } finally {
+      setGeneratingContract(false);
+    }
+  };
+
+  const handleShareContractToChat = () => {
+    if (!contractResult || !fareShieldMatchId) return;
+    
+    const clausesSummary = contractResult.sections.map(sec => `📜 ${sec.title}: ${sec.clauses[0] || ""}`).join("\n");
+    
+    const messageText = `👵📜 [OFFICIAL ELDERS COVENANT - FARE SHIELD CERTIFIED] 📜👵\n\n` +
+      `Covenant: "${contractResult.contractTitle}"\n` +
+      `Sponsor: ${contractResult.hostName} 💸\n` +
+      `Recipient: ${contractResult.guestName} 🚗\n` +
+      `Fare Amount: ${contractResult.fareAmount} KES (M-Pesa)\n` +
+      `Venue: ${contractResult.venueName}\n` +
+      `Meetup Time: ${contractResult.meetTime}\n\n` +
+      `${clausesSummary}\n\n` +
+      `⚖️ Verdict: "${contractResult.eldersVerdict}"\n\n` +
+      `🔒 Stamp: [${contractResult.sealText}]`;
+
+    onShareLinkInChat(fareShieldMatchId, messageText);
+    setContractShareSuccess("Shared covenant to chat room! They cannot pretend they didn't see the elder's verdict!");
+    setTimeout(() => setContractShareSuccess(null), 4000);
   };
 
   // Countdown formatter
@@ -535,28 +643,40 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
       </div>
 
       {/* Sub-Navigation Inner Tabs */}
-      <div className="bg-white border-b border-slate-100 flex items-center p-1 px-3 gap-1 sticky top-[53px] z-10" id="meethub-inner-tabs">
+      <div className="bg-white border-b border-slate-100 flex items-center overflow-x-auto no-scrollbar p-1 px-3 gap-1 sticky top-[53px] z-10" id="meethub-inner-tabs">
         <button
           onClick={() => { stopHardwareVerification(); setActiveSubTab('create'); }}
-          className={`flex-1 text-center py-2.5 text-xs font-bold transition-all border-b-2 rounded-t-lg ${activeSubTab === 'create' ? 'border-purple-600 text-purple-600 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          className={`shrink-0 px-3.5 py-2 text-[11px] font-extrabold transition-all border-b-2 rounded-t-lg ${activeSubTab === 'create' ? 'border-purple-600 text-purple-600 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
         >
           Generate URL
         </button>
         <button
+          onClick={() => { stopHardwareVerification(); setActiveSubTab('voiceLounge'); }}
+          className={`shrink-0 px-3.5 py-2 text-[11px] font-extrabold transition-all border-b-2 rounded-t-lg ${activeSubTab === 'voiceLounge' ? 'border-purple-600 text-purple-600 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+        >
+          🎙️ Voice Lounge
+        </button>
+        <button
           onClick={() => { stopHardwareVerification(); setActiveSubTab('schedule'); }}
-          className={`flex-1 text-center py-2.5 text-xs font-bold transition-all border-b-2 rounded-t-lg ${activeSubTab === 'schedule' ? 'border-purple-600 text-purple-600 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          className={`shrink-0 px-3.5 py-2 text-[11px] font-extrabold transition-all border-b-2 rounded-t-lg ${activeSubTab === 'schedule' ? 'border-purple-600 text-purple-600 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
         >
           Calendar Dates
         </button>
         <button
           onClick={() => { stopHardwareVerification(); setActiveSubTab('icebreakers'); }}
-          className={`flex-1 text-center py-2.5 text-xs font-bold transition-all border-b-2 rounded-t-lg ${activeSubTab === 'icebreakers' ? 'border-purple-600 text-purple-600 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          className={`shrink-0 px-3.5 py-2 text-[11px] font-extrabold transition-all border-b-2 rounded-t-lg ${activeSubTab === 'icebreakers' ? 'border-purple-600 text-purple-600 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
         >
           Icebreaker Play
         </button>
         <button
+          onClick={() => { stopHardwareVerification(); setActiveSubTab('fareShield'); }}
+          className={`shrink-0 px-3.5 py-2 text-[11px] font-extrabold transition-all border-b-2 rounded-t-lg ${activeSubTab === 'fareShield' ? 'border-purple-600 text-purple-600 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+        >
+          🛡️ Fare Shield
+        </button>
+        <button
           onClick={() => { setActiveSubTab('hardware'); }}
-          className={`flex-1 text-center py-2.5 text-xs font-bold transition-all border-b-2 rounded-t-lg ${activeSubTab === 'hardware' ? 'border-purple-600 text-purple-600 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+          className={`shrink-0 px-3.5 py-2 text-[11px] font-extrabold transition-all border-b-2 rounded-t-lg ${activeSubTab === 'hardware' ? 'border-purple-600 text-purple-600 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
         >
           Hardware Test
         </button>
@@ -1126,6 +1246,385 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
                 Copy current prompt question
               </button>
             )}
+          </div>
+        )}
+
+        {/* -------------------- VIEW C: FARE INTEGRITY SHIELD -------------------- */}
+        {activeSubTab === 'fareShield' && (
+          <div className="space-y-4 animate-fade-in" id="panel-fare-shield">
+            {/* Auntie Shosh Banner */}
+            <div className="bg-gradient-to-br from-rose-600 via-purple-700 to-indigo-700 rounded-[24px] text-white p-5 shadow-lg relative overflow-hidden">
+              <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full blur-lg pointer-events-none"></div>
+              <p className="text-[9px] text-rose-200 font-bold tracking-widest uppercase mb-1">Auntie Shosh Protection Service</p>
+              <h2 className="text-base font-extrabold leading-tight">Nairobi Date Planner & Fare Shield</h2>
+              <p className="text-[11px] text-rose-100 mt-1 leading-relaxed">
+                Plan a high-integrity meetup. Calculate the transport, draft an Elders-endorsed mobile money transport covenant, and stop "fare-eating" once and for all!
+              </p>
+            </div>
+
+            {/* Core Planner Form */}
+            <div className="bg-white border border-slate-100 rounded-[24px] p-5 shadow-xs space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="bg-rose-100 text-rose-700 p-1.5 rounded-xl shrink-0">
+                  <Shield size={16} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-xs">Date Logistics & Covenant Parameters</h3>
+                  <p className="text-[9px] text-slate-400">Specify details to lock in mobile travel integrity.</p>
+                </div>
+              </div>
+
+              <div className="space-y-3.5">
+                {/* 1. Chat Partner Selector */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Select Match / Guest
+                  </label>
+                  <select
+                    value={fareShieldMatchId}
+                    onChange={(e) => setFareShieldMatchId(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-purple-500"
+                  >
+                    {chats.map(chat => (
+                      <option key={chat.matchId} value={chat.matchId}>
+                        {chat.matchName}
+                      </option>
+                    ))}
+                    {chats.length === 0 && (
+                      <option value="">No Active Matches Found</option>
+                    )}
+                  </select>
+                </div>
+
+                {/* 2. Names Input Grid */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Sponsor (You)
+                    </label>
+                    <input
+                      type="text"
+                      value={hostInputName}
+                      onChange={(e) => setHostInputName(e.target.value)}
+                      placeholder="Your Name"
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Recipient (Partner)
+                    </label>
+                    <input
+                      type="text"
+                      value={guestInputName}
+                      onChange={(e) => setGuestInputName(e.target.value)}
+                      placeholder="Match Name"
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Venue & Location Grid */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Venue Spot
+                    </label>
+                    <select
+                      value={fareShieldVenue}
+                      onChange={(e) => setFareShieldVenue(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-purple-500"
+                    >
+                      <option value="The Alchemist Bar">The Alchemist (Westlands)</option>
+                      <option value="K1 Klub House">K1 Klub House (Parklands)</option>
+                      <option value="CJ's Restaurant">CJ's Restaurant (CBD)</option>
+                      <option value="Mercado Restaurant">Mercado (Westlands)</option>
+                      <option value="Java House">Java House (Roysambu)</option>
+                      <option value="Social House">Social House (Lavington)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Guest Starting Point
+                    </label>
+                    <select
+                      value={fareShieldStartingPoint}
+                      onChange={(e) => setFareShieldStartingPoint(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-purple-500"
+                    >
+                      <option value="Roysambu">Roysambu (Thika Rd)</option>
+                      <option value="Kilimani">Kilimani (Nairobi)</option>
+                      <option value="Westlands">Westlands</option>
+                      <option value="Langata">Langata (Kenyatta)</option>
+                      <option value="Kileleshwa">Kileleshwa</option>
+                      <option value="South B">South B / C</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 4. Transportation Method */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Transportation Vibe
+                  </label>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[
+                      { key: 'matatu', label: '🚌 Matatu', sub: 'Low budget' },
+                      { key: 'boda', label: '🏍️ Boda', sub: 'No traffic' },
+                      { key: 'uber', label: '🚗 Uber', sub: 'Classy comfort' },
+                      { key: 'walking', label: '🚶 Walk', sub: 'Healthy' }
+                    ].map(opt => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setFareShieldTravelType(opt.key)}
+                        className={`py-2 px-1 rounded-xl text-center border transition-all ${fareShieldTravelType === opt.key ? 'bg-rose-50 border-rose-400 text-rose-700' : 'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100'}`}
+                      >
+                        <p className="text-[10px] font-bold leading-none">{opt.label}</p>
+                        <p className="text-[7px] text-slate-400 mt-0.5">{opt.sub}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 5. Food & Menu Options Selection */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Order Items (Dynamic Estimator)
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'chai', label: '☕ Chai & Mandazi', cost: 150 },
+                      { id: 'choma', label: '🥩 Nyama Choma Plat', cost: 1200 },
+                      { id: 'cocktails', label: '🍹 Sherehe Cocktails', cost: 1500 },
+                      { id: 'ugali', label: '🥣 Ugali & Sukuma', cost: 250 }
+                    ].map(food => {
+                      const selected = selectedFoodItems.includes(food.id);
+                      return (
+                        <button
+                          key={food.id}
+                          type="button"
+                          onClick={() => {
+                            if (selected) {
+                              setSelectedFoodItems(selectedFoodItems.filter(x => x !== food.id));
+                            } else {
+                              setSelectedFoodItems([...selectedFoodItems, food.id]);
+                            }
+                          }}
+                          className={`p-2 rounded-xl text-left border flex items-center justify-between transition-all ${selected ? 'bg-purple-50 border-purple-300 text-purple-700' : 'bg-slate-50 border-slate-100 text-slate-600'}`}
+                        >
+                          <span className="text-[10px] font-bold">{food.label}</span>
+                          <span className="text-[9px] text-slate-400 font-mono font-bold">{food.cost} KES</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 6. Bill Split Mode */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Who Pays for Food/Drinks?
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[
+                      { key: 'host', label: 'Sponsor Pays 100%' },
+                      { key: 'split', label: '50/50 Go Dutch' },
+                      { key: 'guest', label: 'Guest Treats Me' }
+                    ].map(split => (
+                      <button
+                        key={split.key}
+                        type="button"
+                        onClick={() => setBillSplitOption(split.key)}
+                        className={`py-1.5 px-1 rounded-xl text-center border text-[9px] font-bold transition-all ${billSplitOption === split.key ? 'bg-indigo-50 border-indigo-400 text-indigo-700' : 'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100'}`}
+                      >
+                        {split.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 7. Dynamic Budget Summary Card */}
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 space-y-1.5 text-xs text-slate-700 font-semibold">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 uppercase tracking-widest font-bold border-b border-slate-200/60 pb-1">
+                    <span>Vibe Budget Overview</span>
+                    <span className="text-purple-600">Dynamic</span>
+                  </div>
+                  
+                  {/* Transport */}
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-500">Transport ({fareShieldTravelType.toUpperCase()} from {fareShieldStartingPoint}):</span>
+                    <span className="font-mono text-slate-800">{customMpesaFare} KES</span>
+                  </div>
+
+                  {/* Food / Menu items */}
+                  {selectedFoodItems.length > 0 && (
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-500">Food/Drinks Order Subtotal:</span>
+                      <span className="font-mono text-slate-800">
+                        {selectedFoodItems.reduce((total, id) => {
+                          const item = [
+                            { id: 'chai', cost: 150 },
+                            { id: 'choma', cost: 1200 },
+                            { id: 'cocktails', cost: 1500 },
+                            { id: 'ugali', cost: 250 }
+                          ].find(f => f.id === id);
+                          return total + (item ? item.cost : 0);
+                        }, 0)} KES
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Split distribution description */}
+                  <div className="flex justify-between items-center text-[11px] bg-white border border-slate-100 p-1.5 rounded-lg mt-1">
+                    <span className="text-slate-500">Suggested M-Pesa Transit Disbursal:</span>
+                    <span className="font-extrabold text-rose-600 font-mono">{customMpesaFare} KES</span>
+                  </div>
+                </div>
+
+                {/* 8. Meetup Time Setting */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Date Meetup Schedule Time
+                  </label>
+                  <input
+                    type="text"
+                    value={fareShieldTime}
+                    onChange={(e) => setFareShieldTime(e.target.value)}
+                    placeholder="e.g. Saturday 7:00 PM"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                {/* Submit / Generate Trigger */}
+                <button
+                  type="button"
+                  onClick={handleGenerateFareShield}
+                  disabled={generatingContract || chats.length === 0}
+                  className="w-full bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-700 hover:to-purple-700 disabled:from-slate-300 disabled:to-slate-300 text-white py-3 rounded-xl text-xs font-bold shadow-md cursor-pointer flex items-center justify-center gap-1.5 animate-fade-in"
+                >
+                  {generatingContract ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin text-rose-200" />
+                      Consulting Matchmaker Elders...
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck size={14} />
+                      Draft Elders Fare-Integrity Covenant
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Generated Contract Section */}
+            {contractResult && (
+              <div className="bg-amber-50/40 border border-amber-200/80 rounded-[28px] p-5 shadow-xs space-y-4 animate-fade-in relative overflow-hidden">
+                {/* Vintage Watermark SVG Background element for legal authenticity */}
+                <div className="absolute right-[-10px] top-[-10px] opacity-10 text-amber-900 pointer-events-none transform rotate-12">
+                  <ShieldCheck size={180} />
+                </div>
+
+                {/* Certificate Heading */}
+                <div className="text-center space-y-1 relative z-10">
+                  <span className="inline-block bg-amber-100 text-amber-800 text-[8px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-widest border border-amber-200">
+                    📜 Covenant of Trust
+                  </span>
+                  <h3 className="text-sm font-serif font-extrabold text-amber-950 leading-tight">
+                    {contractResult.contractTitle}
+                  </h3>
+                  <p className="text-[9px] text-amber-800 font-mono">Date Seal: AUNTIE-SHOSH-{Date.now().toString().slice(-6)}</p>
+                </div>
+
+                {/* Substantive Clauses List */}
+                <div className="space-y-3 relative z-10 border-y border-amber-200/60 py-3 text-amber-950">
+                  {contractResult.sections.map((sec, sIdx) => (
+                    <div key={sIdx} className="space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-amber-900 font-serif">
+                        ARTICLE {sIdx + 1}: {sec.title}
+                      </p>
+                      <ul className="list-none pl-0 space-y-1">
+                        {sec.clauses.map((clause, cIdx) => (
+                          <li key={cIdx} className="text-[10.5px] leading-relaxed pl-3 border-l border-amber-300 text-amber-900">
+                            {clause}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Auntie's Final Binding Verdict */}
+                <div className="bg-amber-100/60 border border-amber-200 p-3.5 rounded-xl text-[11px] leading-relaxed text-amber-950 italic font-semibold relative z-10 flex gap-2 items-start">
+                  <span className="text-sm shrink-0">👵⚖️</span>
+                  <p>{contractResult.eldersVerdict}</p>
+                </div>
+
+                {/* Red Traditional Stamp */}
+                <div className="flex flex-col items-center justify-center space-y-1 pt-2 relative z-10">
+                  <div className="border-2 border-rose-600/80 text-rose-600/80 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transform -rotate-2 select-none border-dashed bg-rose-50/50">
+                    🔒 {contractResult.sealText}
+                  </div>
+                  <p className="text-[8px] text-slate-400 font-bold tracking-widest uppercase">Traditional Matchmaker Seal of Integrity</p>
+                </div>
+
+                {/* Success feedback message for sharing */}
+                {contractShareSuccess && (
+                  <div className="p-2.5 bg-emerald-50 border border-emerald-100 rounded-xl text-[10px] text-emerald-800 font-bold flex items-center gap-2">
+                    <Check size={14} className="text-emerald-500" />
+                    <span>{contractShareSuccess}</span>
+                  </div>
+                )}
+
+                {/* Action Buttons for Contract */}
+                <div className="flex gap-2 relative z-10 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const textToCopy = `📜 ${contractResult.contractTitle}\n\nSponsor: ${contractResult.hostName}\nRecipient: ${contractResult.guestName}\nFare: ${contractResult.fareAmount} KES\n\n` + contractResult.sections.map(s => `📍 ${s.title}:\n- ${s.clauses.join("\n- ")}`).join("\n\n") + `\n\n⚖️ Elders Verdict: ${contractResult.eldersVerdict}`;
+                      safeCopyToClipboard(textToCopy);
+                      setContractCopied(true);
+                      setTimeout(() => setContractCopied(false), 2500);
+                    }}
+                    className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-bold border border-slate-200 py-2.5 rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {contractCopied ? (
+                      <>
+                        <Check size={13} className="text-emerald-600" />
+                        Covenant Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={13} />
+                        Copy Terms
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleShareContractToChat}
+                    className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Share2 size={13} />
+                    Send to Match Chat
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* -------------------- VIEW E: VOICE LOUNGE -------------------- */}
+        {activeSubTab === 'voiceLounge' && (
+          <div className="space-y-4 animate-fade-in" id="panel-voice-lounge">
+            <VoiceLounge
+              chats={chats}
+              userProfile={userProfile || null}
+              onShareLinkInChat={onShareLinkInChat}
+              onBackToMain={() => setActiveSubTab('create')}
+            />
           </div>
         )}
 

@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
-import { generateAuntieShoshAdvice } from '../services/geminiService';
+import { generateAuntieShoshAdvice, translateShengSlang, evaluateShengRizz, evaluateRedFlags } from '../services/geminiService';
 import { safeCopyToClipboard } from '../services/compat';
-import { X, Sparkles, Send, Loader2, Info, Award, CircleHelp, Check, Copy, Share2, Coffee, Flame } from 'lucide-react';
+import { X, Sparkles, Send, Loader2, Info, Award, CircleHelp, Check, Copy, Share2, Coffee, Flame, Languages, ShieldAlert, HeartHandshake, CheckCircle } from 'lucide-react';
+
+const SCENARIOS = [
+  { id: 'first_text', label: 'The Icebreaker 🧊', desc: 'Greeting them on Friday evening', scenarioText: 'Starting a chat on Friday evening with a beautiful person' },
+  { id: 'invite_date', label: 'The Plan 🥩', desc: 'Inviting them out for Nyama Choma', scenarioText: 'Inviting them out for Nyama Choma and cold drinks' },
+  { id: 'excuse_traffic', label: 'The Traffic Jam 🚗', desc: 'Apologizing for being late in traffic', scenarioText: 'Apologizing for being stuck in Mombasa Road traffic jam' },
+  { id: 'flirt_compliment', label: 'The Sweet Talk 🌹', desc: 'Complimenting their style/hair', scenarioText: 'Complimenting their beautiful look or hair' },
+];
 
 interface AuntieShoshProps {
   userProfile: UserProfile;
@@ -41,8 +48,19 @@ const TEA_OPTIONS = [
   { id: 'iced', label: 'Starbucks Iced Latte Fan 🧊', desc: '"Chai without cold foam? Aiya, please no!"', cowsBonus: 1 },
 ];
 
+const NAIROBI_RED_FLAGS = [
+  { id: 'subaru', label: 'Drives a Subaru/noisy car 🚗', desc: 'Speeding on Ngong Road past midnight' },
+  { id: 'no_pics', label: 'No face pictures/avatar only 👤', desc: '"I work in government, highly confidential"' },
+  { id: 'late_text', label: 'Only texts after 11 PM 🌙', desc: '"Uko up?" or "Are you awake, my dear?"' },
+  { id: 'send_code', label: 'Pays via "Send Cash to this Code" 💸', desc: 'M-Pesa name has to remain fully anonymous' },
+  { id: 'cousins', label: 'Has too many "cousins" in town 👥', desc: 'Every person they hug is apparently family' },
+  { id: 'lounge_tue', label: 'Wants Kilimani Lounge on a Tuesday 🥂', desc: '"Vibes are immaculate, let us go for sherehe"' },
+  { id: 'do_not_disturb', label: 'Phone is permanently on DND 🤫', desc: 'Screen is always turned face-down' },
+  { id: 'mubaba', label: 'Speaks of an influential "uncle" 👴', desc: '"My uncle will sponsor our Mombasa trip"' },
+];
+
 export const AuntieShosh: React.FC<AuntieShoshProps> = ({ userProfile, onClose, onSendVerificationToChat }) => {
-  const [activeTab, setActiveTab] = useState<'counsel' | 'dowry'>('counsel');
+  const [activeTab, setActiveTab] = useState<'counsel' | 'dowry' | 'sheng' | 'redflags'>('counsel');
   
   // Counselor State
   const [question, setQuestion] = useState('');
@@ -69,6 +87,90 @@ export const AuntieShosh: React.FC<AuntieShoshProps> = ({ userProfile, onClose, 
   } | null>(null);
   const [calculatingDowry, setCalculatingDowry] = useState(false);
   const [copiedValue, setCopiedValue] = useState(false);
+
+  // Sheng / Slang Coach State
+  const [shengInput, setShengInput] = useState('');
+  const [shengMode, setShengMode] = useState<'explain' | 'slangify'>('explain');
+  const [shengResult, setShengResult] = useState<{
+    translation: string;
+    vibeScore: string;
+    explanation: string;
+  } | null>(null);
+  const [loadingSheng, setLoadingSheng] = useState(false);
+  const [shengCopied, setShengCopied] = useState(false);
+
+  // Sheng Rizz Coach Scenario Game State
+  const [selectedScenario, setSelectedScenario] = useState('first_text');
+  const [rizzLine, setRizzLine] = useState('');
+  const [evaluatingRizz, setEvaluatingRizz] = useState(false);
+  const [rizzResult, setRizzResult] = useState<{
+    score: number;
+    rank: string;
+    feedback: string;
+    revisedLine: string;
+    slangDefinitions: Array<{ slang: string; meaning: string }>;
+  } | null>(null);
+  const [rizzSubMode, setRizzSubMode] = useState<'challenge' | 'translate'>('challenge');
+
+  // Red Flags State
+  const [selectedFlags, setSelectedFlags] = useState<string[]>([]);
+  const [customBehavior, setCustomBehavior] = useState('');
+  const [evaluatingFlags, setEvaluatingFlags] = useState(false);
+  const [flagsResult, setFlagsResult] = useState<{
+    score: number;
+    rank: string;
+    commentary: string;
+    actionPlan: string;
+    riskFactors: string[];
+  } | null>(null);
+  const [flagsCopied, setFlagsCopied] = useState(false);
+
+  const handleEvaluateFlags = async () => {
+    if (selectedFlags.length === 0 && !customBehavior.trim()) return;
+    setEvaluatingFlags(true);
+    setFlagsResult(null);
+    try {
+      const res = await evaluateRedFlags(selectedFlags, customBehavior, userProfile.name);
+      if (res) {
+        setFlagsResult(res);
+      }
+    } catch (err) {
+      console.error("Error evaluating Red Flags:", err);
+    } finally {
+      setEvaluatingFlags(false);
+    }
+  };
+
+  const handleEvaluateRizz = async () => {
+    if (!rizzLine.trim()) return;
+    setEvaluatingRizz(true);
+    setRizzResult(null);
+    try {
+      const scenario = SCENARIOS.find(s => s.id === selectedScenario)?.scenarioText || selectedScenario;
+      const res = await evaluateShengRizz(rizzLine, scenario, userProfile.name);
+      if (res) {
+        setRizzResult(res);
+      }
+    } catch (err) {
+      console.error("Error evaluating Sheng Rizz:", err);
+    } finally {
+      setEvaluatingRizz(false);
+    }
+  };
+
+  const handleShengCheck = async (textToCheck: string) => {
+    if (!textToCheck.trim()) return;
+    setLoadingSheng(true);
+    setShengResult(null);
+    try {
+      const res = await translateShengSlang(textToCheck, shengMode);
+      setShengResult(res);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingSheng(false);
+    }
+  };
 
   const handleAskShosh = async (queryText: string) => {
     if (!queryText.trim()) return;
@@ -183,18 +285,30 @@ export const AuntieShosh: React.FC<AuntieShoshProps> = ({ userProfile, onClose, 
           </div>
 
           {/* Cultural Sub-tabs */}
-          <div className="flex mt-5 bg-amber-950/40 p-1.5 rounded-2xl border border-amber-800/30">
+          <div className="grid grid-cols-4 mt-5 bg-amber-950/40 p-0.5 rounded-2xl border border-amber-800/30 gap-0.5">
             <button
               onClick={() => setActiveTab('counsel')}
-              className={`flex-1 text-center py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'counsel' ? 'bg-amber-600 text-amber-50 shadow-sm' : 'text-amber-250 hover:text-white'}`}
+              className={`text-center py-2 rounded-xl text-[10px] font-black transition-all cursor-pointer ${activeTab === 'counsel' ? 'bg-amber-600 text-amber-50 shadow-xs' : 'text-amber-250 hover:text-white'}`}
             >
-              👵 Whisper to Shosh
+              👵 Whisper
             </button>
             <button
               onClick={() => setActiveTab('dowry')}
-              className={`flex-1 text-center py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${activeTab === 'dowry' ? 'bg-amber-600 text-amber-50 shadow-sm' : 'text-amber-250 hover:text-white'}`}
+              className={`text-center py-2 rounded-xl text-[10px] font-black transition-all cursor-pointer ${activeTab === 'dowry' ? 'bg-amber-600 text-amber-50 shadow-xs' : 'text-amber-250 hover:text-white'}`}
             >
-              🐄 Dowry & Shamba Estimator
+              🐄 Dowry
+            </button>
+            <button
+              onClick={() => setActiveTab('sheng')}
+              className={`text-center py-2 rounded-xl text-[10px] font-black transition-all cursor-pointer ${activeTab === 'sheng' ? 'bg-amber-600 text-amber-50 shadow-xs' : 'text-amber-250 hover:text-white'}`}
+            >
+              🗣️ Slang
+            </button>
+            <button
+              onClick={() => setActiveTab('redflags')}
+              className={`text-center py-2 rounded-xl text-[10px] font-black transition-all cursor-pointer ${activeTab === 'redflags' ? 'bg-amber-600 text-amber-50 shadow-xs' : 'text-amber-250 hover:text-white'}`}
+            >
+              🚩 Flags
             </button>
           </div>
         </div>
@@ -289,7 +403,7 @@ export const AuntieShosh: React.FC<AuntieShoshProps> = ({ userProfile, onClose, 
               </div>
 
             </div>
-          ) : (
+          ) : activeTab === 'dowry' ? (
             <div className="space-y-4">
               
               {!estimatedResult ? (
@@ -507,6 +621,584 @@ export const AuntieShosh: React.FC<AuntieShoshProps> = ({ userProfile, onClose, 
                     </button>
                   </div>
 
+                </div>
+              )}
+
+            </div>
+          ) : activeTab === 'redflags' ? (
+            <div className="space-y-4 text-left">
+              {!flagsResult ? (
+                <div className="space-y-4">
+                  <div className="bg-amber-100/40 border border-amber-200 p-4 rounded-2xl flex items-start gap-3">
+                    <ShieldAlert size={16} className="text-amber-800 mt-0.5 shrink-0 animate-pulse" />
+                    <p className="text-[11px] text-slate-600 font-bold leading-normal">
+                      Is your new match a sweet matrimonial angel or are you heading straight for premium Nairobi tears? Pick their behaviors below and ask Auntie Shosh to analyze!
+                    </p>
+                  </div>
+
+                  {/* Red Flags Checkboxes */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-wider font-extrabold text-amber-900 flex items-center gap-1">
+                      🚩 Select their behaviors (multiple allowed):
+                    </label>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {NAIROBI_RED_FLAGS.map(flag => {
+                        const isSelected = selectedFlags.includes(flag.label);
+                        return (
+                          <button
+                            key={flag.id}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedFlags(prev => prev.filter(f => f !== flag.label));
+                              } else {
+                                setSelectedFlags(prev => [...prev, flag.label]);
+                              }
+                            }}
+                            className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-start gap-2.5 ${
+                              isSelected
+                                ? 'bg-red-50 text-red-900 border-red-300 font-bold shadow-xs'
+                                : 'bg-white text-slate-700 border-amber-200 hover:border-amber-300 font-semibold'
+                            }`}
+                          >
+                            <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 ${
+                              isSelected ? 'bg-red-600 border-red-700 text-white' : 'bg-white border-slate-300'
+                            }`}>
+                              {isSelected && <Check size={10} strokeWidth={3} />}
+                            </span>
+                            <div>
+                              <span className="block font-bold">{flag.label}</span>
+                              <span className="block text-[9px] opacity-75">{flag.desc}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Custom Input */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-wider font-extrabold text-amber-900 flex items-center gap-1">
+                      ✍️ Describe any other suspicious behavior:
+                    </label>
+                    <textarea
+                      value={customBehavior}
+                      onChange={(e) => setCustomBehavior(e.target.value)}
+                      placeholder="e.g., They always cancel dates at the last minute because of 'urgent chama meetings'..."
+                      rows={3}
+                      className="w-full bg-white text-xs border border-amber-250 placeholder-amber-900/40 rounded-2xl p-3.5 outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600 font-semibold resize-none"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-2">
+                    <button
+                      onClick={handleEvaluateFlags}
+                      disabled={evaluatingFlags || (selectedFlags.length === 0 && !customBehavior.trim())}
+                      className="w-full py-3.5 bg-amber-700 hover:bg-amber-800 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl font-black shadow-lg shadow-amber-900/10 text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      {evaluatingFlags ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin text-white" />
+                          Vetting candidate profile...
+                        </>
+                      ) : (
+                        <>
+                          <ShieldAlert size={14} />
+                          Analyze Character Development Risk!
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4 animate-fade-in pb-2 text-left">
+                  {/* Gauge/Meter Visualizer */}
+                  <div className="bg-gradient-to-br from-slate-900 to-amber-950 text-white rounded-3xl p-6 border-2 border-red-400/50 shadow-xl relative overflow-hidden text-center">
+                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-red-600/5 rounded-full blur-xl pointer-events-none"></div>
+
+                    <span className="bg-red-600/20 text-red-400 border border-red-500/30 text-[9px] uppercase tracking-widest font-black px-3 py-1 rounded-full inline-block shadow-xs">
+                      Character Development Risk Assessment
+                    </span>
+
+                    {/* Speedometer/Gauge circle */}
+                    <div className="relative w-32 h-32 mx-auto mt-5 flex items-center justify-center">
+                      {/* Outer Ring */}
+                      <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          className="stroke-slate-700"
+                          strokeWidth="8"
+                          fill="transparent"
+                        />
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          className={`${
+                            flagsResult.score >= 75 ? 'stroke-red-500' :
+                            flagsResult.score >= 50 ? 'stroke-orange-500' :
+                            flagsResult.score >= 25 ? 'stroke-yellow-500' : 'stroke-green-500'
+                          } transition-all duration-1000 ease-out`}
+                          strokeWidth="8"
+                          fill="transparent"
+                          strokeDasharray="251.2"
+                          strokeDashoffset={251.2 - (251.2 * flagsResult.score) / 100}
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      {/* Inside Score text */}
+                      <div className="text-center z-10">
+                        <span className="text-4xl font-black block tracking-tight">{flagsResult.score}%</span>
+                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400">Risk Score</span>
+                      </div>
+                    </div>
+
+                    <h4 className="font-black text-base text-yellow-300 uppercase tracking-wide mt-4">
+                      "{flagsResult.rank}"
+                    </h4>
+
+                    {/* Risk Factors Tag list */}
+                    {flagsResult.riskFactors && flagsResult.riskFactors.length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-white/10 space-y-1">
+                        <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest block text-left">
+                          Specific Risk Elements:
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {flagsResult.riskFactors.map((rf, idx) => (
+                            <span key={idx} className="bg-white/10 border border-white/5 text-[10px] font-bold px-2 py-0.5 rounded-lg text-amber-250">
+                              ⚠️ {rf}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sassy review from Shosh */}
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 flex items-start gap-3">
+                    <span className="text-2xl mt-0.5 shrink-0">👵</span>
+                    <div className="text-left">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-amber-900">Shosh's Elder Council Review</h4>
+                      <p className="text-xs text-amber-950 font-extrabold leading-normal mt-0.5 italic">
+                        "{flagsResult.commentary}"
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Sassy Action Plan */}
+                  <div className="bg-red-50 border border-red-150 rounded-2xl p-4 flex items-start gap-3">
+                    <span className="text-lg shrink-0">📋</span>
+                    <div className="text-left">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-red-900">Recommended Action Plan</h4>
+                      <p className="text-xs text-red-950 font-bold leading-normal mt-0.5">
+                        {flagsResult.actionPlan}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions buttons */}
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <button
+                      onClick={() => {
+                        setFlagsResult(null);
+                        setSelectedFlags([]);
+                        setCustomBehavior('');
+                      }}
+                      className="py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-xl font-bold border border-slate-200 text-xs transition-colors cursor-pointer"
+                    >
+                      Scan Someone Else 🔄
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        const shareText = `👵 [Auntie Shosh Red Flag Scan] Vetted my date on Pendo! They got a ${flagsResult.score}% Nairobi Character Development Risk! Rating: "${flagsResult.rank}". Action: "${flagsResult.actionPlan}" ❤️`;
+                        safeCopyToClipboard(shareText);
+                        setFlagsCopied(true);
+                        setTimeout(() => setFlagsCopied(false), 2000);
+                      }}
+                      className="py-3 bg-amber-700 hover:bg-amber-800 text-white rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      {flagsCopied ? (
+                        <>
+                          <Check size={13} />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={13} />
+                          Copy Result
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              
+              {/* Inner Mode Switcher */}
+              <div className="flex bg-amber-100/50 p-1 rounded-2xl border border-amber-200">
+                <button
+                  type="button"
+                  onClick={() => setRizzSubMode('challenge')}
+                  className={`flex-1 text-center py-2 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
+                    rizzSubMode === 'challenge' 
+                      ? 'bg-amber-600 text-amber-50 shadow-sm font-extrabold' 
+                      : 'text-amber-900 hover:text-amber-950 font-bold'
+                  }`}
+                >
+                  🎯 Rizz Challenge
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRizzSubMode('translate')}
+                  className={`flex-1 text-center py-2 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
+                    rizzSubMode === 'translate' 
+                      ? 'bg-amber-600 text-amber-50 shadow-sm font-extrabold' 
+                      : 'text-amber-900 hover:text-amber-955'
+                  }`}
+                >
+                  🗣️ Translate Slang
+                </button>
+              </div>
+
+              {rizzSubMode === 'challenge' ? (
+                <div className="space-y-4">
+                  {!rizzResult ? (
+                    <div className="space-y-4 text-left">
+                      <div className="bg-amber-100/40 border border-amber-200 p-4 rounded-2xl flex items-start gap-3">
+                        <Sparkles size={16} className="text-amber-800 mt-0.5 shrink-0 animate-pulse" />
+                        <p className="text-[11px] text-slate-600 font-bold leading-normal">
+                          Test your flirting lines against authentic Nairobi dating scenarios! Auntie Shosh will rate your "Rizz-o-Meter", correct your style, and define any slang so you never get "Nairobi Character Development"!
+                        </p>
+                      </div>
+
+                      {/* Scenario Selection */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase tracking-wider font-extrabold text-amber-900 flex items-center gap-1">
+                          🎯 Choose a dating scenario:
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {SCENARIOS.map(sc => (
+                            <button
+                              key={sc.id}
+                              type="button"
+                              onClick={() => setSelectedScenario(sc.id)}
+                              className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                                selectedScenario === sc.id
+                                  ? 'bg-amber-700 text-white border-amber-800 font-bold shadow-xs'
+                                  : 'bg-white text-slate-700 border-amber-200 hover:border-amber-300 font-semibold'
+                              }`}
+                            >
+                              <span className="block text-[11px] font-black truncate">{sc.label}</span>
+                              <span className="block text-[9px] opacity-75 truncate">{sc.desc}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Line Input */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase tracking-wider font-extrabold text-amber-900 flex items-center gap-1">
+                          ✍️ Type your flirt line (Sheng/English/Swahili):
+                        </label>
+                        <textarea
+                          value={rizzLine}
+                          onChange={(e) => setRizzLine(e.target.value)}
+                          placeholder="e.g., Sasa mrembo, hope uko poa leo? Kuna form ya nyama choma na tumia baridi hivi karibuni?"
+                          rows={3}
+                          className="w-full bg-white text-xs border border-amber-250 placeholder-amber-900/40 rounded-2xl p-3.5 outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600 font-semibold resize-none"
+                        />
+                      </div>
+
+                      {/* Submit Button */}
+                      <div className="pt-2">
+                        <button
+                          onClick={handleEvaluateRizz}
+                          disabled={evaluatingRizz || !rizzLine.trim()}
+                          className="w-full py-3.5 bg-amber-700 hover:bg-amber-800 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl font-black shadow-lg shadow-amber-900/10 text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          {evaluatingRizz ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin text-white" />
+                              Auntie is consulting the streets...
+                            </>
+                          ) : (
+                            <>
+                              <Flame size={14} />
+                              Calculate My Sheng Rizz!
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 animate-fade-in pb-2 text-left">
+                      {/* Gauge Display */}
+                      <div className="bg-gradient-to-br from-amber-850 to-amber-950 rounded-3xl p-5 text-white text-center border-2 border-amber-400 shadow-lg relative overflow-hidden">
+                        <span className="bg-amber-400 text-amber-950 text-[9px] uppercase tracking-widest font-black px-2.5 py-0.5 rounded-full inline-block shadow-xs mb-3">
+                          Rizz-o-Meter Rating
+                        </span>
+
+                        <div className="relative w-28 h-28 mx-auto mb-3 flex items-center justify-center">
+                          <svg className="w-full h-full transform -rotate-90">
+                            <circle
+                              cx="56"
+                              cy="56"
+                              r="44"
+                              stroke="#78350f"
+                              strokeWidth="6"
+                              fill="transparent"
+                            />
+                            <circle
+                              cx="56"
+                              cy="56"
+                              r="44"
+                              stroke="#f59e0b"
+                              strokeWidth="6"
+                              fill="transparent"
+                              strokeDasharray={276.4}
+                              strokeDashoffset={276.4 - (276.4 * rizzResult.score) / 100}
+                              className="transition-all duration-1000 ease-out"
+                            />
+                          </svg>
+                          <div className="absolute flex flex-col items-center">
+                            <span className="text-3xl font-black tracking-tight">{rizzResult.score}</span>
+                            <span className="text-[8px] text-amber-300 uppercase tracking-widest font-bold">Score</span>
+                          </div>
+                        </div>
+
+                        <h4 className="font-extrabold text-sm text-yellow-300 uppercase tracking-wide">
+                          "{rizzResult.rank}"
+                        </h4>
+
+                        <p className="text-xs text-amber-100 mt-2 font-medium leading-relaxed italic opacity-95">
+                          "{rizzResult.feedback}"
+                        </p>
+                      </div>
+
+                      {/* Revised Line */}
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 shadow-xs relative overflow-hidden">
+                        <span className="absolute top-2 right-2 bg-emerald-100 text-emerald-800 text-[8px] font-black tracking-wider px-1.5 py-0.5 rounded uppercase">
+                          Shosh's Pro Sheng Upgrade
+                        </span>
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+                          🚀 Use this upgraded line:
+                        </h4>
+                        <p className="text-xs text-emerald-950 font-extrabold leading-normal mt-1.5">
+                          "{rizzResult.revisedLine}"
+                        </p>
+                        <button
+                          onClick={() => {
+                            safeCopyToClipboard(rizzResult.revisedLine).then(ok => {
+                              if (ok) alert("Copied! Send it to your date!");
+                            });
+                          }}
+                          className="mt-3 text-[10px] font-black text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer"
+                        >
+                          <Copy size={11} /> Copy Upgraded Line
+                        </button>
+                      </div>
+
+                      {/* Slang Glossary */}
+                      {rizzResult.slangDefinitions && rizzResult.slangDefinitions.length > 0 && (
+                        <div className="bg-white border border-amber-200 rounded-2xl p-4 space-y-2 shadow-xs">
+                          <h4 className="text-[10px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1">
+                            📖 Nairobi Slang Glossary:
+                          </h4>
+                          <div className="divide-y divide-amber-100">
+                            {rizzResult.slangDefinitions.map((def, idx) => (
+                              <div key={idx} className="py-2 first:pt-0 last:pb-0 text-left">
+                                <span className="font-black text-xs text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md inline-block mr-2">
+                                  {def.slang}
+                                </span>
+                                <span className="text-xs text-slate-600 font-semibold">
+                                  {def.meaning}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          setRizzResult(null);
+                          setRizzLine('');
+                        }}
+                        className="w-full py-3 bg-amber-700 hover:bg-amber-800 text-white rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1 cursor-pointer animate-fade-in"
+                      >
+                        Try Another Line 🔄
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4 text-left">
+                  <div className="bg-amber-100/40 border border-amber-200 p-4 rounded-2xl flex items-start gap-3">
+                    <Languages size={16} className="text-amber-800 mt-0.5 shrink-0" />
+                    <p className="text-[11px] text-slate-600 font-bold leading-normal">
+                      Convert/slangify standard text into trendy Sheng dating messages, or paste standard Sheng phrases to decode what they truly mean in Nairobi's fast-moving dating scene!
+                    </p>
+                  </div>
+
+                  {/* Mode select */}
+                  <div className="flex bg-white rounded-xl border border-amber-100 p-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShengMode('explain');
+                        setShengResult(null);
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold text-center transition-all cursor-pointer ${
+                        shengMode === 'explain'
+                          ? 'bg-amber-700 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-800'
+                      }`}
+                    >
+                      💡 Decode Slang
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShengMode('slangify');
+                        setShengResult(null);
+                      }}
+                      className={`flex-1 py-1.5 rounded-lg text-[10px] font-extrabold text-center transition-all cursor-pointer ${
+                        shengMode === 'slangify'
+                          ? 'bg-amber-700 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-800'
+                      }`}
+                    >
+                      🚀 Slangify Standard Text
+                    </button>
+                  </div>
+
+                  {/* Quick Preset Badges */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase tracking-wider font-extrabold text-amber-800 flex items-center gap-1">
+                      💡 Try these local phrases:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {shengMode === 'explain' ? (
+                        <>
+                          {["Kuoga kurudi soko", "Character development", "Mubaba", "Rada chafu", "Kufungua server"].map(p => (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => {
+                                setShengInput(p);
+                                handleShengCheck(p);
+                              }}
+                              className="bg-white hover:bg-amber-100 border border-amber-200 text-[10px] font-bold px-2.5 py-1.5 rounded-full text-slate-700 cursor-pointer active:scale-95 transition-all"
+                            >
+                              {p}
+                            </button>
+                          ))}
+                        </>
+                      ) : (
+                        <>
+                          {["Want to grab coffee?", "I like your vibe", "Are you single?", "You look amazing", "Can I call you?"].map(p => (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => {
+                                setShengInput(p);
+                                handleShengCheck(p);
+                              }}
+                              className="bg-white hover:bg-amber-100 border border-amber-200 text-[10px] font-bold px-2.5 py-1.5 rounded-full text-slate-700 cursor-pointer active:scale-95 transition-all"
+                            >
+                              "{p}"
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-wider font-extrabold text-amber-900">
+                      {shengMode === 'explain' ? '🔍 Enter Sheng words or phrases:' : '✍️ Enter standard English/Swahili text:'}
+                    </label>
+                    <textarea
+                      value={shengInput}
+                      onChange={(e) => setShengInput(e.target.value)}
+                      placeholder={
+                        shengMode === 'explain'
+                          ? "e.g., kuchafuliwa meza, form gani, kofia, draft..."
+                          : "e.g., Hello beautiful, I hope your week was fine. Let us meet up this Friday."
+                      }
+                      rows={3}
+                      className="w-full bg-white text-xs border border-amber-250 placeholder-amber-900/40 rounded-2xl p-3.5 outline-none focus:ring-1 focus:ring-amber-600 focus:border-amber-600 font-semibold resize-none"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    onClick={() => handleShengCheck(shengInput)}
+                    disabled={loadingSheng || !shengInput.trim()}
+                    className="w-full py-3.5 bg-amber-700 hover:bg-amber-800 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl font-black shadow-lg shadow-amber-900/10 text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {loadingSheng ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin text-white" />
+                        Decoding Nairobi vibes...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={14} />
+                        {shengMode === 'explain' ? 'Decode Sheng' : 'Slangify Text'}
+                      </>
+                    )}
+                  </button>
+
+                  {/* Results */}
+                  {shengResult && (
+                    <div className="space-y-3.5 animate-fade-in pt-1">
+                      <div className="bg-gradient-to-br from-amber-800 to-amber-950 text-white p-4.5 rounded-2xl shadow-sm border border-amber-700/50 border-b-4 border-amber-900">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[10px] uppercase font-black tracking-wider text-amber-300">
+                            {shengMode === 'explain' ? 'English Translation' : 'Upgraded Sheng Phrase'}
+                          </span>
+                          <span className="text-[9px] bg-white/15 text-white border border-white/20 font-black px-2 py-0.5 rounded-md">
+                            {shengResult.vibeScore}
+                          </span>
+                        </div>
+                        <p className="text-sm font-black leading-snug">
+                          {shengResult.translation}
+                        </p>
+                        
+                        <button
+                          onClick={() => {
+                            safeCopyToClipboard(shengResult.translation).then(ok => {
+                              if (ok) {
+                                setShengCopied(true);
+                                setTimeout(() => setShengCopied(false), 2000);
+                              }
+                            });
+                          }}
+                          className="mt-3 text-[10px] font-black text-amber-200 bg-amber-950/40 hover:bg-amber-950/60 px-3 py-1.5 rounded-lg flex items-center gap-1 border border-amber-800/40 cursor-pointer"
+                        >
+                          {shengCopied ? <Check size={11} /> : <Copy size={11} />}
+                          {shengCopied ? 'Copied!' : 'Copy to Clipboard'}
+                        </button>
+                      </div>
+
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 flex items-start gap-3">
+                        <span className="text-2xl mt-0.5 shrink-0">👵</span>
+                        <div className="text-left">
+                          <h4 className="text-[10px] font-black uppercase tracking-wider text-amber-900">Shosh's Vibe Review</h4>
+                          <p className="text-xs text-amber-950 font-extrabold leading-normal mt-0.5 italic">
+                            "{shengResult.explanation}"
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -60,7 +60,11 @@ const VERIFICATION_GESTURES = [
 ];
 
 export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSave }) => {
-  const [profile, setProfile] = useState<UserProfile>(initialProfile);
+  const [profile, setProfile] = useState<UserProfile>(() => ({
+    ...initialProfile,
+    interests: initialProfile?.interests || [],
+    languages: initialProfile?.languages || []
+  }));
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancementSuccess, setEnhancementSuccess] = useState(false);
   const [justPolished, setJustPolished] = useState(false);
@@ -84,22 +88,24 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
 
   const handleInterestToggle = (interest: string) => {
     setProfile(prev => {
-      const exists = (prev.interests || []).includes(interest);
+      const currentInterests = prev.interests || [];
+      const exists = currentInterests.includes(interest);
       if (exists) {
-        return { ...prev, interests: prev.interests.filter(i => i !== interest) };
+        return { ...prev, interests: currentInterests.filter(i => i !== interest) };
       }
-      if (prev.interests.length >= 5) return prev; // Max 5
-      return { ...prev, interests: [...prev.interests, interest] };
+      if (currentInterests.length >= 5) return prev; // Max 5
+      return { ...prev, interests: [...currentInterests, interest] };
     });
   };
 
   const handleLanguageToggle = (lang: string) => {
     setProfile(prev => {
-      const exists = (prev.languages || []).includes(lang);
+      const currentLanguages = prev.languages || [];
+      const exists = currentLanguages.includes(lang);
       if (exists) {
-        return { ...prev, languages: prev.languages.filter(l => l !== lang) };
+        return { ...prev, languages: currentLanguages.filter(l => l !== lang) };
       }
-      return { ...prev, languages: [...prev.languages, lang] };
+      return { ...prev, languages: [...currentLanguages, lang] };
     });
   };
 

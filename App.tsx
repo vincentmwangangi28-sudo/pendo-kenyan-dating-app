@@ -1355,6 +1355,7 @@ const App: React.FC = () => {
                 chats={chats}
                 onBack={() => setView(AppView.DISCOVERY)}
                 onShareLinkInChat={handleShareMeetLinkInChat}
+                userProfile={userProfile}
               />
           );
     }

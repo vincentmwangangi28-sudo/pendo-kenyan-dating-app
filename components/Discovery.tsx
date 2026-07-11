@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { MatchProfile, UserProfile, HangoutSpot } from '../types';
-import { X, Heart, MapPin, Info, Sparkles, Loader2, SlidersHorizontal, Check, Mic, Volume2, Zap, ShieldCheck, MessageSquarePlus, Map as MapIcon, Users, Moon } from 'lucide-react';
+import { X, Heart, MapPin, Info, Sparkles, Loader2, SlidersHorizontal, Check, Mic, Volume2, Zap, ShieldCheck, MessageSquarePlus, Map as MapIcon, Users, Moon, Flame } from 'lucide-react';
 import { analyzeCompatibility, generateSpeech, generateHoroscope } from '../services/geminiService';
 import { INTERESTS_LIST } from './ProfileSetup';
 import { Map as PigeonMap, Marker, Overlay } from 'pigeon-maps';
+import { VibeHeatmap } from './VibeHeatmap';
 
 interface DiscoveryProps {
   userProfile: UserProfile;
@@ -23,7 +24,7 @@ interface FilterState {
 }
 
 export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hangoutSpots = [], onLike, onPass, onBoost }) => {
-  const [viewMode, setViewMode] = useState<'cards' | 'map'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'map' | 'heatmap'>('cards');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
   const [vibeCheck, setVibeCheck] = useState<string | null>(null);
@@ -477,7 +478,7 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
   };
 
   return (
-    <div className="h-[calc(100vh-140px)] w-full max-w-md mx-auto relative p-4 flex flex-col select-none overflow-hidden">
+    <div className={`h-[calc(100vh-140px)] w-full ${viewMode === 'heatmap' ? 'max-w-5xl overflow-y-auto' : 'max-w-md overflow-hidden'} mx-auto relative p-4 flex flex-col select-none`}>
       
       {!showFilters && !showBoostModal && (
          <div className="absolute top-6 left-6 z-30">
@@ -694,6 +695,12 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
             >
               <MapIcon size={14} /> Map
             </button>
+            <button 
+              onClick={() => setViewMode('heatmap')}
+              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all flex items-center gap-1 ${viewMode === 'heatmap' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <Flame size={14} className={viewMode === 'heatmap' ? 'animate-pulse' : ''} /> Heatmap
+            </button>
           </div>
         </div>
       )}
@@ -788,6 +795,13 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
                </div> Matches
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Render Dynamic D3 Heatmap view */}
+      {!showFilters && !showBoostModal && viewMode === 'heatmap' && (
+        <div className="flex-1 w-full mt-12 animate-fade-in flex flex-col">
+          <VibeHeatmap userProfile={userProfile} />
         </div>
       )}
     </div>

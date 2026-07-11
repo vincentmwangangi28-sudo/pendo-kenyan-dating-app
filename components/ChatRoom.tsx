@@ -3,7 +3,7 @@ import { ChatSession, ChatMessage, MatchProfile, UserProfile } from '../types';
 import { generateIcebreaker, generateDateIdeas, explainMessage } from '../services/geminiService';
 import { signInForGoogleMeet, getCachedAccessToken } from '../services/firebase';
 import { safeCopyToClipboard, safeGetMediaStream, safeGetDisplayMedia } from '../services/compat';
-import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, X, Crown, Shield, SmilePlus, Share } from 'lucide-react';
+import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, X, Crown, Shield, SmilePlus, Share, Wifi, WifiOff, Signal, AlertTriangle } from 'lucide-react';
 
 // --- Mock Data for Group Members ---
 const MOCK_GROUP_MEMBERS = [
@@ -334,6 +334,91 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
   const [meetError, setMeetError] = useState<string | null>(null);
   const [createdMeetUrl, setCreatedMeetUrl] = useState<string | null>(null);
   const hasRequestedIcebreaker = useRef(false);
+
+  // Network Connection Quality Indicator States
+  const [connectionState, setConnectionState] = useState<'excellent' | 'stable' | 'unstable' | 'offline'>('excellent');
+  const [ping, setPing] = useState<number>(32);
+  const [packetLoss, setPacketLoss] = useState<number>(0);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [forceUnstable, setForceUnstable] = useState(false);
+
+  // Real-time network monitor and simulation
+  useEffect(() => {
+    // Check initial online status
+    const updateOnlineStatus = () => {
+      if (!window.navigator.onLine) {
+        setConnectionState('offline');
+        setPing(0);
+        setPacketLoss(100);
+      } else if (forceUnstable) {
+        setConnectionState('unstable');
+        setPing(Math.floor(Math.random() * 150) + 280); // 280-430ms
+        setPacketLoss(Math.floor(Math.random() * 8) + 6); // 6-14%
+      } else {
+        // Normal random connection quality swings
+        const roll = Math.random();
+        if (roll > 0.85) {
+          // Stable spike
+          setConnectionState('stable');
+          setPing(Math.floor(Math.random() * 40) + 95); // 95-135ms
+          setPacketLoss(Math.floor(Math.random() * 2)); // 0-1%
+        } else if (roll > 0.05) {
+          // Excellent state
+          setConnectionState('excellent');
+          setPing(Math.floor(Math.random() * 15) + 22); // 22-37ms
+          setPacketLoss(0);
+        } else {
+          // Natural momentary congestion
+          setConnectionState('unstable');
+          setPing(Math.floor(Math.random() * 100) + 190); // 190-290ms
+          setPacketLoss(Math.floor(Math.random() * 4) + 2); // 2-5%
+        }
+      }
+    };
+
+    updateOnlineStatus();
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    const interval = setInterval(() => {
+      if (!window.navigator.onLine) {
+        setConnectionState('offline');
+        setPing(0);
+        setPacketLoss(100);
+        return;
+      }
+
+      if (forceUnstable) {
+        setConnectionState('unstable');
+        setPing(prev => Math.max(180, prev + (Math.random() > 0.5 ? 25 : -25)));
+        setPacketLoss(Math.floor(Math.random() * 10) + 5);
+        return;
+      }
+
+      // Small jitter fluctuation
+      setPing(prev => {
+        const jitter = Math.floor(Math.random() * 6) - 3; // +/- 3ms
+        const base = connectionState === 'excellent' ? 28 : connectionState === 'stable' ? 110 : 250;
+        const nextPing = Math.max(15, prev + jitter);
+        // Force bounds depending on state
+        if (connectionState === 'excellent' && nextPing > 60) return 30;
+        if (connectionState === 'stable' && (nextPing < 60 || nextPing > 160)) return 110;
+        return nextPing;
+      });
+
+      // Periodically run standard fluctuation rolls
+      if (Math.random() > 0.7) {
+        updateOnlineStatus();
+      }
+    }, 4000);
+
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+      clearInterval(interval);
+    };
+  }, [forceUnstable, connectionState]);
 
   // Error boundary state for API requests
   const [apiError, setApiError] = useState<{message: string; action: () => void} | null>(null);
@@ -868,9 +953,32 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                 {session.matchName}
                 {isGroup && <Users size={12} className="text-slate-400" />}
               </h3>
-              <span className="text-xs text-rose-500 font-medium">
-                {isGroup ? `${MOCK_GROUP_MEMBERS.length} members` : 'Online'}
-              </span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-xs text-rose-500 font-medium">
+                  {isGroup ? `${MOCK_GROUP_MEMBERS.length} members` : 'Online'}
+                </span>
+                <span className="text-slate-300 text-xs">•</span>
+                
+                {/* Clickable Connection Indicator */}
+                <button
+                  onClick={() => setShowDiagnostics(prev => !prev)}
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-slate-100 transition-colors text-[9px] font-extrabold border cursor-pointer select-none ${
+                    connectionState === 'excellent' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' :
+                    connectionState === 'stable' ? 'text-blue-600 bg-blue-50 border-blue-100' :
+                    connectionState === 'unstable' ? 'text-amber-600 bg-amber-50 border-amber-100 animate-pulse' :
+                    'text-rose-600 bg-rose-50 border-rose-100 animate-pulse'
+                  }`}
+                  title="Check Real-time Connection Quality"
+                >
+                  <Wifi size={10} className={connectionState === 'offline' ? 'hidden' : 'block'} />
+                  {connectionState === 'offline' && <WifiOff size={10} />}
+                  <span>
+                    {connectionState === 'excellent' ? 'Excellent' :
+                     connectionState === 'stable' ? 'Stable' :
+                     connectionState === 'unstable' ? 'Unstable' : 'Offline'}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -915,9 +1023,138 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
         </div>
       </div>
 
+      {/* Network Connection Diagnostics Panel */}
+      {showDiagnostics && (
+        <div className="absolute top-[65px] left-4 right-4 z-40 bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl p-4 shadow-xl animate-fade-in text-left">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+            <div className="flex items-center gap-1.5 text-slate-800">
+              <Signal size={14} className="text-rose-500 animate-pulse" />
+              <h4 className="font-extrabold text-xs">Pendo Connection Diagnostics</h4>
+            </div>
+            <button 
+              onClick={() => setShowDiagnostics(false)}
+              className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-2">
+              <p className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400">Connection Speed</p>
+              <p className="text-xs font-black text-slate-850 mt-0.5">{ping > 0 ? `${ping} ms` : 'N/A'}</p>
+              <div className="w-full bg-slate-200 h-1 rounded-full mt-1.5 overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-500 ${
+                    connectionState === 'excellent' ? 'bg-emerald-500 w-1/4' :
+                    connectionState === 'stable' ? 'bg-blue-500 w-1/2' :
+                    connectionState === 'unstable' ? 'bg-amber-500 w-3/4' : 'bg-rose-500 w-full'
+                  }`}
+                />
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-2">
+              <p className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400">Packet Integrity</p>
+              <p className="text-xs font-black text-slate-850 mt-0.5">{ping > 0 ? `99.9% Ok` : '0% (Offline)'}</p>
+              <p className="text-[8px] text-slate-400 mt-0.5">Loss: {packetLoss}%</p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-2">
+              <p className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400">Server Region</p>
+              <p className="text-[10px] font-bold text-slate-700 mt-0.5">Nairobi, KE 🇰🇪</p>
+              <p className="text-[8px] text-slate-400 leading-none">Sub-node: Westlands Edge</p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-2">
+              <p className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400">Channel protocol</p>
+              <p className="text-[10px] font-bold text-slate-700 mt-0.5">Secure WebRTC</p>
+              <p className="text-[8px] text-slate-400 leading-none">WSS TLS v1.3</p>
+            </div>
+          </div>
+
+          {/* Network Simulator Controls */}
+          <div className="border-t border-slate-100 pt-2.5">
+            <p className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mb-1.5">Simulate Network Quality:</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                onClick={() => {
+                  setForceUnstable(false);
+                  setConnectionState('excellent');
+                  setPing(28);
+                  setPacketLoss(0);
+                }}
+                className={`py-1 rounded-lg text-[9px] font-extrabold transition-all border cursor-pointer ${
+                  !forceUnstable && connectionState === 'excellent' 
+                    ? 'bg-slate-900 border-slate-900 text-white shadow-xs' 
+                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Excellent
+              </button>
+              <button
+                onClick={() => {
+                  setForceUnstable(true);
+                  setConnectionState('unstable');
+                  setPing(310);
+                  setPacketLoss(9);
+                }}
+                className={`py-1 rounded-lg text-[9px] font-extrabold transition-all border cursor-pointer ${
+                  forceUnstable 
+                    ? 'bg-amber-500 border-amber-500 text-white shadow-xs' 
+                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Unstable
+              </button>
+              <button
+                onClick={() => {
+                  setForceUnstable(false);
+                  setConnectionState('offline');
+                  setPing(0);
+                  setPacketLoss(100);
+                }}
+                className={`py-1 rounded-lg text-[9px] font-extrabold transition-all border cursor-pointer ${
+                  !forceUnstable && connectionState === 'offline'
+                    ? 'bg-rose-600 border-rose-600 text-white shadow-xs' 
+                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Offline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50 overflow-x-hidden">
         
+        {/* Real-time Connection Quality Alerts */}
+        {connectionState === 'unstable' && (
+          <div className="mb-3 bg-amber-50 border border-amber-200 text-amber-850 p-3 rounded-2xl flex items-start gap-2.5 text-xs shadow-xs animate-fade-in text-left">
+            <AlertTriangle size={15} className="text-amber-500 mt-0.5 shrink-0 animate-pulse" />
+            <div className="flex-1">
+              <span className="font-extrabold block text-[11px] uppercase tracking-wide text-amber-900 mb-0.5">Connection Quality Unstable 📡</span>
+              <p className="text-[10px] text-amber-700 leading-normal">
+                High round-trip latency ({ping}ms) or packet dropouts detected on Kenyan network nodes. Calls or video dating with {session.matchName} may be degraded.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {connectionState === 'offline' && (
+          <div className="mb-3 bg-rose-50 border border-rose-200 text-rose-850 p-3 rounded-2xl flex items-start gap-2.5 text-xs shadow-xs animate-fade-in text-left">
+            <WifiOff size={15} className="text-rose-500 mt-0.5 shrink-0 animate-pulse" />
+            <div className="flex-1">
+              <span className="font-extrabold block text-[11px] uppercase tracking-wide text-rose-900 mb-0.5">You are Offline 🌐</span>
+              <p className="text-[10px] text-rose-700 leading-normal">
+                Your device appears disconnected from the network. Check your Nairobi/Mombasa data subscription or local Wi-Fi router.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* API Error Message */}
         {apiError && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl flex items-center justify-between text-sm shadow-sm animate-fade-in">

@@ -88,5 +88,12 @@ service cloud.firestore {
        
        allow delete: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember() && existing().senderId == request.auth.uid;
     }
+
+    match /voiceRooms/{roomId} {
+       allow read, list: if isSignedIn();
+       allow create: if isSignedIn() && isValidId(roomId) && incoming().creatorId == request.auth.uid && incoming().name.size() <= 100 && incoming().participants.size() <= 10;
+       allow update: if isSignedIn() && isValidId(roomId) && incoming().participants.size() <= 10;
+       allow delete: if isSignedIn() && isValidId(roomId) && resource.data.creatorId == request.auth.uid;
+    }
   }
 }
