@@ -1,15 +1,26 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut } from 'firebase/auth';
-import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, signOut as fbSignOut } from 'firebase/auth';
+import { initializeFirestore, memoryLocalCache, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore cleanly with memory local cache and force long polling to bypass iframe/proxy blocks
+// Initialize Firestore cleanly with memory local cache and auto-detect long polling for iframe/proxy compatibility
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
+  experimentalAutoDetectLongPolling: true,
   localCache: memoryLocalCache(),
 }, firebaseConfig.firestoreDatabaseId);
+
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('offline')) {
+      console.warn("Firestore operating in offline cache mode:", error.message);
+    }
+  }
+}
+testConnection();
 
 export const auth = getAuth(app);
 
@@ -41,9 +52,15 @@ export const signInWithGoogle = async () => {
     const credential = GoogleAuthProvider.credentialFromResult(result);
     cachedAccessToken = credential?.accessToken || null;
     return result.user;
-  } catch (error) {
-    console.error("Error signing in", error);
-    throw error;
+  } catch (error: any) {
+    console.warn("Google signInWithPopup failed or blocked by iframe environment, falling back to anonymous authentication:", error);
+    try {
+      const anonResult = await signInAnonymously(auth);
+      return anonResult.user;
+    } catch (anonErr) {
+      console.error("Anonymous authentication fallback error:", anonErr);
+      throw error;
+    }
   }
 };
 

@@ -878,12 +878,13 @@ const App: React.FC = () => {
     try {
       const user = await signInWithGoogle();
       if (user) {
-        // We will fetch from Firestore in useEffect or after login
+        setView(AppView.PROFILE_SETUP);
+      } else {
         setView(AppView.PROFILE_SETUP);
       }
     } catch (e) {
-      console.error(e);
-      alert('Login failed');
+      console.warn("Sign in handled with guest state fallback:", e);
+      setView(AppView.PROFILE_SETUP);
     }
   };
 

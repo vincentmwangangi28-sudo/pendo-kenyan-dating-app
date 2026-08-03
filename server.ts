@@ -18,6 +18,37 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // Google Search Console Verification File
+  app.get("/google00332d67777e965d.html", (req, res) => {
+    res.setHeader("Content-Type", "text/html");
+    res.send("google-site-verification: google00332d67777e965d.html");
+  });
+
+  // Search Engine Crawling & SEO Endpoints
+  app.get("/robots.txt", (req, res) => {
+    res.setHeader("Content-Type", "text/plain");
+    res.send("User-agent: *\nAllow: /\nSitemap: https://ais-pre-ohryznl5tg2opvo3ua73bl-937574102702.europe-west2.run.app/sitemap.xml");
+  });
+
+  app.get("/sitemap.xml", (req, res) => {
+    res.setHeader("Content-Type", "application/xml");
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://ais-pre-ohryznl5tg2opvo3ua73bl-937574102702.europe-west2.run.app/</loc>
+    <lastmod>2026-08-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://ais-pre-ohryznl5tg2opvo3ua73bl-937574102702.europe-west2.run.app/#voice-lounge</loc>
+    <lastmod>2026-08-02</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.9</priority>
+  </url>
+</urlset>`);
+  });
+
   app.post("/api/gemini/call", async (req, res) => {
     try {
       const { action, args = [] } = req.body;
