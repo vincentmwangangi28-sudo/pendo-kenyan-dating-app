@@ -3,7 +3,9 @@ import { UserProfile } from '../types';
 import { Button } from './Button';
 import { enhanceBio, verifyPhotoGesture } from '../services/geminiService';
 import { safeGetMediaStream } from '../services/compat';
-import { Sparkles, MapPin, Camera, Navigation, Mic, Square, Trash2, ShieldCheck, X, Loader2, CheckCircle2, RefreshCw, Info } from 'lucide-react';
+import { GoogleAccountCard } from './GoogleAccountCard';
+import { GoogleLogsViewer } from './GoogleLogsViewer';
+import { Sparkles, MapPin, Camera, Navigation, Mic, Square, Trash2, ShieldCheck, X, Loader2, CheckCircle2, RefreshCw, Info, Terminal } from 'lucide-react';
 
 interface ProfileSetupProps {
   initialProfile: UserProfile;
@@ -78,6 +80,9 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
   const [audioUrl, setAudioUrl] = useState<string | null>(profile.voiceUrl || null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  // Google Logs Modal State
+  const [showGoogleLogsModal, setShowGoogleLogsModal] = useState(false);
 
   // Verification State
   const [showVerificationModal, setShowVerificationModal] = useState(false);
@@ -675,11 +680,22 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
           </div>
         </div>
 
+        {/* Google Authentication & System Logs Card */}
+        <div className="pt-2">
+          <GoogleAccountCard onOpenLogs={() => setShowGoogleLogsModal(true)} />
+        </div>
+
         <Button onClick={() => onSave(profile)} className="w-full mt-4">
           Save & Start Matching
         </Button>
       </div>
       
+      {/* Google Logs Viewer Modal */}
+      <GoogleLogsViewer
+        isOpen={showGoogleLogsModal}
+        onClose={() => setShowGoogleLogsModal(false)}
+      />
+
       {/* Verification Modal */}
       {showVerificationModal && (
         <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-6 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">

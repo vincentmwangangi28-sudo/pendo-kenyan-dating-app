@@ -8,12 +8,16 @@ import { HangoutSpots } from './components/HangoutSpots';
 import { VoiceCoach } from './components/VoiceCoach';
 import { MeetHub } from './components/MeetHub';
 import { AuntieShosh } from './components/AuntieShosh';
-import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video } from 'lucide-react';
+import { GoogleAuthButton } from './components/GoogleAuthButton';
+import { GoogleLogsViewer } from './components/GoogleLogsViewer';
+import { AuthNotification } from './components/AuthNotification';
+import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Terminal, Shield, CheckCircle2 } from 'lucide-react';
 import { findRealtimeEvents } from './services/geminiService';
-import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut } from './services/firebase';
+import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut, getOrCreateGuestUser, AppAuthUser } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
 import { safeStorage } from './services/storage';
+import { googleAuthLogger } from './services/googleAuthLogger';
 
 // --- UTILS ---
 // Haversine formula to calculate distance in km
@@ -710,8 +714,10 @@ const App: React.FC = () => {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [typingStatus, setTypingStatus] = useState<Record<string, string[]>>({});
   
-  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authUser, setAuthUser] = useState<User | AppAuthUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isSigningInGoogle, setIsSigningInGoogle] = useState(false);
+  const [showGoogleLogs, setShowGoogleLogs] = useState(false);
 
   const [isOffline, setIsOffline] = useState(false);
   const [isAuntieShoshOpen, setIsAuntieShoshOpen] = useState(false);
@@ -734,8 +740,8 @@ const App: React.FC = () => {
   // Auth Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setAuthUser(user);
       if (user) {
+        setAuthUser(user);
         // fetch user profile
         try {
           const profileDoc = await getDoc(doc(db, 'users', user.uid));
@@ -743,7 +749,7 @@ const App: React.FC = () => {
              setUserProfile(profileDoc.data() as UserProfile);
              setView(AppView.DISCOVERY);
           } else {
-             setUserProfile(prev => ({ ...prev, name: user.displayName || '', photoUrl: user.photoURL || prev.photoUrl }));
+             setUserProfile(prev => ({ ...prev, uid: user.uid, name: user.displayName || prev.name, photoUrl: user.photoURL || prev.photoUrl }));
              setView(AppView.PROFILE_SETUP);
           }
         } catch (e: any) {
@@ -751,24 +757,26 @@ const App: React.FC = () => {
           if (errMsg.toLowerCase().includes('offline') || errMsg.toLowerCase().includes('could not reach') || errMsg.toLowerCase().includes('unreachable') || errMsg.toLowerCase().includes('failed to get document')) {
             console.warn("Firestore appears to be offline or unreachable. Loading with cached profile gracefully.", e);
             setIsOffline(true);
-            setUserProfile({
+            setUserProfile(prev => ({
+              ...prev,
               uid: user.uid,
-              name: user.displayName || 'Pendo User',
-              age: 23,
-              gender: 'FEMALE',
-              location: 'Nairobi',
-              bio: 'Active on Pendo! Running in offline-robust sandbox mode.',
-              photoUrl: user.photoURL || 'https://picsum.photos/seed/pendo/400/400',
-              lookingFor: 'SERIOUS',
-              isVerified: true
-            });
+              name: user.displayName || prev.name || 'Pendo User',
+              photoUrl: user.photoURL || prev.photoUrl,
+            }));
             setView(AppView.DISCOVERY);
           } else {
             handleFirestoreError(e, OperationType.GET, 'users');
           }
         }
       } else {
-        setView(AppView.LANDING);
+        // Check if there is an existing local guest profile
+        const savedProfile = safeStorage.getItem('pendo_user_profile');
+        if (savedProfile) {
+          try {
+            const parsed = JSON.parse(savedProfile);
+            setUserProfile(parsed);
+          } catch {}
+        }
       }
       setIsAuthLoading(false);
     });
@@ -874,53 +882,88 @@ const App: React.FC = () => {
 
   // --- Handlers ---
 
-  const handleStartApp = async () => {
+  const handleStartApp = async (mode: 'google' | 'guest' = 'google') => {
+    setIsSigningInGoogle(true);
+    googleAuthLogger.info('GOOGLE_AUTH', `User initiated login flow (${mode} mode)`);
     try {
-      const user = await signInWithGoogle();
-      if (user) {
+      if (mode === 'google') {
+        const user = await signInWithGoogle();
+        if (user) {
+          setAuthUser(user);
+          setUserProfile(prev => ({
+            ...prev,
+            uid: user.uid,
+            name: user.displayName || prev.name,
+            photoUrl: user.photoURL || prev.photoUrl,
+          }));
+        }
         setView(AppView.PROFILE_SETUP);
       } else {
+        googleAuthLogger.info('GOOGLE_AUTH', 'Starting with direct Guest Mode');
+        const guestUser = getOrCreateGuestUser();
+        setAuthUser(guestUser);
+        setUserProfile(prev => ({
+          ...prev,
+          uid: guestUser.uid,
+          name: guestUser.displayName || 'Kenyan Guest',
+          photoUrl: guestUser.photoURL || prev.photoUrl,
+        }));
         setView(AppView.PROFILE_SETUP);
       }
-    } catch (e) {
-      console.warn("Sign in handled with guest state fallback:", e);
+    } catch (e: any) {
+      googleAuthLogger.warn('GOOGLE_AUTH', "Sign in handled with guest state fallback:", { error: e?.message || e });
+      const guestUser = getOrCreateGuestUser();
+      setAuthUser(guestUser);
+      setUserProfile(prev => ({
+        ...prev,
+        uid: guestUser.uid,
+        name: guestUser.displayName || 'Kenyan Guest',
+        photoUrl: guestUser.photoURL || prev.photoUrl,
+      }));
       setView(AppView.PROFILE_SETUP);
+    } finally {
+      setIsSigningInGoogle(false);
     }
   };
 
   const handleProfileSave = async (profile: UserProfile) => {
-    if (!authUser) return;
-    try {
-      const profileToSave = {
-          uid: authUser.uid,
-          name: profile.name || 'New User',
-          age: profile.age >= 18 ? profile.age : 18,
-          location: profile.location || 'Nairobi',
-          bio: profile.bio || 'New member',
-          ...((profile.neighborhood && profile.neighborhood.length > 0) && { neighborhood: profile.neighborhood }),
-          ...((profile.interests && profile.interests.length > 0) && { interests: profile.interests }),
-          ...((profile.languages && profile.languages.length > 0) && { languages: profile.languages }),
-          ...((profile.gender && profile.gender.length > 0) && { gender: profile.gender }),
-          ...((profile.lookingFor && profile.lookingFor.length > 0) && { lookingFor: profile.lookingFor }),
-          ...((profile.photoUrl && profile.photoUrl.length > 0) && { photoUrl: profile.photoUrl }),
-          ...((profile.voiceUrl && profile.voiceUrl.length > 0) && { voiceUrl: profile.voiceUrl }),
-          ...((profile.coordinates) && { coordinates: profile.coordinates })
-      };
-      // explicitly define isVerified per our rules requirement during create
-      const docRef = doc(db, 'users', authUser.uid);
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) {
-         Object.assign(profileToSave, { isVerified: false });
-      } else {
-         Object.assign(profileToSave, { isVerified: profile.isVerified });
-      }
+    const activeUid = authUser?.uid || userProfile.uid || 'guest_user';
+    const profileToSave = {
+        uid: activeUid,
+        name: profile.name || 'New User',
+        age: profile.age >= 18 ? profile.age : 18,
+        location: profile.location || 'Nairobi',
+        bio: profile.bio || 'New member',
+        ...((profile.neighborhood && profile.neighborhood.length > 0) && { neighborhood: profile.neighborhood }),
+        ...((profile.interests && profile.interests.length > 0) && { interests: profile.interests }),
+        ...((profile.languages && profile.languages.length > 0) && { languages: profile.languages }),
+        ...((profile.gender && profile.gender.length > 0) && { gender: profile.gender }),
+        ...((profile.lookingFor && profile.lookingFor.length > 0) && { lookingFor: profile.lookingFor }),
+        ...((profile.photoUrl && profile.photoUrl.length > 0) && { photoUrl: profile.photoUrl }),
+        ...((profile.voiceUrl && profile.voiceUrl.length > 0) && { voiceUrl: profile.voiceUrl }),
+        ...((profile.coordinates) && { coordinates: profile.coordinates })
+    };
 
-      await setDoc(docRef, profileToSave, { merge: true });
-      setUserProfile(profile);
-      setView(AppView.DISCOVERY);
+    try {
+      if (authUser && !isOffline) {
+        const docRef = doc(db, 'users', activeUid);
+        const docSnap = await getDoc(docRef).catch(() => null);
+        if (!docSnap || !docSnap.exists()) {
+           Object.assign(profileToSave, { isVerified: false });
+        } else {
+           Object.assign(profileToSave, { isVerified: profile.isVerified });
+        }
+        await setDoc(docRef, profileToSave, { merge: true });
+      }
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'users');
+      console.warn("Firestore save fallback to local storage:", error);
+      setIsOffline(true);
     }
+
+    // Persist locally as well
+    safeStorage.setItem('pendo_user_profile', JSON.stringify({ ...profile, uid: activeUid }));
+    setUserProfile({ ...profile, uid: activeUid });
+    setView(AppView.DISCOVERY);
   };
 
   const handleLike = (match: MatchProfile) => {
@@ -1216,28 +1259,70 @@ const App: React.FC = () => {
     switch (view) {
       case AppView.LANDING:
         return (
-          <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-500 to-rose-700 text-white p-6 relative overflow-hidden">
+          <div className="h-screen flex flex-col items-center justify-between bg-gradient-to-br from-rose-500 via-rose-600 to-slate-900 text-white p-6 relative overflow-hidden">
              {/* Background Decoration */}
-             <div className="absolute top-0 left-0 w-64 h-64 bg-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-             <div className="absolute bottom-0 right-0 w-64 h-64 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+             <div className="absolute top-0 left-0 w-72 h-72 bg-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+             <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
 
-            <div className="relative z-10 text-center">
-              <div className="w-24 h-24 bg-white/20 backdrop-blur-lg rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl rotate-3">
-                <Flame size={48} className="text-white drop-shadow-lg" />
+            {/* Top Bar on Landing with Google Logs Console Button */}
+            <div className="w-full flex justify-between items-center z-10 pt-2">
+              <div className="flex items-center gap-1.5 bg-black/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[11px] font-medium text-rose-100">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Google Auth & Services</span>
               </div>
-              <h1 className="text-5xl font-extrabold mb-4 tracking-tight">Pendo</h1>
-              <p className="text-xl text-rose-100 mb-10 max-w-xs mx-auto leading-relaxed">
-                Connect with genuine people across Kenya. Find your perfect match today.
-              </p>
-              <button 
-                onClick={handleStartApp}
-                className="bg-white text-rose-600 px-10 py-4 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+              <button
+                onClick={() => setShowGoogleLogs(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/15 hover:bg-white/25 active:scale-95 text-white backdrop-blur-md rounded-full text-xs font-semibold border border-white/20 shadow-sm transition-all"
+                title="Open Google Auth & Activity Logs"
               >
-                Get Started
+                <Terminal size={13} />
+                <span>Google Logs</span>
               </button>
             </div>
+
+            <div className="relative z-10 text-center my-auto w-full max-w-sm">
+              <div className="w-20 h-20 bg-white/20 backdrop-blur-lg rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl rotate-3 border border-white/20">
+                <Flame size={44} className="text-white drop-shadow-lg" />
+              </div>
+              <h1 className="text-4xl font-extrabold mb-2 tracking-tight">Pendo Kenya</h1>
+              <p className="text-base text-rose-100 mb-8 max-w-xs mx-auto leading-relaxed">
+                Connect with genuine singles across Nairobi, Mombasa & Kenya.
+              </p>
+
+              {/* Login Actions */}
+              <div className="space-y-3 w-full">
+                <GoogleAuthButton
+                  onClick={() => handleStartApp('google')}
+                  isLoading={isSigningInGoogle}
+                  text="Continue with Google"
+                  className="w-full shadow-xl"
+                />
+
+                <button 
+                  onClick={() => handleStartApp('guest')}
+                  disabled={isSigningInGoogle}
+                  className="w-full bg-white/15 hover:bg-white/25 text-white border border-white/30 px-6 py-3 rounded-2xl font-semibold text-sm backdrop-blur-md transition-all active:scale-[0.98]"
+                >
+                  Quick Guest Access
+                </button>
+              </div>
+
+              {/* Features Badges */}
+              <div className="mt-8 grid grid-cols-2 gap-2 text-left">
+                <div className="p-2.5 rounded-xl bg-black/20 backdrop-blur-sm border border-white/10 text-xs">
+                  <span className="font-bold text-rose-200 block">✨ Google SSO</span>
+                  <span className="text-[10px] text-rose-100/80">Instant profile & photo sync</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-black/20 backdrop-blur-sm border border-white/10 text-xs">
+                  <span className="font-bold text-rose-200 block">📹 Google Meet</span>
+                  <span className="text-[10px] text-rose-100/80">1-on-1 virtual video dates</span>
+                </div>
+              </div>
+            </div>
             
-            <p className="absolute bottom-8 text-rose-200 text-sm">Made with ❤️ in Nairobi</p>
+            <div className="relative z-10 text-center pb-2 text-[11px] text-rose-200/80">
+              <span>Protected by Google Identity & Firebase Security Rules</span>
+            </div>
           </div>
         );
 
@@ -1255,13 +1340,20 @@ const App: React.FC = () => {
               <h1 className="text-2xl font-bold text-rose-600 flex items-center gap-2">
                 <Flame size={24} fill="currentColor" /> Pendo
               </h1>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                 <button 
+                    onClick={() => setShowGoogleLogs(true)}
+                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-colors"
+                    title="Google Logs & Diagnostic Console"
+                 >
+                    <Terminal size={18} />
+                 </button>
                  <button 
                     onClick={async () => { await signOut(); setView(AppView.LANDING); }}
                     className="p-2 text-slate-400 hover:text-slate-600 rounded-full"
                     title="Log Out"
                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                  </button>
                  <button 
                     onClick={() => setIsAuntieShoshOpen(true)}
@@ -1276,7 +1368,7 @@ const App: React.FC = () => {
                     className="p-2 bg-rose-100 text-rose-600 rounded-full animate-pulse-slow shadow-sm"
                     title="AI Coach"
                  >
-                    <Mic size={20} />
+                    <Mic size={18} />
                  </button>
                  <div className={`w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300 ${userProfile.boostExpiresAt && userProfile.boostExpiresAt > Date.now() ? 'ring-2 ring-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : ''}`}>
                    <img src={userProfile.photoUrl} alt="Me" className="w-full h-full object-cover"/>
@@ -1431,6 +1523,15 @@ const App: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Global Auth Error & Status Notifications */}
+      <AuthNotification onOpenLogs={() => setShowGoogleLogs(true)} />
+
+      {/* Google Logs & Diagnostic Viewer Modal */}
+      <GoogleLogsViewer
+        isOpen={showGoogleLogs}
+        onClose={() => setShowGoogleLogs(false)}
+      />
     </div>
   );
 };

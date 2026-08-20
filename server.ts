@@ -11,6 +11,22 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // CORS setup for Vercel & local deployment
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
   app.use(express.json({ limit: '10mb' })); // Increase JSON limit to allow base64 images
 
   // API routes FIRST
@@ -27,7 +43,7 @@ async function startServer() {
   // Search Engine Crawling & SEO Endpoints
   app.get("/robots.txt", (req, res) => {
     res.setHeader("Content-Type", "text/plain");
-    res.send("User-agent: *\nAllow: /\nSitemap: https://ais-pre-ohryznl5tg2opvo3ua73bl-937574102702.europe-west2.run.app/sitemap.xml");
+    res.send("User-agent: *\nAllow: /\nSitemap: https://pendo-kenyan-dating-app.vercel.app/sitemap.xml");
   });
 
   app.get("/sitemap.xml", (req, res) => {
@@ -35,14 +51,14 @@ async function startServer() {
     res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://ais-pre-ohryznl5tg2opvo3ua73bl-937574102702.europe-west2.run.app/</loc>
-    <lastmod>2026-08-02</lastmod>
+    <loc>https://pendo-kenyan-dating-app.vercel.app/</loc>
+    <lastmod>2026-08-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://ais-pre-ohryznl5tg2opvo3ua73bl-937574102702.europe-west2.run.app/#voice-lounge</loc>
-    <lastmod>2026-08-02</lastmod>
+    <loc>https://pendo-kenyan-dating-app.vercel.app/#voice-lounge</loc>
+    <lastmod>2026-08-03</lastmod>
     <changefreq>always</changefreq>
     <priority>0.9</priority>
   </url>
