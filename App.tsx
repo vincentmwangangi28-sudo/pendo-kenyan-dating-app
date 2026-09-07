@@ -18,6 +18,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
 import { safeStorage } from './services/storage';
 import { googleAuthLogger } from './services/googleAuthLogger';
+import { Analytics } from '@vercel/analytics/react';
 
 // --- UTILS ---
 // Haversine formula to calculate distance in km
@@ -1532,6 +1533,9 @@ const App: React.FC = () => {
         isOpen={showGoogleLogs}
         onClose={() => setShowGoogleLogs(false)}
       />
+      
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 };
