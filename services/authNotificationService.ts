@@ -168,7 +168,7 @@ class AuthNotificationService {
       title = options?.context ? `Google Auth (${options.context})` : 'Google Authentication Error';
       message = rawMessage.length < 120 && !rawMessage.includes('{') 
         ? rawMessage 
-        : 'An unexpected issue occurred while authenticating with Google. Please retry or inspect diagnostic logs.';
+        : 'An unexpected issue occurred while authenticating with Google. Please try again.';
       type = 'error';
     }
 

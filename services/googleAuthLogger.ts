@@ -88,16 +88,8 @@ class GoogleAuthLogger {
 
     this.logs = [entry, ...this.logs].slice(0, MAX_LOGS);
     
-    // Also output formatted console log
-    const prefix = `[GoogleLogs][${category}][${level}]`;
     if (level === 'ERROR') {
-      console.error(prefix, message, details || '');
-    } else if (level === 'WARN') {
-      console.warn(prefix, message, details || '');
-    } else if (level === 'SUCCESS') {
-      console.log(`%c${prefix} ${message}`, 'color: #10b981; font-weight: bold;', details || '');
-    } else {
-      console.log(prefix, message, details || '');
+      console.error(`[Auth] ${message}`, details || '');
     }
 
     this.notify();

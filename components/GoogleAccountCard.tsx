@@ -1,26 +1,20 @@
 import React from 'react';
-import { auth, signInWithGoogle, signOut, getCachedAccessToken, getOrCreateGuestUser } from '../services/firebase';
+import { auth, signInWithGoogle, getCachedAccessToken, getOrCreateGuestUser } from '../services/firebase';
 import { googleAuthLogger } from '../services/googleAuthLogger';
 import { GoogleAuthButton } from './GoogleAuthButton';
 import {
   ShieldCheck,
   CheckCircle2,
-  AlertCircle,
   Video,
-  LogOut,
-  Terminal,
   RefreshCw,
-  ExternalLink,
   UserCheck,
 } from 'lucide-react';
 
 interface GoogleAccountCardProps {
-  onOpenLogs: () => void;
   onRefreshProfile?: () => void;
 }
 
 export const GoogleAccountCard: React.FC<GoogleAccountCardProps> = ({
-  onOpenLogs,
   onRefreshProfile,
 }) => {
   const [isSigningIn, setIsSigningIn] = React.useState(false);
@@ -67,19 +61,10 @@ export const GoogleAccountCard: React.FC<GoogleAccountCardProps> = ({
               Google Account & Auth Sync
             </h3>
             <p className="text-[11px] text-slate-500">
-              Identity verification, video date scopes & security logging
+              Identity verification & Google Meet video dates
             </p>
           </div>
         </div>
-
-        <button
-          onClick={onOpenLogs}
-          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-200"
-          title="Open Google Auth & System Logs"
-        >
-          <Terminal size={13} className="text-slate-600" />
-          <span>Logs</span>
-        </button>
       </div>
 
       {/* User Status Info */}

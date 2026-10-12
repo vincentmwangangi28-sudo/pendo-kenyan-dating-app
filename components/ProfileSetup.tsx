@@ -4,8 +4,7 @@ import { Button } from './Button';
 import { enhanceBio, verifyPhotoGesture } from '../services/geminiService';
 import { safeGetMediaStream } from '../services/compat';
 import { GoogleAccountCard } from './GoogleAccountCard';
-import { GoogleLogsViewer } from './GoogleLogsViewer';
-import { Sparkles, MapPin, Camera, Navigation, Mic, Square, Trash2, ShieldCheck, X, Loader2, CheckCircle2, RefreshCw, Info, Terminal } from 'lucide-react';
+import { Sparkles, MapPin, Camera, Navigation, Mic, Square, Trash2, ShieldCheck, X, Loader2, CheckCircle2, RefreshCw, Info } from 'lucide-react';
 
 interface ProfileSetupProps {
   initialProfile: UserProfile;
@@ -81,8 +80,6 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  // Google Logs Modal State
-  const [showGoogleLogsModal, setShowGoogleLogsModal] = useState(false);
 
   // Verification State
   const [showVerificationModal, setShowVerificationModal] = useState(false);
@@ -680,21 +677,15 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
           </div>
         </div>
 
-        {/* Google Authentication & System Logs Card */}
+        {/* Google Account & Profile Sync Card */}
         <div className="pt-2">
-          <GoogleAccountCard onOpenLogs={() => setShowGoogleLogsModal(true)} />
+          <GoogleAccountCard />
         </div>
 
         <Button onClick={() => onSave(profile)} className="w-full mt-4">
           Save & Start Matching
         </Button>
       </div>
-      
-      {/* Google Logs Viewer Modal */}
-      <GoogleLogsViewer
-        isOpen={showGoogleLogsModal}
-        onClose={() => setShowGoogleLogsModal(false)}
-      />
 
       {/* Verification Modal */}
       {showVerificationModal && (

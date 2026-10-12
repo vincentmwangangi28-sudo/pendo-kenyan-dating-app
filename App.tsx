@@ -9,9 +9,8 @@ import { VoiceCoach } from './components/VoiceCoach';
 import { MeetHub } from './components/MeetHub';
 import { AuntieShosh } from './components/AuntieShosh';
 import { GoogleAuthButton } from './components/GoogleAuthButton';
-import { GoogleLogsViewer } from './components/GoogleLogsViewer';
 import { AuthNotification } from './components/AuthNotification';
-import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Terminal, Shield, CheckCircle2 } from 'lucide-react';
+import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Shield, CheckCircle2 } from 'lucide-react';
 import { findRealtimeEvents } from './services/geminiService';
 import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut, getOrCreateGuestUser, AppAuthUser } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -717,7 +716,6 @@ const App: React.FC = () => {
   const [authUser, setAuthUser] = useState<User | AppAuthUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isSigningInGoogle, setIsSigningInGoogle] = useState(false);
-  const [showGoogleLogs, setShowGoogleLogs] = useState(false);
 
   const [isOffline, setIsOffline] = useState(false);
   const [isAuntieShoshOpen, setIsAuntieShoshOpen] = useState(false);
@@ -1264,21 +1262,6 @@ const App: React.FC = () => {
              <div className="absolute top-0 left-0 w-72 h-72 bg-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
              <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
 
-            {/* Top Bar on Landing with Google Logs Console Button */}
-            <div className="w-full flex justify-between items-center z-10 pt-2">
-              <div className="flex items-center gap-1.5 bg-black/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[11px] font-medium text-rose-100">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Google Auth & Services</span>
-              </div>
-              <button
-                onClick={() => setShowGoogleLogs(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/15 hover:bg-white/25 active:scale-95 text-white backdrop-blur-md rounded-full text-xs font-semibold border border-white/20 shadow-sm transition-all"
-                title="Open Google Auth & Activity Logs"
-              >
-                <Terminal size={13} />
-                <span>Google Logs</span>
-              </button>
-            </div>
 
             <div className="relative z-10 text-center my-auto w-full max-w-sm">
               <div className="w-20 h-20 bg-white/20 backdrop-blur-lg rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl rotate-3 border border-white/20">
@@ -1341,13 +1324,6 @@ const App: React.FC = () => {
                 <Flame size={24} fill="currentColor" /> Pendo
               </h1>
               <div className="flex items-center gap-2">
-                 <button 
-                    onClick={() => setShowGoogleLogs(true)}
-                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-colors"
-                    title="Google Logs & Diagnostic Console"
-                 >
-                    <Terminal size={18} />
-                 </button>
                  <button 
                     onClick={async () => { await signOut(); setView(AppView.LANDING); }}
                     className="p-2 text-slate-400 hover:text-slate-600 rounded-full"
@@ -1525,13 +1501,7 @@ const App: React.FC = () => {
       )}
 
       {/* Global Auth Error & Status Notifications */}
-      <AuthNotification onOpenLogs={() => setShowGoogleLogs(true)} />
-
-      {/* Google Logs & Diagnostic Viewer Modal */}
-      <GoogleLogsViewer
-        isOpen={showGoogleLogs}
-        onClose={() => setShowGoogleLogs(false)}
-      />
+      <AuthNotification />
     </div>
   );
 };

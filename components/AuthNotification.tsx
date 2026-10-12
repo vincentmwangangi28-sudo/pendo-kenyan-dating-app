@@ -12,7 +12,6 @@ import {
   Info,
   X,
   RefreshCw,
-  Terminal,
   ExternalLink,
 } from 'lucide-react';
 
@@ -20,7 +19,7 @@ interface AuthNotificationProps {
   onOpenLogs?: () => void;
 }
 
-export const AuthNotification: React.FC<AuthNotificationProps> = ({ onOpenLogs }) => {
+export const AuthNotification: React.FC<AuthNotificationProps> = () => {
   const [notifications, setNotifications] = useState<AuthNotificationData[]>([]);
 
   useEffect(() => {
@@ -146,25 +145,6 @@ export const AuthNotification: React.FC<AuthNotificationProps> = ({ onOpenLogs }
                     </button>
                   )}
 
-                  {/* Logs shortcut */}
-                  {(onOpenLogs || item.onOpenLogs) && (
-                    <button
-                      id={`btn-toast-logs-${item.id}`}
-                      type="button"
-                      onClick={() => {
-                        if (item.onOpenLogs) {
-                          item.onOpenLogs();
-                        } else if (onOpenLogs) {
-                          onOpenLogs();
-                        }
-                        authNotificationService.dismiss(item.id);
-                      }}
-                      className="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors flex items-center gap-1"
-                    >
-                      <Terminal size={12} className="text-slate-500" />
-                      View Logs
-                    </button>
-                  )}
                 </div>
               </div>
 
