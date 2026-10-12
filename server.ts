@@ -46,6 +46,13 @@ async function startServer() {
     res.send("8zvbpmffgtwz251x44qqw5h5ugnvyyva");
   });
 
+  // Microsoft Bing Webmaster Tools Verification File
+  const bingXml = `<?xml version="1.0"?>\n<users>\n\t<user>1A704EBF4AD6B5D3CFBA2F15F6D5689E</user>\n</users>\n`;
+  app.get(["/BingSiteAuth.xml", "/bingsiteauth.xml"], (req, res) => {
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.send(bingXml);
+  });
+
   // Search Engine Crawling & SEO Endpoints
   app.get("/robots.txt", (req, res) => {
     res.setHeader("Content-Type", "text/plain");
