@@ -1,6 +1,6 @@
 {
   "name": "Pendo - Kenyan Dating",
-  "description": "A modern, AI-powered dating application tailored for Kenyans to find meaningful connections. Features AI profile enhancements and conversation starters.",
+  "description": "Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges and safe video dates on Pendo.",
   "requestFramePermissions": [
     "camera",
     "microphone",

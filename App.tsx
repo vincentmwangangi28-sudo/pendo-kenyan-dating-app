@@ -1247,8 +1247,13 @@ const App: React.FC = () => {
 
   if (isAuthLoading) {
       return (
-          <div className="h-screen flex items-center justify-center bg-white">
-              <Loader2 size={48} className="animate-spin text-rose-500" />
+          <div className="h-screen flex flex-col items-center justify-center bg-white p-6 text-center">
+              <div className="w-16 h-16 rounded-3xl bg-rose-50 flex items-center justify-center mb-4 shadow-sm border border-rose-100">
+                  <Flame size={36} className="text-rose-500 animate-pulse" />
+              </div>
+              <h1 className="text-xl font-extrabold text-slate-900 mb-2">Pendo | Kenya's #1 Dating & Matchmaking App</h1>
+              <p className="text-xs text-slate-500 mb-5 max-w-xs">Connecting verified singles across Nairobi, Mombasa & East Africa...</p>
+              <Loader2 size={24} className="animate-spin text-rose-500" />
           </div>
       );
   }

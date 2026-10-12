@@ -46,6 +46,39 @@ async function startServer() {
     res.send("8zvbpmffgtwz251x44qqw5h5ugnvyyva");
   });
 
+  // IndexNow API Submission Endpoint for Bing & Search Engines
+  app.post("/api/indexnow/submit", async (req, res) => {
+    try {
+      const host = req.headers.host || "pendo-kenyan-dating-app.vercel.app";
+      const hostClean = host.split(":")[0];
+      const key = "8zvbpmffgtwz251x44qqw5h5ugnvyyva";
+      const payload = {
+        host: hostClean,
+        key: key,
+        keyLocation: `https://${hostClean}/${key}.txt`,
+        urlList: [
+          `https://${hostClean}/`,
+          `https://${hostClean}/#voice-lounge`,
+        ],
+      };
+
+      const response = await fetch("https://api.indexnow.org/indexnow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+
+      return res.json({
+        success: response.ok,
+        status: response.status,
+        message: response.ok ? "Successfully notified IndexNow engines (Bing, Yandex, Naver)" : "IndexNow responded with code " + response.status,
+        payload,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || "Failed to notify IndexNow" });
+    }
+  });
+
   // Microsoft Bing Webmaster Tools Verification File
   const bingXml = `<?xml version="1.0"?>\n<users>\n\t<user>1A704EBF4AD6B5D3CFBA2F15F6D5689E</user>\n</users>\n`;
   app.get(["/BingSiteAuth.xml", "/bingsiteauth.xml"], (req, res) => {
