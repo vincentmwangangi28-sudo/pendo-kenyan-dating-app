@@ -40,6 +40,12 @@ async function startServer() {
     res.send("google-site-verification: google00332d67777e965d.html");
   });
 
+  // IndexNow Key Verification Endpoint
+  app.get("/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt", (req, res) => {
+    res.setHeader("Content-Type", "text/plain");
+    res.send("8zvbpmffgtwz251x44qqw5h5ugnvyyva");
+  });
+
   // Search Engine Crawling & SEO Endpoints
   app.get("/robots.txt", (req, res) => {
     res.setHeader("Content-Type", "text/plain");
