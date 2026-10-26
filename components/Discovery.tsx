@@ -14,6 +14,8 @@ interface DiscoveryProps {
   onLike: (match: MatchProfile) => void;
   onPass: (matchId: string) => void;
   onBoost: () => void;
+  onOpenMpesaModal?: (tab: 'BOOST' | 'GOLD' | 'GIFT') => void;
+  onOpenSafetyModal?: () => void;
 }
 
 interface FilterState {
@@ -23,7 +25,7 @@ interface FilterState {
   interests: string[];
 }
 
-export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hangoutSpots = [], onLike, onPass, onBoost }) => {
+export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hangoutSpots = [], onLike, onPass, onBoost, onOpenMpesaModal, onOpenSafetyModal }) => {
   const [viewMode, setViewMode] = useState<'cards' | 'map' | 'heatmap'>('cards');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
@@ -347,38 +349,52 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white no-swipe">
           <div className="flex items-end justify-between mb-2">
             <div>
-              {((currentMatch.badges && currentMatch.badges.length > 0) || isCompatible) && (
-                <div className="flex flex-wrap gap-1.5 mb-2 pointer-events-none">
-                  {[...(currentMatch.badges || []), ...(isCompatible && !(currentMatch.badges || []).includes('Compatible') ? ['Compatible' as const] : [])].map(badge => {
-                    let bgColor = "bg-rose-500/80";
-                    if (badge === 'Verified') bgColor = "bg-blue-500/80";
-                    else if (badge === 'Top Pick') bgColor = "bg-amber-500/80 text-amber-50";
-                    else if (badge === 'Newbie') bgColor = "bg-emerald-500/80";
-                    else if (badge === 'Compatible') bgColor = "bg-purple-500/80";
-
-                    return (
-                      <span key={badge} className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm ${bgColor}`}>
-                        {badge}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="flex items-center gap-2 mb-1.5 pointer-events-none">
+                {currentMatch.isVerified && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-600/90 text-white text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-sm">
+                    <ShieldCheck size={11} /> Verified · {currentMatch.trustScore || 92}% Trust
+                  </span>
+                )}
+                {!currentMatch.isVerified && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900/70 text-slate-200 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm">
+                    {currentMatch.trustScore || 74}% Trust Score
+                  </span>
+                )}
+                {isCompatible && (
+                  <span className="px-2 py-0.5 rounded bg-rose-600/90 text-white text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-sm">
+                    High Vibe Match
+                  </span>
+                )}
+              </div>
               <h2 className="text-3xl font-bold flex items-center gap-2 pointer-events-none">
                 {currentMatch.name}, {currentMatch.age}
-                {currentMatch.zodiacSign && (
-                  <span className="text-xl ml-1 text-purple-200 opacity-90">{currentMatch.zodiacSign}</span>
-                )}
                 {currentMatch.isVerified && (
-                  <ShieldCheck size={24} className="text-blue-400" fill="currentColor" stroke="white" title="Verified Profile" />
+                  <ShieldCheck size={24} className="text-emerald-400" fill="currentColor" stroke="white" title="Verified Kenyan Profile" />
                 )}
                 {currentMatch.voiceUrl && (
-                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" title="Voice Intro Available"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" title="Voice Intro Available"></div>
                 )}
               </h2>
-              <div className="flex items-center text-rose-300 text-sm mt-1 pointer-events-none">
-                <MapPin size={16} className="mr-1" />
-                {currentMatch.location} • {currentMatch.distance}km away
+              {/* Zero-Pill Metadata Discipline: Clean inline text separated by middle dots */}
+              <div className="flex flex-wrap items-center text-rose-100/95 text-xs font-medium mt-1 pointer-events-none gap-1.5">
+                <span className="inline-flex items-center gap-1 font-semibold text-white">
+                  <MapPin size={13} className="text-rose-400" />
+                  {currentMatch.location}
+                </span>
+                <span className="text-white/50">·</span>
+                <span>{currentMatch.distance} km away</span>
+                {currentMatch.zodiacSign && (
+                  <>
+                    <span className="text-white/50">·</span>
+                    <span>{currentMatch.zodiacSign}</span>
+                  </>
+                )}
+                {currentMatch.languages && currentMatch.languages.length > 0 && (
+                  <>
+                    <span className="text-white/50">·</span>
+                    <span>Speaks {currentMatch.languages.join(', ')}</span>
+                  </>
+                )}
               </div>
             </div>
             
@@ -437,38 +453,25 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
                  </div>
                )}
 
-               <div className="mb-4">
+               <div className="mb-3">
                    <div className="flex items-center justify-between mb-1">
-                       <h4 className="text-sm font-bold text-slate-300">Bio</h4>
+                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">About {currentMatch.name}</h4>
                        <button 
                          onClick={handlePlayBio}
-                         className={`text-xs flex items-center gap-1 px-2 py-1 rounded-full ${isPlayingBio ? 'bg-rose-600 text-white' : 'bg-white/10 hover:bg-white/20'}`}
+                         className={`text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg ${isPlayingBio ? 'bg-rose-600 text-white' : 'bg-white/15 hover:bg-white/25'}`}
                        >
                            {isPlayingBio ? <Loader2 size={10} className="animate-spin" /> : <Volume2 size={10} />}
                            {isPlayingBio ? 'Playing...' : 'Listen'}
                        </button>
                    </div>
-                   <p className="text-base leading-relaxed text-slate-100">"{currentMatch.bio}"</p>
+                   <p className="text-sm leading-relaxed text-slate-100">"{currentMatch.bio}"</p>
                </div>
                
-               <div className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    {currentMatch.interests.map(i => (
-                      <span key={i} className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-medium">
-                        {i}
-                      </span>
-                    ))}
-                  </div>
-                  
-                  {currentMatch.languages.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {currentMatch.languages.map(l => (
-                        <span key={l} className="px-3 py-1 bg-slate-900/40 backdrop-blur-md rounded-full text-xs font-medium border border-white/10 text-slate-300">
-                          🗣️ {l}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+               <div className="pt-2 border-t border-white/10 text-xs text-slate-200">
+                  <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] block mb-1">Shared Interests & Passions</span>
+                  <p className="font-medium text-white/95">
+                    {currentMatch.interests.join(' · ')}
+                  </p>
                </div>
             </div>
          )}
@@ -483,13 +486,13 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
       {!showFilters && !showBoostModal && (
          <div className="absolute top-6 left-6 z-30">
             <button 
-              onClick={() => setShowBoostModal(true)}
+              onClick={() => onOpenMpesaModal ? onOpenMpesaModal('BOOST') : setShowBoostModal(true)}
               className={`p-3 rounded-full shadow-lg transition-all flex items-center gap-2 ${
                  isBoosted 
                   ? 'bg-purple-600 text-white animate-pulse shadow-purple-400/50' 
                   : 'bg-white/90 backdrop-blur text-slate-600 hover:text-purple-600 hover:scale-105'
               }`}
-              title="Boost Profile"
+              title="Boost Profile via M-Pesa"
             >
               <Zap size={20} fill={isBoosted ? "currentColor" : "none"} />
               {isBoosted && (

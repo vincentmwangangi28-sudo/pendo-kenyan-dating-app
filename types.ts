@@ -1,4 +1,5 @@
 export interface UserProfile {
+  uid?: string;
   name: string;
   age: number;
   location: string;
@@ -10,9 +11,14 @@ export interface UserProfile {
   gender: string;
   lookingFor: string;
   photoUrl: string;
-  voiceUrl?: string; // New field for audio intro
+  voiceUrl?: string; // Audio intro
   boostExpiresAt?: number; // Timestamp for when profile boost expires
   isVerified?: boolean; // Profile verification status
+  trustScore?: number; // Explainable 0-100 trust score
+  subscriptionTier?: 'FREE' | 'GOLD' | 'VIP';
+  mpesaPhone?: string;
+  giftsSent?: number;
+  giftsReceived?: number;
   coordinates?: {
     latitude: number;
     longitude: number;
@@ -30,14 +36,56 @@ export interface MatchProfile {
   interests: string[];
   languages: string[];
   photoUrl: string;
-  voiceUrl?: string; // New field for audio intro
+  voiceUrl?: string; // Audio intro
   distance: number; // in km
   isVerified?: boolean; // Profile verification status
-  badges?: ('Verified' | 'Top Pick' | 'Newbie' | 'Compatible')[];
+  trustScore?: number; // 0-100 trust score
+  subscriptionTier?: 'FREE' | 'GOLD' | 'VIP';
+  badges?: ('Verified' | 'Top Pick' | 'Newbie' | 'Compatible' | 'Pendo Gold')[];
   coordinates?: {
     latitude: number;
     longitude: number;
   };
+}
+
+export interface VirtualGift {
+  id: string;
+  name: string;
+  swahiliTag: string;
+  priceKes: number;
+  desc: string;
+  icon: string;
+  color: string;
+}
+
+export interface MpesaTransaction {
+  id: string;
+  userId: string;
+  phone: string;
+  amountKes: number;
+  purpose: 'BOOST' | 'GOLD_SUBSCRIPTION' | 'VIRTUAL_GIFT' | 'FARE_SHIELD';
+  itemName: string;
+  recipientId?: string;
+  recipientName?: string;
+  receiptNumber: string;
+  status: 'COMPLETED' | 'PENDING' | 'FAILED';
+  createdAt: number;
+}
+
+export interface SafetyCheckin {
+  id: string;
+  userId: string;
+  userName: string;
+  matchId?: string;
+  matchName: string;
+  venueName: string;
+  city: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  fareShieldKes?: number;
+  status: 'ACTIVE' | 'SAFE_COMPLETED' | 'ALERT_TRIGGERED';
+  createdAt: number;
+  checkInBy: number;
 }
 
 export interface GroupProfile {

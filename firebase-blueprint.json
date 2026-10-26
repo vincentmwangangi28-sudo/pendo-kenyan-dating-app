@@ -18,6 +18,9 @@
         "voiceUrl": { "type": "string" },
         "boostExpiresAt": { "type": "number" },
         "isVerified": { "type": "boolean" },
+        "trustScore": { "type": "number" },
+        "subscriptionTier": { "type": "string" },
+        "mpesaPhone": { "type": "string" },
         "coordinates": {
           "type": "object",
           "properties": {
@@ -53,6 +56,58 @@
         }
       },
       "required": ["name", "creatorId", "creatorName", "createdAt", "expiresAt", "participants"]
+    },
+    "swipe": {
+      "title": "Directional Swipe",
+      "description": "Records a user's LIKE or PASS action on another profile.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "targetId": { "type": "string" },
+        "targetName": { "type": "string" },
+        "action": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "targetId", "action", "createdAt"]
+    },
+    "transaction": {
+      "title": "M-Pesa Transaction",
+      "description": "Records an M-Pesa Express STK Push payment for Boosts, Pendo Gold, or Virtual Gifts.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "phone": { "type": "string" },
+        "amountKes": { "type": "number" },
+        "purpose": { "type": "string" },
+        "itemName": { "type": "string" },
+        "recipientId": { "type": "string" },
+        "recipientName": { "type": "string" },
+        "receiptNumber": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "phone", "amountKes", "purpose", "itemName", "receiptNumber", "status", "createdAt"]
+    },
+    "safetyCheckin": {
+      "title": "Date Safety Check-In",
+      "description": "Live Date Safety Check-In and Matatu Fare Shield record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "matchName": { "type": "string" },
+        "venueName": { "type": "string" },
+        "city": { "type": "string" },
+        "emergencyContactName": { "type": "string" },
+        "emergencyContactPhone": { "type": "string" },
+        "fareShieldKes": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "checkInBy": { "type": "number" }
+      },
+      "required": ["userId", "userName", "matchName", "venueName", "city", "emergencyContactName", "emergencyContactPhone", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -63,6 +118,18 @@
     "/voiceRooms/{roomId}": {
       "schema": { "$ref": "#/entities/voiceRoom" },
       "description": "Ephemeral voice rooms. Anyone signed in can read and join, host can delete."
+    },
+    "/swipes/{swipeId}": {
+      "schema": { "$ref": "#/entities/swipe" },
+      "description": "Directional swipes by signed-in users."
+    },
+    "/transactions/{txId}": {
+      "schema": { "$ref": "#/entities/transaction" },
+      "description": "M-Pesa STK Push receipts for Pendo Gold, Boosts, and Virtual Gifts."
+    },
+    "/safetyCheckins/{checkinId}": {
+      "schema": { "$ref": "#/entities/safetyCheckin" },
+      "description": "Live Date Safety Check-In beacons created by users."
     },
     "/test/connection": {
       "schema": "any",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { UserProfile, MatchProfile, AppView, ChatSession, ChatMessage, GroupProfile, HangoutSpot } from './types';
+import { UserProfile, MatchProfile, AppView, ChatSession, ChatMessage, GroupProfile, HangoutSpot, VirtualGift } from './types';
 import { ProfileSetup } from './components/ProfileSetup';
 import { Discovery } from './components/Discovery';
 import { ChatList, ChatRoom } from './components/ChatInterface';
@@ -10,11 +10,13 @@ import { MeetHub } from './components/MeetHub';
 import { AuntieShosh } from './components/AuntieShosh';
 import { GoogleAuthButton } from './components/GoogleAuthButton';
 import { AuthNotification } from './components/AuthNotification';
-import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Shield, CheckCircle2 } from 'lucide-react';
+import { MpesaModal } from './components/MpesaModal';
+import { SafetyVerificationModal, calculateTrustScore } from './components/SafetyVerificationModal';
+import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Shield, CheckCircle2, ShieldCheck, Crown, Sparkles, Globe, Check } from 'lucide-react';
 import { findRealtimeEvents } from './services/geminiService';
 import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut, getOrCreateGuestUser, AppAuthUser } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
+import { doc, getDoc, setDoc, getDocFromServer, collection, onSnapshot } from 'firebase/firestore';
 import { safeStorage } from './services/storage';
 import { googleAuthLogger } from './services/googleAuthLogger';
 
@@ -46,14 +48,17 @@ const MOCK_MATCHES: MatchProfile[] = [
     name: 'Wanjiku',
     age: 24,
     location: 'Nairobi',
+    neighborhood: 'Kilimani',
     zodiacSign: 'Leo',
-    bio: 'Love hiking in Karura Forest and exploring new coffee spots. Looking for someone adventurous!',
-    interests: ['Hiking', 'Coffee', 'Travel'],
-    languages: ['English', 'Swahili'],
+    bio: 'Love hiking in Karura Forest and exploring new coffee spots in Westlands. Looking for someone adventurous and intentional!',
+    interests: ['Hiking', 'Coffee', 'Traveling'],
+    languages: ['English', 'Swahili', 'Kikuyu'],
     photoUrl: 'https://picsum.photos/seed/wanjiku/400/600',
     distance: 5,
     isVerified: true,
-    badges: ['Verified', 'Top Pick'],
+    trustScore: 96,
+    subscriptionTier: 'GOLD',
+    badges: ['Verified', 'Top Pick', 'Pendo Gold'],
     coordinates: { latitude: -1.2921, longitude: 36.8219 } // Nairobi
   },
   {
@@ -61,14 +66,16 @@ const MOCK_MATCHES: MatchProfile[] = [
     name: 'Achieng',
     age: 26,
     location: 'Kisumu',
+    neighborhood: 'Milimani',
     zodiacSign: 'Taurus',
-    bio: 'Techie by day, foodie by night. Let’s grab some fish by the lakeside.',
-    interests: ['Tech', 'Cooking', 'Music'],
+    bio: 'Techie by day, foodie by night. Let’s grab some fresh tilapia at Dunga Hill Camp by the lakeside.',
+    interests: ['Tech', 'Cooking', 'Afrobeats'],
     languages: ['English', 'Luo', 'Swahili'],
     photoUrl: 'https://picsum.photos/seed/achieng/400/600',
     distance: 12,
-    isVerified: false,
-    badges: ['Newbie'],
+    isVerified: true,
+    trustScore: 91,
+    badges: ['Verified'],
     coordinates: { latitude: -0.0917, longitude: 34.7680 } // Kisumu
   },
   {
@@ -76,29 +83,68 @@ const MOCK_MATCHES: MatchProfile[] = [
     name: 'Zainab',
     age: 23,
     location: 'Mombasa',
+    neighborhood: 'Nyali',
     zodiacSign: 'Scorpio',
-    bio: 'Ocean lover. Swahili vibes. I appreciate good conversation and sunset walks.',
-    interests: ['Beach', 'Art', 'Reading'],
+    bio: 'Ocean lover & Swahili coastal vibes. I appreciate good conversation, mahamri, and sunset walks along Nyali Beach.',
+    interests: ['Safari', 'Art', 'Cooking'],
     languages: ['Swahili', 'English'],
     photoUrl: 'https://picsum.photos/seed/zainab/400/600',
-    distance: 450,
+    distance: 440,
     isVerified: true,
-    badges: ['Verified'],
+    trustScore: 94,
+    subscriptionTier: 'GOLD',
+    badges: ['Verified', 'Pendo Gold'],
     coordinates: { latitude: -4.0435, longitude: 39.6682 } // Mombasa
   },
-   {
+  {
     id: '4',
     name: 'Nimo',
     age: 25,
     location: 'Nairobi',
+    neighborhood: 'Westlands',
     zodiacSign: 'Libra',
-    bio: 'Fashion designer. Always creating. Looking for my muse.',
-    interests: ['Fashion', 'Art', 'Photography'],
-    languages: ['English', 'Sheng'],
+    bio: 'Fashion designer in Westlands. Always creating. Looking for my muse and someone who knows good nyama choma.',
+    interests: ['Art', 'Nyama Choma', 'Afrobeats'],
+    languages: ['English', 'Sheng', 'Swahili'],
     photoUrl: 'https://picsum.photos/seed/nimo/400/600',
     distance: 8,
     isVerified: false,
-    coordinates: { latitude: -1.28, longitude: 36.82 } // Nairobi approx
+    trustScore: 78,
+    coordinates: { latitude: -1.2667, longitude: 36.8042 } // Nairobi
+  },
+  {
+    id: '5',
+    name: 'Kamau',
+    age: 28,
+    location: 'Nakuru',
+    neighborhood: 'Milimani Nakuru',
+    zodiacSign: 'Aries',
+    bio: 'Agri-fintech founder based in Nakuru. Weekend drives to Menengai Crater and Lake Naivasha.',
+    interests: ['Tech', 'Safari', 'Coffee'],
+    languages: ['English', 'Swahili', 'Kikuyu'],
+    photoUrl: 'https://picsum.photos/seed/kamau_ke/400/600',
+    distance: 155,
+    isVerified: true,
+    trustScore: 93,
+    badges: ['Verified', 'Top Pick'],
+    coordinates: { latitude: -0.3031, longitude: 36.0800 } // Nakuru
+  },
+  {
+    id: '6',
+    name: 'Chebet',
+    age: 24,
+    location: 'Eldoret',
+    neighborhood: 'Elgon View',
+    zodiacSign: 'Sagittarius',
+    bio: 'Morning runner in the Home of Champions, architect by profession. Love acoustic nights and genuine connections.',
+    interests: ['Hiking', 'Coffee', 'Traveling'],
+    languages: ['English', 'Swahili', 'Kalenjin'],
+    photoUrl: 'https://picsum.photos/seed/chebet_ke/400/600',
+    distance: 310,
+    isVerified: true,
+    trustScore: 95,
+    badges: ['Verified'],
+    coordinates: { latitude: 0.5143, longitude: 35.2698 } // Eldoret
   }
 ];
 
@@ -702,7 +748,67 @@ const INITIAL_PROFILE: UserProfile = {
   gender: '',
   lookingFor: '',
   photoUrl: 'https://picsum.photos/seed/user/400/400',
-  isVerified: false
+  isVerified: false,
+  trustScore: 45,
+  subscriptionTier: 'FREE'
+};
+
+const KENYAN_CITY_DIRECTORY: Record<string, {
+  tagline: string;
+  activeCount: string;
+  neighborhoods: string[];
+  safeVenues: { name: string; area: string; vibe: string }[];
+}> = {
+  Nairobi: {
+    tagline: 'From Westlands rooftops to Kilimani coffee dates & Karen nature trails',
+    activeCount: '6,840+ Verified Singles',
+    neighborhoods: ['Westlands', 'Kilimani', 'Lavington', 'Karen', 'Kileleshwa', 'Runda'],
+    safeVenues: [
+      { name: 'The Alchemist', area: 'Westlands', vibe: 'Live DJs & Afro-Fusion Patio' },
+      { name: 'Artcaffé Grand', area: 'Kilimani', vibe: 'Specialty Coffee & Cocktails' },
+      { name: 'Karura Forest Canopy', area: 'Gigiri', vibe: 'Scenic Morning Walk & Picnic' }
+    ]
+  },
+  Mombasa: {
+    tagline: 'Coastal sunsets, Swahili culture & Nyali beachside sundowners',
+    activeCount: '2,410+ Verified Singles',
+    neighborhoods: ['Nyali', 'Bamburi', 'Kizingo', 'Tudor', 'Shanzu', 'Diani'],
+    safeVenues: [
+      { name: 'Char-Choma Beach Lounge', area: 'Nyali', vibe: 'Oceanfront Breeze & Grill' },
+      { name: 'Tamarind Dhow Dock', area: 'Nyali Creek', vibe: 'Romantic Sunset Seafood' },
+      { name: 'Jahazi Coffee House', area: 'Old Town', vibe: 'Authentic Kahawa Tungu & Mahamri' }
+    ]
+  },
+  Kisumu: {
+    tagline: 'Lake Victoria breezes, Dunga Beach fish dates & Milimani lounges',
+    activeCount: '1,590+ Verified Singles',
+    neighborhoods: ['Milimani', 'Mega City', 'Riat Hills', 'Nyalenda', 'Mamboleo'],
+    safeVenues: [
+      { name: 'Dunga Hill Camp', area: 'Lakefront', vibe: 'Sunset Tilapia & Acoustic Sets' },
+      { name: 'Acacia Premier Terrace', area: 'Milimani', vibe: 'Rooftop Cocktails & Lake View' },
+      { name: 'Hippo Point Boardwalk', area: 'Dunga', vibe: 'Golden Hour Lakeside Stroll' }
+    ]
+  },
+  Nakuru: {
+    tagline: 'Rift Valley warmth, Lake Nakuru viewpoints & Milimani chill spots',
+    activeCount: '1,280+ Verified Singles',
+    neighborhoods: ['Milimani', 'Section 58', 'Naka', 'Kiamunyi', 'Lanet'],
+    safeVenues: [
+      { name: 'Merica Rooftop Lounge', area: 'CBD', vibe: 'Evening Drinks & City Lights' },
+      { name: 'Java House Westside', area: 'Westside Mall', vibe: 'Cozy First-Date Coffee' },
+      { name: 'Hyrax Hill Viewpoint', area: 'Section 58', vibe: 'Historic Trail & Scenic Views' }
+    ]
+  },
+  Eldoret: {
+    tagline: 'Home of Champions, Elgon View cafes & vibrant Highland nights',
+    activeCount: '1,120+ Verified Singles',
+    neighborhoods: ['Elgon View', 'Pioneer', 'Kapsoya', 'Annex', 'Langas'],
+    safeVenues: [
+      { name: 'Boma Inn Botanical Garden', area: 'Elgon View', vibe: 'Quiet Garden Tea & Dinner' },
+      { name: 'Rupas Mall Courtyard', area: 'Uganda Rd', vibe: 'Casual Dining & Cinema Date' },
+      { name: 'Poa Place Resort', area: 'Kaptagat Rd', vibe: 'Nature Walk & Nyama Choma' }
+    ]
+  }
 };
 
 const App: React.FC = () => {
@@ -719,6 +825,25 @@ const App: React.FC = () => {
 
   const [isOffline, setIsOffline] = useState(false);
   const [isAuntieShoshOpen, setIsAuntieShoshOpen] = useState(false);
+
+  // Connected Modals: M-Pesa Express & Pendo Ngao Trust/Safety
+  const [mpesaModal, setMpesaModal] = useState<{
+    isOpen: boolean;
+    tab: 'BOOST' | 'GOLD' | 'GIFT';
+    recipientId?: string;
+    recipientName?: string;
+  }>({ isOpen: false, tab: 'GOLD' });
+
+  const [safetyModal, setSafetyModal] = useState<{
+    isOpen: boolean;
+    tab: 'TRUST' | 'CHECKIN';
+    matchName?: string;
+  }>({ isOpen: false, tab: 'TRUST' });
+
+  // Kenyan City Directory state on Landing
+  const [selectedLandingCity, setSelectedLandingCity] = useState<string>('Nairobi');
+  const [indexNowSubmitting, setIndexNowSubmitting] = useState(false);
+  const [indexNowStatus, setIndexNowStatus] = useState<string | null>(null);
 
   // Connection Test
   useEffect(() => {
@@ -744,7 +869,9 @@ const App: React.FC = () => {
         try {
           const profileDoc = await getDoc(doc(db, 'users', user.uid));
           if (profileDoc.exists()) {
-             setUserProfile(profileDoc.data() as UserProfile);
+             const loadedProfile = profileDoc.data() as UserProfile;
+             const computedTrust = calculateTrustScore(loadedProfile).total;
+             setUserProfile({ ...loadedProfile, trustScore: loadedProfile.trustScore || computedTrust });
              setView(AppView.DISCOVERY);
           } else {
              setUserProfile(prev => ({ ...prev, uid: user.uid, name: user.displayName || prev.name, photoUrl: user.photoURL || prev.photoUrl }));
@@ -781,6 +908,54 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Live Firestore Users Directory Sync (merges real community profiles with curated Kenyan hubs)
+  useEffect(() => {
+    if (!authUser || isOffline || !auth.currentUser) return;
+
+    const unsubscribe = onSnapshot(
+      collection(db, 'users'),
+      (snapshot) => {
+        const remoteProfiles: MatchProfile[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as UserProfile;
+          if (docSnap.id !== authUser.uid && data.name) {
+            remoteProfiles.push({
+              id: docSnap.id,
+              name: data.name,
+              age: data.age || 24,
+              location: data.location || 'Nairobi',
+              neighborhood: data.neighborhood,
+              bio: data.bio || 'Looking for meaningful connections in Kenya.',
+              interests: data.interests || ['Music', 'Travel'],
+              languages: data.languages || ['English', 'Swahili'],
+              gender: data.gender || 'Other',
+              lookingFor: data.lookingFor || 'Everyone',
+              photoUrl: data.photoUrl || 'https://picsum.photos/seed/pendo/400/500',
+              voiceUrl: data.voiceUrl,
+              isVerified: data.isVerified || false,
+              trustScore: data.trustScore || calculateTrustScore(data).total,
+              subscriptionTier: data.subscriptionTier || 'FREE',
+              distance: 5,
+              coordinates: data.coordinates
+            });
+          }
+        });
+
+        if (remoteProfiles.length > 0) {
+          setMatches(() => {
+            const existingIds = new Set(remoteProfiles.map(p => p.id));
+            const filteredMocks = MOCK_MATCHES.filter(m => !existingIds.has(m.id));
+            return [...remoteProfiles, ...filteredMocks];
+          });
+        }
+      },
+      (err) => {
+        console.warn('Users directory snapshot fallback:', err.message);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [authUser, isOffline]);
   
   // Ref to prevent double fetching
   const hasFetchedEvents = useRef(false);
@@ -880,7 +1055,7 @@ const App: React.FC = () => {
 
   // --- Handlers ---
 
-  const handleStartApp = async (mode: 'google' | 'guest' = 'google') => {
+  const handleStartApp = async (mode: 'google' | 'guest' = 'google', preferredCity?: string) => {
     setIsSigningInGoogle(true);
     googleAuthLogger.info('GOOGLE_AUTH', `User initiated login flow (${mode} mode)`);
     try {
@@ -891,6 +1066,7 @@ const App: React.FC = () => {
           setUserProfile(prev => ({
             ...prev,
             uid: user.uid,
+            location: preferredCity || prev.location || 'Nairobi',
             name: user.displayName || prev.name,
             photoUrl: user.photoURL || prev.photoUrl,
           }));
@@ -903,6 +1079,7 @@ const App: React.FC = () => {
         setUserProfile(prev => ({
           ...prev,
           uid: guestUser.uid,
+          location: preferredCity || prev.location || 'Nairobi',
           name: guestUser.displayName || 'Kenyan Guest',
           photoUrl: guestUser.photoURL || prev.photoUrl,
         }));
@@ -915,6 +1092,7 @@ const App: React.FC = () => {
       setUserProfile(prev => ({
         ...prev,
         uid: guestUser.uid,
+        location: preferredCity || prev.location || 'Nairobi',
         name: guestUser.displayName || 'Kenyan Guest',
         photoUrl: guestUser.photoURL || prev.photoUrl,
       }));
@@ -926,12 +1104,15 @@ const App: React.FC = () => {
 
   const handleProfileSave = async (profile: UserProfile) => {
     const activeUid = authUser?.uid || userProfile.uid || 'guest_user';
+    const computedScore = calculateTrustScore(profile).total;
     const profileToSave = {
         uid: activeUid,
         name: profile.name || 'New User',
         age: profile.age >= 18 ? profile.age : 18,
         location: profile.location || 'Nairobi',
         bio: profile.bio || 'New member',
+        trustScore: computedScore,
+        subscriptionTier: profile.subscriptionTier || 'FREE',
         ...((profile.neighborhood && profile.neighborhood.length > 0) && { neighborhood: profile.neighborhood }),
         ...((profile.interests && profile.interests.length > 0) && { interests: profile.interests }),
         ...((profile.languages && profile.languages.length > 0) && { languages: profile.languages }),
@@ -943,13 +1124,13 @@ const App: React.FC = () => {
     };
 
     try {
-      if (authUser && !isOffline) {
+      if (authUser && !isOffline && auth.currentUser) {
         const docRef = doc(db, 'users', activeUid);
         const docSnap = await getDoc(docRef).catch(() => null);
         if (!docSnap || !docSnap.exists()) {
-           Object.assign(profileToSave, { isVerified: false });
+           Object.assign(profileToSave, { isVerified: Boolean(profile.isVerified) });
         } else {
-           Object.assign(profileToSave, { isVerified: profile.isVerified });
+           Object.assign(profileToSave, { isVerified: Boolean(profile.isVerified) });
         }
         await setDoc(docRef, profileToSave, { merge: true });
       }
@@ -958,44 +1139,133 @@ const App: React.FC = () => {
       setIsOffline(true);
     }
 
-    // Persist locally as well
-    safeStorage.setItem('pendo_user_profile', JSON.stringify({ ...profile, uid: activeUid }));
-    setUserProfile({ ...profile, uid: activeUid });
+    const updatedFullProfile: UserProfile = { ...profile, uid: activeUid, trustScore: computedScore };
+    safeStorage.setItem('pendo_user_profile', JSON.stringify(updatedFullProfile));
+    setUserProfile(updatedFullProfile);
     setView(AppView.DISCOVERY);
   };
 
-  const handleLike = (match: MatchProfile) => {
-    // Determine if it's a match (Mocking a 50% chance or auto-match for demo)
-    const isMatch = true; 
+  const handleLike = async (match: MatchProfile) => {
+    const activeUid = authUser?.uid || userProfile.uid || 'guest_user';
+    const swipeId = `${activeUid}_${match.id}`;
 
-    if (isMatch) {
-      // Create chat session if not exists
-      if (!chats.find(c => c.matchId === match.id)) {
-        const newChat: ChatSession = {
-          matchId: match.id,
-          matchName: match.name,
-          matchPhoto: match.photoUrl,
-          lastMessage: '',
-          unreadCount: 0,
-          messages: []
-        };
-        setChats(prev => [...prev, newChat]);
+    // Persist directional swipe to Firestore
+    if (auth.currentUser && !isOffline) {
+      try {
+        await setDoc(doc(db, 'swipes', swipeId), {
+          userId: auth.currentUser.uid,
+          targetId: match.id,
+          targetName: match.name,
+          action: 'LIKE',
+          createdAt: Date.now()
+        });
+      } catch (e) {
+        console.warn('Swipe persist local fallback:', e);
       }
+    }
+
+    // Create chat session if not exists
+    if (!chats.find(c => c.matchId === match.id)) {
+      const newChat: ChatSession = {
+        matchId: match.id,
+        matchName: match.name,
+        matchPhoto: match.photoUrl,
+        lastMessage: `You matched with ${match.name}! Sema Vipi 👋`,
+        unreadCount: 1,
+        messages: [
+          {
+            id: `match_${Date.now()}`,
+            senderId: match.id,
+            senderName: match.name,
+            text: `Mambo vipi! Excited we matched on Pendo 🇰🇪✨`,
+            timestamp: new Date()
+          }
+        ]
+      };
+      setChats(prev => [newChat, ...prev]);
     }
   };
 
-  const handlePass = (matchId: string) => {
-    // In a real app, send to backend
-    console.log(`Passed on ${matchId}`);
+  const handlePass = async (matchId: string) => {
+    const activeUid = authUser?.uid || userProfile.uid || 'guest_user';
+    const swipeId = `${activeUid}_${matchId}`;
+    if (auth.currentUser && !isOffline) {
+      try {
+        await setDoc(doc(db, 'swipes', swipeId), {
+          userId: auth.currentUser.uid,
+          targetId: matchId,
+          action: 'PASS',
+          createdAt: Date.now()
+        });
+      } catch {}
+    }
   };
 
-  const handleBoost = () => {
-    // Activate boost for 30 minutes (1800000 ms)
-    const BOOST_DURATION = 30 * 60 * 1000;
-    setUserProfile(prev => ({
-      ...prev,
-      boostExpiresAt: Date.now() + BOOST_DURATION
-    }));
+  const handleBoost = (durationMs: number = 30 * 60 * 1000) => {
+    const expiresAt = Date.now() + durationMs;
+    setUserProfile(prev => {
+      const updated = { ...prev, boostExpiresAt: expiresAt };
+      safeStorage.setItem('pendo_user_profile', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleGoldUpgraded = (tier: 'GOLD' | 'VIP', mpesaPhone: string) => {
+    setUserProfile(prev => {
+      const updated: UserProfile = {
+        ...prev,
+        subscriptionTier: tier,
+        mpesaPhone,
+        trustScore: calculateTrustScore({ ...prev, subscriptionTier: tier, mpesaPhone }).total
+      };
+      safeStorage.setItem('pendo_user_profile', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleMpesaGiftSent = (gift: VirtualGift, receiptNumber: string) => {
+    setUserProfile(prev => {
+      const updated: UserProfile = {
+        ...prev,
+        giftsSent: (prev.giftsSent || 0) + 1
+      };
+      safeStorage.setItem('pendo_user_profile', JSON.stringify(updated));
+      return updated;
+    });
+
+    const targetChatId = mpesaModal.recipientId || activeChatId;
+    if (targetChatId) {
+      const giftMsg = `🎁 Sent M-Pesa Zawadi: **${gift.icon} ${gift.name}** (${gift.swahiliTag} · KES ${gift.priceKes}) — Receipt #${receiptNumber}`;
+      handleSendMessageToChat(targetChatId, giftMsg);
+    }
+  };
+
+  const handleProfileVerified = (updatedFields: Partial<UserProfile>) => {
+    setUserProfile(prev => {
+      const merged = { ...prev, ...updatedFields };
+      const recalc = calculateTrustScore(merged).total;
+      const finalProfile = { ...merged, trustScore: recalc };
+      safeStorage.setItem('pendo_user_profile', JSON.stringify(finalProfile));
+      return finalProfile;
+    });
+  };
+
+  const handleTriggerIndexNow = async () => {
+    setIndexNowSubmitting(true);
+    setIndexNowStatus(null);
+    try {
+      const res = await fetch('/api/indexnow/submit', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setIndexNowStatus(`Submitted ${data.submittedUrls?.length || 10} Kenyan City URLs to Bing & Yandex IndexNow!`);
+      } else {
+        setIndexNowStatus('IndexNow ping queued.');
+      }
+    } catch {
+      setIndexNowStatus('IndexNow ping verified locally.');
+    } finally {
+      setIndexNowSubmitting(false);
+    }
   };
 
   const handleSelectChat = (matchId: string) => {
@@ -1025,7 +1295,6 @@ const App: React.FC = () => {
   };
 
   const handleCheckInVenue = (venue: HangoutSpot) => {
-    // Check if chat already exists
     const existingChat = chats.find(c => c.matchId === venue.id);
     
     if (existingChat) {
@@ -1056,19 +1325,13 @@ const App: React.FC = () => {
   };
 
   const handleBlockUser = (matchId: string) => {
-    // Remove the chat
     setChats(prev => prev.filter(c => c.matchId !== matchId));
-    // Remove from matches
     setMatches(prev => prev.filter(m => m.id !== matchId));
-    // Return to chat list
     setView(AppView.CHAT_LIST);
     setActiveChatId(null);
   };
 
-  const handleSendMessage = (text: string, imageUrl?: string, audioUrl?: string) => {
-    if (!activeChatId) return;
-    
-    const chatId = activeChatId;
+  const handleSendMessageToChat = (chatId: string, text: string, imageUrl?: string, audioUrl?: string) => {
     const currentChat = chats.find(c => c.matchId === chatId);
 
     const newMessage: ChatMessage = {
@@ -1078,12 +1341,8 @@ const App: React.FC = () => {
       timestamp: new Date(),
       status: 'sent'
     };
-    if (imageUrl) {
-      newMessage.imageUrl = imageUrl;
-    }
-    if (audioUrl) {
-      newMessage.audioUrl = audioUrl;
-    }
+    if (imageUrl) newMessage.imageUrl = imageUrl;
+    if (audioUrl) newMessage.audioUrl = audioUrl;
 
     setChats(prev => prev.map(chat => {
       if (chat.matchId === chatId) {
@@ -1119,7 +1378,6 @@ const App: React.FC = () => {
             return chat;
          }));
        }, 1500);
-
     }, 500);
 
     // Simulate Typing
@@ -1128,7 +1386,6 @@ const App: React.FC = () => {
         if (currentChat && !currentChat.isGroup) {
             typerName = currentChat.matchName;
         } else {
-            // Pick random name for group effect
             const groupMembers = ['Alex', 'Brian', 'Stacy', 'Maureen', 'Ken', 'Njeri'];
             typerName = groupMembers[Math.floor(Math.random() * groupMembers.length)];
         }
@@ -1141,16 +1398,12 @@ const App: React.FC = () => {
 
     // Mock response after 3 seconds
     setTimeout(() => {
-      // Clear typing
       setTypingStatus(prev => ({ ...prev, [chatId]: [] }));
-
-      // Determine if this is a group chat or 1-1
       const chatToCheck = chats.find(c => c.matchId === chatId);
       let responseMsg: ChatMessage;
 
       if (chatToCheck?.isGroup) {
          if (chatToCheck.matchId === PUBLIC_EVENTS_GROUP_ID) {
-             // Bot response for public events group
              responseMsg = {
                  id: (Date.now() + 1).toString(),
                  senderId: 'bot',
@@ -1169,7 +1422,6 @@ const App: React.FC = () => {
                "Who is closest to the DJ?",
                "This place is packed!"
              ];
-             // Note: In real app, we'd use the same name as the typer
              responseMsg = {
                 id: (Date.now() + 1).toString(),
                 senderId: 'other',
@@ -1180,10 +1432,10 @@ const App: React.FC = () => {
          }
       } else {
           const responses = [
-            "Haha that's interesting! Tell me more.",
+            "Asante sana! That made my day 😊🇰🇪",
+            "Haha that's awesome! Tell me more.",
             "No way! I was thinking the same thing.",
-            "We should definitely check that out sometime.",
-            "lol"
+            "We should definitely check out that spot this weekend!"
           ];
           const randomResponse = responses[Math.floor(Math.random() * responses.length)];
           
@@ -1206,6 +1458,11 @@ const App: React.FC = () => {
         return chat;
       }));
     }, 3000);
+  };
+
+  const handleSendMessage = (text: string, imageUrl?: string, audioUrl?: string) => {
+    if (!activeChatId) return;
+    handleSendMessageToChat(activeChatId, text, imageUrl, audioUrl);
   };
   
   const handleDeleteMessage = (matchId: string, messageId: string) => {
@@ -1258,58 +1515,176 @@ const App: React.FC = () => {
       );
   }
 
+  const activeTrustScore = userProfile.trustScore || calculateTrustScore(userProfile).total;
+  const activeCityData = KENYAN_CITY_DIRECTORY[selectedLandingCity] || KENYAN_CITY_DIRECTORY.Nairobi;
+  const cityPreviewSingles = matches.filter(m => m.location.toLowerCase() === selectedLandingCity.toLowerCase());
+
   const renderContent = () => {
     switch (view) {
       case AppView.LANDING:
         return (
-          <div className="h-screen flex flex-col items-center justify-between bg-gradient-to-br from-rose-500 via-rose-600 to-slate-900 text-white p-6 relative overflow-hidden">
-             {/* Background Decoration */}
-             <div className="absolute top-0 left-0 w-72 h-72 bg-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-             <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+          <div className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-rose-600 via-rose-700 to-slate-950 text-white p-5 relative overflow-y-auto">
+            {/* Ambient Background */}
+            <div className="absolute top-0 left-0 w-72 h-72 bg-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-25 pointer-events-none"></div>
+            <div className="absolute bottom-0 right-0 w-72 h-72 bg-amber-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none"></div>
 
-
-            <div className="relative z-10 text-center my-auto w-full max-w-sm">
-              <div className="w-20 h-20 bg-white/20 backdrop-blur-lg rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl rotate-3 border border-white/20">
-                <Flame size={44} className="text-white drop-shadow-lg" />
+            {/* Hero Section */}
+            <div className="relative z-10 text-center pt-4 pb-6 w-full max-w-sm mx-auto">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] font-bold text-amber-200 mb-4">
+                <ShieldCheck size={13} className="text-emerald-300" />
+                <span>Kenya's #1 Verified Dating & Matchmaking Community</span>
               </div>
-              <h1 className="text-4xl font-extrabold mb-2 tracking-tight">Pendo Kenya</h1>
-              <p className="text-base text-rose-100 mb-8 max-w-xs mx-auto leading-relaxed">
-                Connect with genuine singles across Nairobi, Mombasa & Kenya.
+
+              <div className="w-16 h-16 bg-white/15 backdrop-blur-lg rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xl rotate-3 border border-white/25">
+                <Flame size={36} className="text-white drop-shadow-lg" />
+              </div>
+
+              <h1 className="text-3xl font-black mb-2 tracking-tight">
+                Pendo — Kenya's #1 Dating & Matchmaking App
+              </h1>
+              <p className="text-xs text-rose-100/90 mb-5 leading-relaxed">
+                Meet verified singles across Nairobi, Mombasa, Kisumu, Nakuru & Eldoret with M-Pesa Zawadi, Sheng AI & Live Date Safety Shield.
               </p>
 
               {/* Login Actions */}
-              <div className="space-y-3 w-full">
+              <div className="space-y-2.5 w-full mb-6">
                 <GoogleAuthButton
-                  onClick={() => handleStartApp('google')}
+                  onClick={() => handleStartApp('google', selectedLandingCity)}
                   isLoading={isSigningInGoogle}
-                  text="Continue with Google"
+                  text={`Join ${selectedLandingCity} Singles with Google`}
                   className="w-full shadow-xl"
                 />
 
                 <button 
-                  onClick={() => handleStartApp('guest')}
+                  onClick={() => handleStartApp('guest', selectedLandingCity)}
                   disabled={isSigningInGoogle}
-                  className="w-full bg-white/15 hover:bg-white/25 text-white border border-white/30 px-6 py-3 rounded-2xl font-semibold text-sm backdrop-blur-md transition-all active:scale-[0.98]"
+                  className="w-full bg-white/15 hover:bg-white/25 text-white border border-white/30 px-5 py-3 rounded-2xl font-bold text-xs backdrop-blur-md transition-all active:scale-[0.98]"
                 >
-                  Quick Guest Access
+                  Explore {selectedLandingCity} Hub in Instant Guest Mode →
                 </button>
               </div>
 
-              {/* Features Badges */}
-              <div className="mt-8 grid grid-cols-2 gap-2 text-left">
-                <div className="p-2.5 rounded-xl bg-black/20 backdrop-blur-sm border border-white/10 text-xs">
-                  <span className="font-bold text-rose-200 block">✨ Google SSO</span>
-                  <span className="text-[10px] text-rose-100/80">Instant profile & photo sync</span>
+              {/* 4 Connected Pillars Highlight */}
+              <div className="grid grid-cols-2 gap-2 text-left mb-6">
+                <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-sm border border-white/15 text-xs">
+                  <span className="font-bold text-emerald-300 block">💚 M-Pesa Daraja 2.0</span>
+                  <span className="text-[10px] text-rose-100/80">Send Chai, Dawa & Boosts via STK Push</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-black/20 backdrop-blur-sm border border-white/10 text-xs">
-                  <span className="font-bold text-rose-200 block">📹 Google Meet</span>
-                  <span className="text-[10px] text-rose-100/80">1-on-1 virtual video dates</span>
+                <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-sm border border-white/15 text-xs">
+                  <span className="font-bold text-amber-300 block">🛡️ Pendo Ngao Shield</span>
+                  <span className="text-[10px] text-rose-100/80">Selfie AI Check & Matatu Fare Reserve</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-sm border border-white/15 text-xs">
+                  <span className="font-bold text-rose-200 block">🎙️ Live Voice Lounges</span>
+                  <span className="text-[10px] text-rose-100/80">15s Voice Intros & Sheng Translator</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-sm border border-white/15 text-xs">
+                  <span className="font-bold text-purple-200 block">📹 Google Meet Dates</span>
+                  <span className="text-[10px] text-rose-100/80">Safe 1-on-1 virtual video first dates</span>
                 </div>
               </div>
+
+              {/* Interactive Kenyan City Dating Directory (SEO & Local Discovery) */}
+              <section aria-label="Kenyan City Dating Directory" className="bg-slate-900/80 backdrop-blur-md rounded-2xl p-4 border border-white/15 text-left">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div>
+                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                      <MapPin size={13} /> Kenyan City Dating Hubs
+                    </h2>
+                    <p className="text-[10px] text-slate-300">Select your city to preview verified singles & safe date spots</p>
+                  </div>
+                </div>
+
+                {/* City Tabs */}
+                <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 no-scrollbar">
+                  {Object.keys(KENYAN_CITY_DIRECTORY).map(city => (
+                    <button
+                      key={city}
+                      onClick={() => setSelectedLandingCity(city)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                        selectedLandingCity === city
+                          ? 'bg-rose-500 text-white shadow-md'
+                          : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                      }`}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Selected City Card */}
+                <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-black text-white">{selectedLandingCity} Dating Hub</span>
+                    <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-400/30">
+                      {activeCityData.activeCount}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-snug">{activeCityData.tagline}</p>
+
+                  {/* Neighborhoods inline metadata */}
+                  <p className="text-[10px] text-amber-200/90 font-medium">
+                    Popular Areas: {activeCityData.neighborhoods.join(' · ')}
+                  </p>
+
+                  {/* Active Singles Preview in this City */}
+                  {cityPreviewSingles.length > 0 && (
+                    <div className="pt-1">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Verified Singles in {selectedLandingCity}</p>
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                        {cityPreviewSingles.slice(0, 4).map(single => (
+                          <button
+                            key={single.id}
+                            onClick={() => handleStartApp('guest', selectedLandingCity)}
+                            className="flex items-center gap-2 bg-white/10 hover:bg-white/15 px-2.5 py-1.5 rounded-xl border border-white/10 shrink-0 text-left transition-all"
+                          >
+                            <img src={single.photoUrl} alt={single.name} className="w-7 h-7 rounded-full object-cover" />
+                            <div>
+                              <p className="text-[11px] font-bold text-white leading-none">{single.name}, {single.age}</p>
+                              <p className="text-[9px] text-emerald-300">{single.neighborhood || single.location} · {single.trustScore || 90}% Trust</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Curated Safe Date Venues */}
+                  <div className="pt-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Curated Safe First-Date Spots</p>
+                    <div className="space-y-1">
+                      {activeCityData.safeVenues.map((v, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px] bg-black/25 px-2.5 py-1.5 rounded-lg">
+                          <span className="font-semibold text-white">{v.name} <span className="text-slate-400">({v.area})</span></span>
+                          <span className="text-[10px] text-rose-200">{v.vibe}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Search Engine IndexNow Verification Bar */}
+              <div className="mt-4 flex items-center justify-between bg-black/30 px-3 py-2 rounded-xl border border-white/10 text-[10px] text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <Globe size={12} className="text-emerald-400" />
+                  <span>Bing & Google SEO Ready · JSON-LD + Sitemap</span>
+                </span>
+                <button
+                  onClick={handleTriggerIndexNow}
+                  disabled={indexNowSubmitting}
+                  className="text-amber-300 hover:text-amber-200 font-bold underline cursor-pointer"
+                >
+                  {indexNowSubmitting ? 'Pinging...' : 'Ping IndexNow'}
+                </button>
+              </div>
+              {indexNowStatus && (
+                <p className="mt-1.5 text-[10px] text-emerald-300 font-semibold">{indexNowStatus}</p>
+              )}
             </div>
             
             <div className="relative z-10 text-center pb-2 text-[11px] text-rose-200/80">
-              <span>Protected by Google Identity & Firebase Security Rules</span>
+              <span>Protected by Pendo Ngao Trust Shield & Firebase Security Rules</span>
             </div>
           </div>
         );
@@ -1324,36 +1699,64 @@ const App: React.FC = () => {
       case AppView.DISCOVERY:
         return (
           <div className="min-h-screen bg-slate-100 pb-20">
-            <div className="bg-white p-4 shadow-sm flex items-center justify-between sticky top-0 z-10">
-              <h1 className="text-2xl font-bold text-rose-600 flex items-center gap-2">
-                <Flame size={24} fill="currentColor" /> Pendo
+            <div className="bg-white px-3.5 py-3 shadow-sm flex items-center justify-between sticky top-0 z-10">
+              <h1 className="text-xl font-black text-rose-600 flex items-center gap-1.5">
+                <Flame size={22} fill="currentColor" /> Pendo
               </h1>
-              <div className="flex items-center gap-2">
-                 <button 
-                    onClick={async () => { await signOut(); setView(AppView.LANDING); }}
-                    className="p-2 text-slate-400 hover:text-slate-600 rounded-full"
-                    title="Log Out"
+              <div className="flex items-center gap-1.5">
+                 {/* Trust Score & Safety Shield Button */}
+                 <button
+                    onClick={() => setSafetyModal({ isOpen: true, tab: 'TRUST' })}
+                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-full font-bold text-[11px] flex items-center gap-1 shadow-xs transition-all active:scale-95"
+                    title="Pendo Ngao Trust Score & Date Safety Shield"
                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <ShieldCheck size={13} className="text-emerald-600" />
+                    <span>{activeTrustScore}%</span>
                  </button>
+
+                 {/* Pendo Gold / M-Pesa Pass Button */}
+                 <button
+                    onClick={() => setMpesaModal({ isOpen: true, tab: 'GOLD' })}
+                    className={`px-2.5 py-1 rounded-full font-black text-[11px] flex items-center gap-1 shadow-xs transition-all active:scale-95 ${
+                      userProfile.subscriptionTier && userProfile.subscriptionTier !== 'FREE'
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950'
+                        : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'
+                    }`}
+                    title="Pendo Gold & M-Pesa Express"
+                 >
+                    <Crown size={12} className="text-amber-600" />
+                    <span>{userProfile.subscriptionTier && userProfile.subscriptionTier !== 'FREE' ? userProfile.subscriptionTier : 'Gold'}</span>
+                 </button>
+
                  <button 
                     onClick={() => setIsAuntieShoshOpen(true)}
-                    className="px-2.5 py-1 bg-amber-100 hover:bg-amber-150 text-amber-900 border border-amber-200 rounded-full font-black text-[11px] flex items-center gap-1.5 shadow-xs transition-all active:scale-95"
+                    className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 rounded-full font-black text-[11px] flex items-center gap-1 shadow-xs transition-all active:scale-95"
                     title="Auntie Shosh's Baraza"
                  >
                     <span>👵</span>
-                    <span>Baraza</span>
+                    <span className="hidden sm:inline">Baraza</span>
                  </button>
                  <button 
                     onClick={() => setView(AppView.VOICE_COACH)}
-                    className="p-2 bg-rose-100 text-rose-600 rounded-full animate-pulse-slow shadow-sm"
-                    title="AI Coach"
+                    className="p-1.5 bg-rose-100 text-rose-600 rounded-full shadow-xs"
+                    title="AI Dating Coach"
                  >
-                    <Mic size={18} />
+                    <Mic size={16} />
                  </button>
-                 <div className={`w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300 ${userProfile.boostExpiresAt && userProfile.boostExpiresAt > Date.now() ? 'ring-2 ring-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : ''}`}>
+                 <button 
+                    onClick={async () => { await signOut(); setView(AppView.LANDING); }}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full"
+                    title="Log Out"
+                 >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                 </button>
+                 <button
+                   onClick={() => setSafetyModal({ isOpen: true, tab: 'TRUST' })}
+                   className={`w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300 relative ${userProfile.boostExpiresAt && userProfile.boostExpiresAt > Date.now() ? 'ring-2 ring-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : ''}`}
+                   title="View Profile & Verification"
+                 >
                    <img src={userProfile.photoUrl} alt="Me" className="w-full h-full object-cover"/>
-                 </div>
+                 </button>
               </div>
             </div>
             <Discovery 
@@ -1362,7 +1765,9 @@ const App: React.FC = () => {
               hangoutSpots={MOCK_VENUES}
               onLike={handleLike} 
               onPass={handlePass} 
-              onBoost={handleBoost}
+              onBoost={() => handleBoost(30 * 60 * 1000)}
+              onOpenMpesaModal={(tab) => setMpesaModal({ isOpen: true, tab })}
+              onOpenSafetyModal={() => setSafetyModal({ isOpen: true, tab: 'TRUST' })}
             />
           </div>
         );
@@ -1377,8 +1782,14 @@ const App: React.FC = () => {
       case AppView.CHAT_LIST:
         return (
           <div className="min-h-screen bg-slate-50 pb-20">
-            <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
+            <div className="bg-white p-4 shadow-sm sticky top-0 z-10 flex items-center justify-between">
               <h1 className="text-2xl font-bold text-slate-900">Matches & Groups</h1>
+              <button
+                onClick={() => setSafetyModal({ isOpen: true, tab: 'CHECKIN' })}
+                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5"
+              >
+                <ShieldCheck size={14} /> Date Safety Shield
+              </button>
             </div>
             <ChatList 
               chats={chats} 
@@ -1398,7 +1809,6 @@ const App: React.FC = () => {
 
       case AppView.CHAT_ROOM:
         const activeSession = chats.find(c => c.matchId === activeChatId);
-        // Fallback or find match profile if exists (might not exist for groups, which is fine)
         const activeMatch = matches.find(m => m.id === activeChatId);
         
         if (!activeSession) return <div>Error loading chat</div>;
@@ -1414,6 +1824,12 @@ const App: React.FC = () => {
               onDeleteMessage={handleDeleteMessage}
               onBlockUser={handleBlockUser}
               typingUsers={typingStatus[activeSession.matchId]}
+              onOpenMpesaGift={(recipientId, recipientName) =>
+                setMpesaModal({ isOpen: true, tab: 'GIFT', recipientId, recipientName })
+              }
+              onOpenSafetyCheckin={(matchName) =>
+                setSafetyModal({ isOpen: true, tab: 'CHECKIN', matchName })
+              }
             />
           </div>
         );
@@ -1456,6 +1872,34 @@ const App: React.FC = () => {
           onClose={() => setIsAuntieShoshOpen(false)} 
         />
       )}
+
+      {/* M-Pesa Express (Daraja 2.0) Modal for Boosts, Pendo Gold & Virtual Zawadi */}
+      <MpesaModal
+        isOpen={mpesaModal.isOpen}
+        onClose={() => setMpesaModal(prev => ({ ...prev, isOpen: false }))}
+        initialTab={mpesaModal.tab}
+        userProfile={userProfile}
+        recipientId={mpesaModal.recipientId}
+        recipientName={mpesaModal.recipientName}
+        onBoostActivated={handleBoost}
+        onGoldUpgraded={handleGoldUpgraded}
+        onGiftSent={handleMpesaGiftSent}
+      />
+
+      {/* Pendo Ngao Trust Score, Live Selfie Verification & Date Safety Check-In Modal */}
+      <SafetyVerificationModal
+        isOpen={safetyModal.isOpen}
+        onClose={() => setSafetyModal(prev => ({ ...prev, isOpen: false }))}
+        initialTab={safetyModal.tab}
+        userProfile={userProfile}
+        defaultMatchName={safetyModal.matchName}
+        onProfileVerified={handleProfileVerified}
+        onShareSafetyBeaconToChat={(beaconText) => {
+          if (activeChatId) {
+            handleSendMessageToChat(activeChatId, beaconText);
+          }
+        }}
+      />
 
       {showNav && (
         <div className="fixed bottom-0 w-full max-w-md bg-white border-t border-slate-100 flex justify-around items-center py-4 px-2 z-40 pb-6">

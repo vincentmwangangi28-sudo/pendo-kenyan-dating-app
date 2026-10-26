@@ -95,5 +95,41 @@ service cloud.firestore {
        allow update: if isSignedIn() && isValidId(roomId) && incoming().participants.size() <= 10;
        allow delete: if isSignedIn() && isValidId(roomId) && resource.data.creatorId == request.auth.uid;
     }
+
+    match /swipes/{swipeId} {
+       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+       allow create, update: if isSignedIn() && isValidId(swipeId) &&
+         incoming().userId == request.auth.uid &&
+         incoming().targetId is string && incoming().targetId.size() <= 128 &&
+         incoming().action in ['LIKE', 'PASS'] &&
+         incoming().createdAt is number;
+    }
+
+    match /transactions/{txId} {
+       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+       allow create: if isSignedIn() && isValidId(txId) &&
+         incoming().userId == request.auth.uid &&
+         incoming().phone is string && incoming().phone.size() <= 32 &&
+         incoming().amountKes is number && incoming().amountKes > 0 &&
+         incoming().purpose in ['BOOST', 'GOLD', 'GIFT'] &&
+         incoming().itemName is string && incoming().itemName.size() <= 128 &&
+         incoming().receiptNumber is string && incoming().receiptNumber.size() <= 64 &&
+         incoming().status in ['PENDING', 'COMPLETED', 'FAILED'] &&
+         incoming().createdAt is number;
+    }
+
+    match /safetyCheckins/{checkinId} {
+       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+       allow create, update: if isSignedIn() && isValidId(checkinId) &&
+         incoming().userId == request.auth.uid &&
+         incoming().userName is string && incoming().userName.size() <= 128 &&
+         incoming().matchName is string && incoming().matchName.size() <= 128 &&
+         incoming().venueName is string && incoming().venueName.size() <= 200 &&
+         incoming().city is string && incoming().city.size() <= 64 &&
+         incoming().emergencyContactName is string && incoming().emergencyContactName.size() <= 128 &&
+         incoming().emergencyContactPhone is string && incoming().emergencyContactPhone.size() <= 32 &&
+         incoming().status in ['ACTIVE', 'SAFE', 'ALERT'] &&
+         incoming().createdAt is number;
+    }
   }
 }

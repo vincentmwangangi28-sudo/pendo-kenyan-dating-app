@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, ChatMessage, MatchProfile, UserProfile } from '../types';
 import { generateIcebreaker, generateDateIdeas, explainMessage } from '../services/geminiService';
 import { safeGetMediaStream, safeGetDisplayMedia, safeCopyToClipboard } from '../services/compat';
-import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, Users as UsersIcon, Plus as Plus, PlusCircle, User, Crown, X, SmilePlus, Camera, Gift } from 'lucide-react';
+import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, Users as UsersIcon, Plus as Plus, PlusCircle, User, Crown, X, SmilePlus, Camera, Gift, ShieldCheck } from 'lucide-react';
 
 // --- Video Call Component ---
 interface VideoCallProps {
@@ -587,18 +587,22 @@ interface ChatRoomProps {
   onSendMessage: (text: string, imageUrl?: string, audioUrl?: string) => void;
   onDeleteMessage: (matchId: string, msgId: string) => void;
   onBlockUser?: (matchId: string) => void;
-  typingUsers?: string[]; // New prop for typing indicators
+  typingUsers?: string[];
+  onOpenMpesaGift?: (recipientId: string, recipientName: string) => void;
+  onOpenSafetyCheckin?: (matchName: string) => void;
 }
 
 export const KENYAN_GIFTS = [
+  { id: 'chai', name: 'Chai ya Tangawizi ☕', price: '100 KES', desc: 'Warm spiced ginger milk tea to break the ice with Kenyan hospitality.', color: 'from-amber-600 to-orange-700', icon: '☕' },
+  { id: 'mahamri', name: 'Mombasa Mahamri & Kahawa 🥐', price: '200 KES', desc: 'Cardamom-spiced coastal mahamri paired with rich Kahawa Tungu.', color: 'from-yellow-600 to-amber-700', icon: '🥐' },
+  { id: 'dawa', name: 'Westlands Dawa Cocktail 🍸', price: '250 KES', desc: 'Kenya\'s signature honey-lime-vodka sundowner for Friday night vibes.', color: 'from-emerald-600 to-teal-700', icon: '🍸' },
   { id: 'tusker', name: 'Cold Tusker 🍻', price: '150 KES', desc: 'Buy them a legendary cold round of Kenya\'s finest brew.', color: 'from-amber-400 to-yellow-600', icon: '🍻' },
-  { id: 'choma', name: 'Nyama Choma 🥩', price: '450 KES', desc: 'A succulent, hot plate of charcoal-roasted goat meat.', color: 'from-orange-500 to-red-700', icon: '🥩' },
-  { id: 'rose', name: 'Nairobi Rose 🌹', price: '200 KES', desc: 'A premium, fresh red rose from the hills of Naivasha.', color: 'from-rose-400 to-pink-600', icon: '🌹' },
-  { id: 'chai', name: 'Vikombe vya Chai ☕', price: '80 KES', desc: 'A rich pot of authentic hot milk tea with ginger.', color: 'from-amber-600 to-amber-700', icon: '☕' },
-  { id: 'safari', name: 'Safari Voucher 🦁', price: '1,000 KES', desc: 'A virtual game drive pass to the beautiful Game Parks.', color: 'from-emerald-400 to-teal-700', icon: '🦁' },
+  { id: 'rose', name: 'Naivasha Fresh Rose 🌹', price: '350 KES', desc: 'A premium, fresh crimson rose bouquet from the hills of Naivasha.', color: 'from-rose-500 to-pink-700', icon: '🌹' },
+  { id: 'choma', name: 'Kamakis Nyama Choma 🥩', price: '650 KES', desc: 'A succulent, hot platter of charcoal-roasted goat meat & kachumbari.', color: 'from-orange-500 to-red-700', icon: '🥩' },
+  { id: 'safari', name: 'Maasai Mara Safari Pass 🦁', price: '2,500 KES', desc: 'A golden weekend safari voucher for an unforgettable savannah getaway.', color: 'from-purple-600 to-indigo-800', icon: '🦁' },
 ];
 
-export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchProfile, onBack, onSendMessage, onDeleteMessage, onBlockUser, typingUsers }) => {
+export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchProfile, onBack, onSendMessage, onDeleteMessage, onBlockUser, typingUsers, onOpenMpesaGift, onOpenSafetyCheckin }) => {
   const [inputText, setInputText] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
@@ -840,9 +844,22 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
               <div className="bg-rose-100 p-2.5 rounded-full text-rose-600"><Gift size={22} /></div>
               <div>
                 <h3 className="text-lg font-bold text-slate-900 leading-none">Zawadi Courtship Kit</h3>
-                <p className="text-xs text-slate-500 mt-1">Send a charming traditional gift to express interest!</p>
+                <p className="text-xs text-slate-500 mt-1">Send a charming Kenyan gift or pay via M-Pesa Express</p>
               </div>
             </div>
+
+            {onOpenMpesaGift && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowGiftModal(false);
+                  onOpenMpesaGift(matchProfile.id, matchProfile.name);
+                }}
+                className="w-full mb-3 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              >
+                <span>📲 Send Verified M-Pesa Express Zawadi</span>
+              </button>
+            )}
             
             <div className="flex-1 overflow-y-auto space-y-3 pr-1 py-1 no-scrollbar">
               {KENYAN_GIFTS.map(gift => (
@@ -900,13 +917,33 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
           <div onClick={() => isGroup && setShowGroupMembers(true)} className={`flex items-center gap-3 ${isGroup ? 'cursor-pointer hover:opacity-70 transition-opacity' : ''}`}>
             <img src={session.matchPhoto} alt="" className={`object-cover border border-slate-200 ${isGroup ? 'w-10 h-10 rounded-lg' : 'w-10 h-10 rounded-full'}`} />
             <div>
-              <h3 className="font-bold text-slate-900 text-sm leading-tight flex items-center gap-1">{session.matchName}{isGroup && <UsersIcon size={12} className="text-slate-400" />}</h3>
-              <span className="text-xs text-rose-500 font-medium">{isGroup ? `${MOCK_GROUP_MEMBERS.length} members` : 'Online'}</span>
+              <h3 className="font-bold text-slate-900 text-sm leading-tight flex items-center gap-1">
+                {session.matchName}
+                {!isGroup && matchProfile?.isVerified && <ShieldCheck size={14} className="text-emerald-600" />}
+                {isGroup && <UsersIcon size={12} className="text-slate-400" />}
+              </h3>
+              <span className="text-xs text-emerald-600 font-medium">
+                {isGroup ? `${MOCK_GROUP_MEMBERS.length} members` : `Online · ${matchProfile?.location || 'Kenya'}`}
+              </span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-1 relative">
-          {!isGroup && <><button onClick={() => setIsInCall(true)} className="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-full transition-colors"><Video size={20} /></button><button onClick={() => handleDateIdeas(false)} className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"><Calendar size={20} /></button></>}
+          {!isGroup && (
+            <>
+              {onOpenSafetyCheckin && (
+                <button
+                  onClick={() => onOpenSafetyCheckin(session.matchName)}
+                  className="p-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-full transition-colors"
+                  title="Live Date Safety Check-In & Fare Shield"
+                >
+                  <ShieldCheck size={19} />
+                </button>
+              )}
+              <button onClick={() => setIsInCall(true)} className="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-full transition-colors" title="Video Call"><Video size={20} /></button>
+              <button onClick={() => handleDateIdeas(false)} className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors" title="AI Date Ideas"><Calendar size={20} /></button>
+            </>
+          )}
           {isGroup && <button onClick={() => setShowGroupMembers(true)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"><UsersIcon size={20} /></button>}
           <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="p-2 text-slate-400 hover:text-slate-600 rounded-full"><MoreVertical size={20} /></button>
           
