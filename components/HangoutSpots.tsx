@@ -7,6 +7,7 @@ import {
 import { generateVenueVibe, findHangoutSpots, findRealtimeEvents, geocodeCity } from '../services/geminiService';
 import { safeCopyToClipboard } from '../services/compat';
 import { Map as PigeonMap, Overlay } from 'pigeon-maps';
+import { AdSenseBanner } from './AdSenseBanner';
 
 interface HangoutSpotsProps {
   venues: HangoutSpot[];
@@ -460,6 +461,9 @@ export const HangoutSpots: React.FC<HangoutSpotsProps> = ({ venues: initialVenue
         <div className="p-4 text-center text-slate-400 text-[11px] font-bold">
            <p>Don't see your favorite spot? <br/> More verified markers added weekly!</p>
         </div>
+
+        {/* Google AdSense Display Slot */}
+        <AdSenseBanner className="mt-2" />
       </div>
     </div>
   );

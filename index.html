@@ -14,19 +14,24 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
+    <link rel="canonical" href="https://www.pendo.website/" />
     <meta name="google-site-verification" content="google00332d67777e965d" />
     <meta name="msvalidate.01" content="1A704EBF4AD6B5D3CFBA2F15F6D5689E" />
 
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.pendo.website/" />
     <meta property="og:title" content="Pendo | Kenya's #1 Dating & Matchmaking App" />
     <meta property="og:description" content="Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges and safe video dates on Pendo." />
+    <meta property="og:image" content="https://www.pendo.website/pwa-512x512.png" />
     <meta property="og:site_name" content="Pendo Kenya" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://www.pendo.website/" />
     <meta name="twitter:title" content="Pendo | Kenya's #1 Dating & Matchmaking App" />
     <meta name="twitter:description" content="Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges and safe video dates on Pendo." />
+    <meta name="twitter:image" content="https://www.pendo.website/pwa-512x512.png" />
 
     <!-- Schema.org JSON-LD for Search Engine Optimization -->
     <script type="application/ld+json">
@@ -34,6 +39,7 @@
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "Pendo Dating Kenya",
+      "url": "https://www.pendo.website/",
       "applicationCategory": "SocialNetworkingApplication",
       "operatingSystem": "All",
       "description": "Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges and safe video dates on Pendo.",
@@ -44,13 +50,47 @@
       }
     }
     </script>
-    <!-- Ahrefs Analytics -->
-    <script src="https://analytics.ahrefs.com/analytics.js" data-key="e3R4siP2DYpD0XoWG15Rew" async></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Resource Preconnect & DNS Hints for Mobile Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+    <link rel="dns-prefetch" href="https://analytics.ahrefs.com" />
+    <link rel="dns-prefetch" href="https://picsum.photos" />
+
+    <!-- Non-Blocking Google Fonts (Swap & Fallback) -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    </noscript>
+
+    <!-- Ahrefs Analytics (Deferred for Zero TBT on Mobile) -->
+    <script>
+      window.addEventListener('load', function() {
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(function() {
+            var s = document.createElement('script');
+            s.src = "https://analytics.ahrefs.com/analytics.js";
+            s.dataset.key = "e3R4siP2DYpD0XoWG15Rew";
+            s.async = true;
+            document.head.appendChild(s);
+          });
+        } else {
+          setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = "https://analytics.ahrefs.com/analytics.js";
+            s.dataset.key = "e3R4siP2DYpD0XoWG15Rew";
+            s.async = true;
+            document.head.appendChild(s);
+          }, 2000);
+        }
+      });
+    </script>
     <style>
       body {
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         background-color: #f8fafc;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
       }
       /* Hide scrollbar for clean UI in chat/deck */
       .no-scrollbar::-webkit-scrollbar {
@@ -73,16 +113,39 @@
         versions: {},
         platform: 'browser'
       };
+
+      // Suppress transient WebSocket errors in cloud/iframe environment per platform guidelines
+      window.addEventListener('error', function(e) {
+        if (e && e.message && (e.message.includes('WebSocket') || e.message.includes('closed without opened'))) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        if (e && e.reason && (String(e.reason).includes('WebSocket') || String(e.reason).includes('closed without opened'))) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
     </script>
   </head>
   <body>
     <div id="root">
-      <main style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; text-align: center; background-color: #f8fafc;">
-        <div style="max-width: 28rem; width: 100%; background: #ffffff; border-radius: 1.5rem; padding: 2rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border: 1px solid #ffe4e6; display: flex; flex-direction: column; align-items: center;">
-          <div style="width: 4rem; height: 4rem; border-radius: 9999px; background: #fff1f2; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1rem;">❤️</div>
-          <h1 style="font-size: 1.65rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem; letter-spacing: -0.025em; line-height: 1.25;">Pendo | Kenya's #1 Dating & Matchmaking App</h1>
-          <p style="color: #475569; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1.5rem;">Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges and safe video dates on Pendo.</p>
-          <div style="width: 2rem; height: 2rem; border: 3px solid #f43f5e; border-top-color: transparent; border-radius: 9999px; animation: spin 1s linear infinite;"></div>
+      <main id="main-content" style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; text-align: center; background: linear-gradient(135deg, #e11d48 0%, #be123c 50%, #020617 100%); color: #ffffff;">
+        <div style="max-width: 24rem; width: 100%; display: flex; flex-direction: column; align-items: center;">
+          <div style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border-radius: 9999px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.3); font-size: 11px; font-weight: 800; color: #fde047; margin-bottom: 1rem;">
+            <span>Kenya's #1 Verified Dating & Matchmaking Community</span>
+          </div>
+          <div style="width: 4rem; height: 4rem; border-radius: 1rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);">
+            🔥
+          </div>
+          <h1 style="font-size: 1.875rem; font-weight: 900; color: #ffffff; margin-bottom: 0.5rem; letter-spacing: -0.025em; line-height: 1.25;">
+            Pendo — Kenya's #1 Dating & Matchmaking App
+          </h1>
+          <p style="color: #ffffff; font-size: 0.75rem; font-weight: 500; line-height: 1.5; margin-bottom: 1.25rem;">
+            Meet verified singles across Nairobi, Mombasa, Kisumu, Nakuru & Eldoret with M-Pesa Zawadi, Sheng AI & Live Date Safety Shield.
+          </p>
+          <div style="width: 1.5rem; height: 1.5rem; border: 3px solid #fde047; border-top-color: transparent; border-radius: 9999px; animation: spin 1s linear infinite;"></div>
         </div>
       </main>
     </div>

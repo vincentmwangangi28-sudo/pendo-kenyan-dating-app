@@ -98,7 +98,7 @@ async function startServer() {
   // IndexNow API Submission Endpoint for Bing & Search Engines
   app.post("/api/indexnow/submit", async (req, res) => {
     try {
-      const host = req.headers.host || "pendo-kenyan-dating-app.vercel.app";
+      const host = req.headers.host || "www.pendo.website";
       const hostClean = host.split(":")[0];
       const key = "8zvbpmffgtwz251x44qqw5h5ugnvyyva";
       const payload = {
@@ -142,8 +142,21 @@ async function startServer() {
 
   // Search Engine Crawling & SEO Endpoints
   app.get("/robots.txt", (req, res) => {
-    res.setHeader("Content-Type", "text/plain");
-    res.send("User-agent: *\nAllow: /\nSitemap: https://pendo-kenyan-dating-app.vercel.app/sitemap.xml");
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.send("User-agent: *\nAllow: /\nSitemap: https://www.pendo.website/sitemap.xml\nAgentmap: https://www.pendo.website/ai-catalog.json\n");
+  });
+
+  // Agentic Browsing & AI Discovery Endpoints
+  app.get("/llms.txt", (req, res) => {
+    const filePath = path.join(process.cwd(), "public", "llms.txt");
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.sendFile(filePath);
+  });
+
+  app.get("/ai-catalog.json", (req, res) => {
+    const filePath = path.join(process.cwd(), "public", "ai-catalog.json");
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.sendFile(filePath);
   });
 
   app.get("/sitemap.xml", (req, res) => {
@@ -151,44 +164,44 @@ async function startServer() {
     res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://pendo-kenyan-dating-app.vercel.app/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <loc>https://www.pendo.website/</loc>
+    <lastmod>2026-11-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://pendo-kenyan-dating-app.vercel.app/#city-nairobi</loc>
-    <lastmod>2026-10-26</lastmod>
+    <loc>https://www.pendo.website/#city-nairobi</loc>
+    <lastmod>2026-11-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://pendo-kenyan-dating-app.vercel.app/#city-mombasa</loc>
-    <lastmod>2026-10-26</lastmod>
+    <loc>https://www.pendo.website/#city-mombasa</loc>
+    <lastmod>2026-11-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://pendo-kenyan-dating-app.vercel.app/#city-kisumu</loc>
-    <lastmod>2026-10-26</lastmod>
+    <loc>https://www.pendo.website/#city-kisumu</loc>
+    <lastmod>2026-11-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://pendo-kenyan-dating-app.vercel.app/#city-nakuru</loc>
-    <lastmod>2026-10-26</lastmod>
+    <loc>https://www.pendo.website/#city-nakuru</loc>
+    <lastmod>2026-11-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://pendo-kenyan-dating-app.vercel.app/#city-eldoret</loc>
-    <lastmod>2026-10-26</lastmod>
+    <loc>https://www.pendo.website/#city-eldoret</loc>
+    <lastmod>2026-11-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://pendo-kenyan-dating-app.vercel.app/#voice-lounge</loc>
-    <lastmod>2026-10-26</lastmod>
+    <loc>https://www.pendo.website/#voice-lounge</loc>
+    <lastmod>2026-11-04</lastmod>
     <changefreq>always</changefreq>
     <priority>0.9</priority>
   </url>
@@ -224,7 +237,7 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: "spa",
     });
     app.use(vite.middlewares);
@@ -243,16 +256,17 @@ async function startServer() {
     setTimeout(async () => {
       try {
         const payload = {
-          host: "pendo-kenyan-dating-app.vercel.app",
+          host: "www.pendo.website",
           key: "8zvbpmffgtwz251x44qqw5h5ugnvyyva",
-          keyLocation: "https://pendo-kenyan-dating-app.vercel.app/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt",
+          keyLocation: "https://www.pendo.website/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt",
           urlList: [
-            "https://pendo-kenyan-dating-app.vercel.app/",
-            "https://pendo-kenyan-dating-app.vercel.app/#city-nairobi",
-            "https://pendo-kenyan-dating-app.vercel.app/#city-mombasa",
-            "https://pendo-kenyan-dating-app.vercel.app/#city-kisumu",
-            "https://pendo-kenyan-dating-app.vercel.app/#city-nakuru",
-            "https://pendo-kenyan-dating-app.vercel.app/#city-eldoret",
+            "https://www.pendo.website/",
+            "https://www.pendo.website/#city-nairobi",
+            "https://www.pendo.website/#city-mombasa",
+            "https://www.pendo.website/#city-kisumu",
+            "https://www.pendo.website/#city-nakuru",
+            "https://www.pendo.website/#city-eldoret",
+            "https://www.pendo.website/#voice-lounge",
           ]
         };
         await fetch("https://api.indexnow.org/indexnow", {

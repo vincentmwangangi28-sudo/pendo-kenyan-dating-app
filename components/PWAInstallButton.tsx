@@ -46,8 +46,8 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                 <Smartphone className="h-5 w-5 text-white" />
               </div>
               <div className="text-left">
-                <p className="text-xs font-black tracking-tight">Install Pendo Kenya App</p>
-                <p className="text-[10px] text-rose-100/90 leading-tight">Instant voice lounges, M-Pesa gifts & offline access</p>
+                <p className="text-xs font-black tracking-tight text-white">Install Pendo Kenya App</p>
+                <p className="text-[10px] text-white font-medium leading-tight">Instant voice lounges, M-Pesa gifts & offline access</p>
               </div>
             </div>
             <button

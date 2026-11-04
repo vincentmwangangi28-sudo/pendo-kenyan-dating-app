@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Zap, Crown, Gift, CheckCircle2, Loader2, ShieldCheck, Smartphone, ArrowRight, Sparkles, Receipt } from 'lucide-react';
+import { X, Zap, Crown, Gift, CheckCircle2, Loader2, ShieldCheck, Smartphone, ArrowRight, Sparkles, Receipt, Share2 } from 'lucide-react';
 import { VirtualGift, MpesaTransaction, UserProfile } from '../types';
 import { db, auth } from '../services/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -618,13 +618,26 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
-              >
-                Done & Continue
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = `🎉 Pendo Dating Kenya M-Pesa Receipt:\nItem: ${lastTransaction.itemName}\nReceipt: ${lastTransaction.receiptNumber}\nAmount: KES ${lastTransaction.amountKes}\nStatus: Confirmed ✓\nVerified on https://www.pendo.website/`;
+                    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+                  }}
+                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
+                >
+                  <Share2 size={14} />
+                  <span>Share on WhatsApp</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="py-3 px-5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           )}
 

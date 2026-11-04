@@ -334,6 +334,15 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
   const [meetError, setMeetError] = useState<string | null>(null);
   const [createdMeetUrl, setCreatedMeetUrl] = useState<string | null>(null);
   const hasRequestedIcebreaker = useRef(false);
+  const [showShengWingman, setShowShengWingman] = useState(false);
+
+  const SHENG_STARTERS = [
+    "Sema! Una form gani this weekend? 🇰🇪",
+    "Kahawa ya Java ama chai ya tangawizi? ☕",
+    "Hizo photos zako ni tops! Where was that taken? ✨",
+    "Uko na playlist recommendations za cool Kenyan vibes? 🎶",
+    "Nipee siri ya surviving Nairobi traffic 😂🚗"
+  ];
 
   // Network Connection Quality Indicator States
   const [connectionState, setConnectionState] = useState<'excellent' | 'stable' | 'unstable' | 'offline'>('excellent');
@@ -1388,9 +1397,45 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Sheng Wingman Quick Starters Bar */}
+      {showShengWingman && (
+        <div className="px-3 py-2 bg-gradient-to-r from-amber-50 to-rose-50 border-t border-amber-200/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar animate-fade-in">
+          <span className="text-[10px] font-black uppercase text-amber-900 shrink-0 flex items-center gap-1">
+            🕶️ Kevo:
+          </span>
+          {SHENG_STARTERS.map((starter, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                setInputText(starter);
+                setShowShengWingman(false);
+              }}
+              className="px-2.5 py-1 bg-white hover:bg-amber-100 border border-amber-200/80 rounded-full text-xs text-slate-800 whitespace-nowrap transition-all shadow-xs cursor-pointer font-medium"
+            >
+              {starter}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Input Area */}
       <div className="p-3 bg-white border-t border-slate-100">
         <div className="flex items-center gap-2">
+          {/* Kevo the Sheng Wingman Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowShengWingman(!showShengWingman)}
+            className={`p-2.5 rounded-full transition-all flex-shrink-0 cursor-pointer ${
+              showShengWingman
+                ? 'bg-amber-500 text-white shadow-md'
+                : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200/60'
+            }`}
+            title="Kevo the Sheng AI Wingman"
+          >
+            <span className="text-sm">🕶️</span>
+          </button>
+
           {!isGroup && session.messages.length === 0 && !aiSuggestion && (
              <button 
                onClick={() => { hasRequestedIcebreaker.current = false; handleAskAI(); }}
@@ -1408,7 +1453,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Type a message..."
+              placeholder="Type a message or tap 🕶️..."
               className="w-full pl-4 pr-4 py-3 bg-slate-100 rounded-full border-transparent focus:bg-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none text-sm transition-all"
             />
           </div>

@@ -1,0 +1,35 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Pendo Dating Kenya",
+    "identifier": "did:web:pendo.website",
+    "documentationUrl": "https://www.pendo.website/llms.txt",
+    "logoUrl": "https://www.pendo.website/pwa-512x512.png"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:pendo.website:city-directory",
+      "displayName": "Kenyan City Dating Directory",
+      "type": "web",
+      "url": "https://www.pendo.website/#city-nairobi"
+    },
+    {
+      "identifier": "urn:air:pendo.website:mpesa-checkout",
+      "displayName": "M-Pesa STK Push Integration",
+      "type": "api",
+      "url": "https://www.pendo.website/api/mpesa/stk-push"
+    },
+    {
+      "identifier": "urn:air:pendo.website:safety-shield",
+      "displayName": "Pendo Ngao Date Safety Check-In",
+      "type": "api",
+      "url": "https://www.pendo.website/api/safety/checkin"
+    },
+    {
+      "identifier": "urn:air:pendo.website:indexnow",
+      "displayName": "IndexNow Search Engine Indexing",
+      "type": "api",
+      "url": "https://www.pendo.website/api/indexnow/submit"
+    }
+  ]
+}

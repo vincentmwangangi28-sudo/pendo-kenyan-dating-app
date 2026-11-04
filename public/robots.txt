@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
-Sitemap: https://ais-pre-ohryznl5tg2opvo3ua73bl-937574102702.europe-west2.run.app/sitemap.xml
+Sitemap: https://www.pendo.website/sitemap.xml
+Agentmap: https://www.pendo.website/ai-catalog.json

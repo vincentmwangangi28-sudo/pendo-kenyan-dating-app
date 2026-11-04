@@ -1,0 +1,18 @@
+# Pendo — Kenya's #1 Dating & Matchmaking Platform
+
+> Pendo is the leading Kenyan dating and matchmaking web application designed for verified singles in Nairobi, Mombasa, Kisumu, Nakuru, and Eldoret. Featuring M-Pesa Zawadi gifts, Live Date Safety Shield (Matatu Fare Shield), Sheng AI Wingman, and real-time Voice Lounges.
+
+## Canonical Web Resources
+- [Home & City Dating Directory](https://www.pendo.website/): Discover verified singles across Kenyan urban hubs with zero catfishing.
+- [Nairobi Dating Hub](https://www.pendo.website/#city-nairobi): Connect with verified singles and curated first-date venues in Westlands, Kilimani, and Karen.
+- [Mombasa Dating Hub](https://www.pendo.website/#city-mombasa): Coastal matchmaking and safe beach date spots in Nyali and Old Town.
+- [Kisumu Dating Hub](https://www.pendo.website/#city-kisumu): Lakeside singles directory and Dunga Hill sunset lounges.
+- [Nakuru Dating Hub](https://www.pendo.website/#city-nakuru): Rift Valley dating and Great Rift romance spots.
+- [Eldoret Dating Hub](https://www.pendo.website/#city-eldoret): Champions hub dating and safe rendezvous lounges.
+- [Voice Lounges](https://www.pendo.website/#voice-lounge): Live audio hangouts and icebreaker speed dating hosted with Auntie Shosh AI.
+- [Alika Rafiki Referral](https://www.pendo.website/#alika): Viral WhatsApp referral program with Trust Score rewards and free Profile Boosts.
+
+## Trust & Safety Architecture
+- Pendo Ngao Trust Score: Explainable 0–100 identity verification score based on Google Auth, live camera selfie pose checks, and community standing.
+- Matatu Fare Shield & Safe Date Check-in: Real-time emergency check-in sharing trusted contact emergency numbers and fare guarantees.
+- Local M-Pesa STK Push: Transparent KES transactions for date reservations, virtual gifts (Chai, Dawa, Nyama Choma), and Pendo Gold.

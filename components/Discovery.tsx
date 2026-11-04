@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { MatchProfile, UserProfile, HangoutSpot } from '../types';
-import { X, Heart, MapPin, Info, Sparkles, Loader2, SlidersHorizontal, Check, Mic, Volume2, Zap, ShieldCheck, MessageSquarePlus, Map as MapIcon, Users, Moon, Flame } from 'lucide-react';
+import { X, Heart, MapPin, Info, Sparkles, Loader2, SlidersHorizontal, Check, Mic, Volume2, Zap, ShieldCheck, MessageSquarePlus, Map as MapIcon, Users, Moon, Flame, Share2 } from 'lucide-react';
 import { analyzeCompatibility, generateSpeech, generateHoroscope } from '../services/geminiService';
 import { INTERESTS_LIST } from './ProfileSetup';
 import { Map as PigeonMap, Marker, Overlay } from 'pigeon-maps';
@@ -16,6 +16,7 @@ interface DiscoveryProps {
   onBoost: () => void;
   onOpenMpesaModal?: (tab: 'BOOST' | 'GOLD' | 'GIFT') => void;
   onOpenSafetyModal?: () => void;
+  onOpenAlikaModal?: () => void;
 }
 
 interface FilterState {
@@ -25,9 +26,10 @@ interface FilterState {
   interests: string[];
 }
 
-export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hangoutSpots = [], onLike, onPass, onBoost, onOpenMpesaModal, onOpenSafetyModal }) => {
+export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hangoutSpots = [], onLike, onPass, onBoost, onOpenMpesaModal, onOpenSafetyModal, onOpenAlikaModal }) => {
   const [viewMode, setViewMode] = useState<'cards' | 'map' | 'heatmap'>('cards');
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedCity, setSelectedCity] = useState<string>('All Kenya');
   const [showInfo, setShowInfo] = useState(false);
   const [vibeCheck, setVibeCheck] = useState<string | null>(null);
   const [loadingVibe, setLoadingVibe] = useState(false);
@@ -58,6 +60,11 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startXRef = useRef(0);
+
+  // Reset index when city filter changes
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [selectedCity]);
   
   // Timer for Boost
   useEffect(() => {
@@ -79,6 +86,13 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
   // Filtering Logic
   const filteredMatches = useMemo(() => {
     return matches.filter(match => {
+      // City Filter
+      if (selectedCity !== 'All Kenya') {
+        const matchLocation = (match.location || '').toLowerCase();
+        const targetCity = selectedCity.toLowerCase();
+        if (!matchLocation.includes(targetCity)) return false;
+      }
+
       // Age Filter
       if (match.age < filters.minAge || match.age > filters.maxAge) return false;
       
@@ -96,7 +110,7 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
       
       return true;
     });
-  }, [matches, filters]);
+  }, [matches, filters, selectedCity]);
 
   const currentMatch = filteredMatches[currentIndex];
 
@@ -484,7 +498,7 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
     <div className={`h-[calc(100vh-140px)] w-full ${viewMode === 'heatmap' ? 'max-w-5xl overflow-y-auto' : 'max-w-md overflow-hidden'} mx-auto relative p-4 flex flex-col select-none`}>
       
       {!showFilters && !showBoostModal && (
-         <div className="absolute top-6 left-6 z-30">
+         <div className="absolute top-6 left-6 z-30 flex items-center gap-2">
             <button 
               onClick={() => onOpenMpesaModal ? onOpenMpesaModal('BOOST') : setShowBoostModal(true)}
               className={`p-3 rounded-full shadow-lg transition-all flex items-center gap-2 ${
@@ -499,6 +513,16 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
                 <span className="text-xs font-bold tabular-nums">{timeRemaining}</span>
               )}
             </button>
+
+            {onOpenAlikaModal && (
+              <button
+                onClick={onOpenAlikaModal}
+                className="p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg hover:scale-105 transition-all flex items-center justify-center cursor-pointer"
+                title="Alika Rafiki (Invite on WhatsApp)"
+              >
+                <Share2 size={18} />
+              </button>
+            )}
          </div>
       )}
 
@@ -705,6 +729,25 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
               <Flame size={14} className={viewMode === 'heatmap' ? 'animate-pulse' : ''} /> Heatmap
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Kenyan City Quick Filter Bar */}
+      {!showFilters && !showBoostModal && viewMode === 'cards' && (
+        <div className="mt-14 mb-2 z-20 flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar px-1 shrink-0">
+          {['All Kenya', 'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret'].map(city => (
+            <button
+              key={city}
+              onClick={() => setSelectedCity(city)}
+              className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shadow-sm cursor-pointer ${
+                selectedCity === city
+                  ? 'bg-rose-600 text-white shadow-rose-200'
+                  : 'bg-white/90 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-100'
+              }`}
+            >
+              {city}
+            </button>
+          ))}
         </div>
       )}
 

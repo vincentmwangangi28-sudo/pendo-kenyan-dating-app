@@ -1,21 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { UserProfile, MatchProfile, AppView, ChatSession, ChatMessage, GroupProfile, HangoutSpot, VirtualGift } from './types';
-import { ProfileSetup } from './components/ProfileSetup';
-import { Discovery } from './components/Discovery';
-import { ChatList, ChatRoom } from './components/ChatInterface';
-import { GroupCreation } from './components/GroupCreation';
-import { HangoutSpots } from './components/HangoutSpots';
-import { VoiceCoach } from './components/VoiceCoach';
-import { MeetHub } from './components/MeetHub';
-import { AuntieShosh } from './components/AuntieShosh';
 import { GoogleAuthButton } from './components/GoogleAuthButton';
 import { AuthNotification } from './components/AuthNotification';
-import { MpesaModal } from './components/MpesaModal';
-import { SafetyVerificationModal, calculateTrustScore } from './components/SafetyVerificationModal';
 import { PWAInstallButton } from './components/PWAInstallButton';
-import { VoiceCallModal } from './components/VoiceCallModal';
+import { AdSenseBanner } from './components/AdSenseBanner';
+import { calculateTrustScore } from './src/lib/trustScore';
 import { useOnlineStatus } from './hooks/usePWAInstall';
-import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Phone, Shield, CheckCircle2, ShieldCheck, Crown, Sparkles, Globe, Check, WifiOff } from 'lucide-react';
+import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Phone, Shield, CheckCircle2, ShieldCheck, Crown, Sparkles, Globe, Check, WifiOff, Share2 } from 'lucide-react';
+
+// Code-split heavy interactive modules for fast mobile FCP & 90+ Lighthouse Performance
+const ProfileSetup = lazy(() => import('./components/ProfileSetup').then(m => ({ default: m.ProfileSetup })));
+const Discovery = lazy(() => import('./components/Discovery').then(m => ({ default: m.Discovery })));
+const ChatList = lazy(() => import('./components/ChatInterface').then(m => ({ default: m.ChatList })));
+const ChatRoom = lazy(() => import('./components/ChatInterface').then(m => ({ default: m.ChatRoom })));
+const GroupCreation = lazy(() => import('./components/GroupCreation').then(m => ({ default: m.GroupCreation })));
+const HangoutSpots = lazy(() => import('./components/HangoutSpots').then(m => ({ default: m.HangoutSpots })));
+const VoiceCoach = lazy(() => import('./components/VoiceCoach').then(m => ({ default: m.VoiceCoach })));
+const MeetHub = lazy(() => import('./components/MeetHub').then(m => ({ default: m.MeetHub })));
+const AuntieShosh = lazy(() => import('./components/AuntieShosh').then(m => ({ default: m.AuntieShosh })));
+const MpesaModal = lazy(() => import('./components/MpesaModal').then(m => ({ default: m.MpesaModal })));
+const SafetyVerificationModal = lazy(() => import('./components/SafetyVerificationModal').then(m => ({ default: m.SafetyVerificationModal })));
+const VoiceCallModal = lazy(() => import('./components/VoiceCallModal').then(m => ({ default: m.VoiceCallModal })));
+const AlikaRafikiModal = lazy(() => import('./components/AlikaRafikiModal').then(m => ({ default: m.AlikaRafikiModal })));
 import { findRealtimeEvents } from './services/geminiService';
 import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut, getOrCreateGuestUser, AppAuthUser, checkFirestoreConnectivity } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -856,6 +862,52 @@ const App: React.FC = () => {
   // Kenyan City Directory state on Landing
   const [selectedLandingCity, setSelectedLandingCity] = useState<string>('Nairobi');
 
+  // Alika Rafiki (Viral WhatsApp Referral Program) Modal State
+  const [isAlikaModalOpen, setIsAlikaModalOpen] = useState<boolean>(false);
+
+  // Hash Routing & Deep Link Listener (SEO Canonical Links, WhatsApp Invites & Kenyan Cities)
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = (window.location.hash || '').toLowerCase();
+      if (hash.includes('nairobi')) setSelectedLandingCity('Nairobi');
+      else if (hash.includes('mombasa')) setSelectedLandingCity('Mombasa');
+      else if (hash.includes('kisumu')) setSelectedLandingCity('Kisumu');
+      else if (hash.includes('nakuru')) setSelectedLandingCity('Nakuru');
+      else if (hash.includes('eldoret')) setSelectedLandingCity('Eldoret');
+
+      if (hash.includes('alika') || hash.includes('invite')) {
+        setIsAlikaModalOpen(true);
+      }
+    };
+
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
+  const handleReferralReward = async (type: 'BOOST' | 'TRUST') => {
+    const newExpiresAt = Date.now() + 30 * 60 * 1000;
+    const newTrustScore = Math.min(100, (userProfile.trustScore || 80) + 10);
+    const updated = {
+      ...userProfile,
+      boostExpiresAt: newExpiresAt,
+      trustScore: newTrustScore,
+    };
+    setUserProfile(updated);
+    safeStorage.setItem('pendo_user_profile', JSON.stringify(updated));
+
+    if (authUser && !isOffline && auth.currentUser) {
+      try {
+        await setDoc(doc(db, 'users', authUser.uid), {
+          boostExpiresAt: newExpiresAt,
+          trustScore: newTrustScore,
+        }, { merge: true });
+      } catch (e) {
+        console.warn('Referral reward Firestore sync fallback:', e);
+      }
+    }
+  };
+
   // Automatic background SEO & IndexNow sync (running in backend without UI)
   useEffect(() => {
     fetch('/api/indexnow/submit', { method: 'POST' }).catch(() => {});
@@ -1528,16 +1580,16 @@ const App: React.FC = () => {
 
   // --- Render Components ---
 
-  if (isAuthLoading) {
+  if (isAuthLoading && view !== AppView.LANDING) {
       return (
-          <div className="h-screen flex flex-col items-center justify-center bg-white p-6 text-center">
-              <div className="w-16 h-16 rounded-3xl bg-rose-50 flex items-center justify-center mb-4 shadow-sm border border-rose-100">
+          <main id="main-content" className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6 text-center">
+              <div className="w-16 h-16 rounded-3xl bg-white/10 flex items-center justify-center mb-4 shadow-sm border border-white/20">
                   <Flame size={36} className="text-rose-500 animate-pulse" />
               </div>
-              <h1 className="text-xl font-extrabold text-slate-900 mb-2">Pendo | Kenya's #1 Dating & Matchmaking App</h1>
-              <p className="text-xs text-slate-500 mb-5 max-w-xs">Connecting verified singles across Nairobi, Mombasa & East Africa...</p>
+              <h1 className="text-xl font-extrabold text-white mb-2">Pendo | Kenya's #1 Dating & Matchmaking App</h1>
+              <p className="text-xs text-slate-200 mb-5 max-w-xs font-medium">Connecting verified singles across Nairobi, Mombasa & East Africa...</p>
               <Loader2 size={24} className="animate-spin text-rose-500" />
-          </div>
+          </main>
       );
   }
 
@@ -1549,15 +1601,15 @@ const App: React.FC = () => {
     switch (view) {
       case AppView.LANDING:
         return (
-          <div className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-rose-600 via-rose-700 to-slate-950 text-white p-5 relative overflow-y-auto">
+          <main id="main-content" className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-rose-600 via-rose-700 to-slate-950 text-white p-5 relative overflow-y-auto">
             {/* Ambient Background */}
             <div className="absolute top-0 left-0 w-72 h-72 bg-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-25 pointer-events-none"></div>
             <div className="absolute bottom-0 right-0 w-72 h-72 bg-amber-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none"></div>
 
             {/* Hero Section */}
             <div className="relative z-10 text-center pt-4 pb-6 w-full max-w-sm mx-auto">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] font-bold text-amber-200 mb-4">
-                <ShieldCheck size={13} className="text-emerald-300" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/30 text-[11px] font-extrabold text-amber-300 mb-4 shadow-sm">
+                <ShieldCheck size={14} className="text-emerald-400" />
                 <span>Kenya's #1 Verified Dating & Matchmaking Community</span>
               </div>
 
@@ -1565,29 +1617,24 @@ const App: React.FC = () => {
                 <Flame size={36} className="text-white drop-shadow-lg" />
               </div>
 
-              <h1 className="text-3xl font-black mb-2 tracking-tight">
+              <h1 className="text-3xl font-black mb-2 tracking-tight text-white">
                 Pendo — Kenya's #1 Dating & Matchmaking App
               </h1>
-              <p className="text-xs text-rose-100/90 mb-5 leading-relaxed">
+              <p className="text-xs text-white font-medium mb-5 leading-relaxed">
                 Meet verified singles across Nairobi, Mombasa, Kisumu, Nakuru & Eldoret with M-Pesa Zawadi, Sheng AI & Live Date Safety Shield.
               </p>
 
               {/* Login Actions */}
-              <div className="space-y-2.5 w-full mb-6">
+              <div className="space-y-2 w-full mb-6">
                 <GoogleAuthButton
                   onClick={() => handleStartApp('google', selectedLandingCity)}
                   isLoading={isSigningInGoogle}
                   text={`Join ${selectedLandingCity} Singles with Google`}
                   className="w-full shadow-xl"
                 />
-
-                <button 
-                  onClick={() => handleStartApp('guest', selectedLandingCity)}
-                  disabled={isSigningInGoogle}
-                  className="w-full bg-white/15 hover:bg-white/25 text-white border border-white/30 px-5 py-3 rounded-2xl font-bold text-xs backdrop-blur-md transition-all active:scale-[0.98]"
-                >
-                  Explore {selectedLandingCity} Hub in Instant Guest Mode →
-                </button>
+                <p className="text-[11px] text-white font-semibold">
+                  Free instant registration · Verified singles only
+                </p>
               </div>
 
               {/* Installable PWA Banner */}
@@ -1595,13 +1642,13 @@ const App: React.FC = () => {
 
 
               {/* Interactive Kenyan City Dating Directory (SEO & Local Discovery) */}
-              <section aria-label="Kenyan City Dating Directory" className="bg-slate-900/80 backdrop-blur-md rounded-2xl p-4 border border-white/15 text-left">
+              <section aria-label="Kenyan City Dating Directory" className="bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 border border-white/20 text-left">
                 <div className="flex items-center justify-between mb-2.5">
                   <div>
-                    <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                    <h2 className="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
                       <MapPin size={13} /> Kenyan City Dating Hubs
                     </h2>
-                    <p className="text-[10px] text-slate-300">Select your city to preview verified singles & safe date spots</p>
+                    <p className="text-[10px] text-slate-100 font-medium">Select your city to preview verified singles & safe date spots</p>
                   </div>
                 </div>
 
@@ -1614,7 +1661,7 @@ const App: React.FC = () => {
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                         selectedLandingCity === city
                           ? 'bg-rose-500 text-white shadow-md'
-                          : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                          : 'bg-white/15 text-white hover:bg-white/25'
                       }`}
                     >
                       {city}
@@ -1623,35 +1670,35 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Selected City Card */}
-                <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2.5">
+                <div className="bg-white/10 rounded-xl p-3 border border-white/15 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-black text-white">{selectedLandingCity} Dating Hub</span>
-                    <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-400/30">
+                    <span className="text-[10px] font-extrabold text-emerald-200 bg-emerald-500/30 px-2 py-0.5 rounded-md border border-emerald-400/40">
                       {activeCityData.activeCount}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-300 leading-snug">{activeCityData.tagline}</p>
+                  <p className="text-[11px] text-slate-100 leading-snug">{activeCityData.tagline}</p>
 
                   {/* Neighborhoods inline metadata */}
-                  <p className="text-[10px] text-amber-200/90 font-medium">
+                  <p className="text-[10px] text-amber-200 font-bold">
                     Popular Areas: {activeCityData.neighborhoods.join(' · ')}
                   </p>
 
                   {/* Active Singles Preview in this City */}
                   {cityPreviewSingles.length > 0 && (
                     <div className="pt-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Verified Singles in {selectedLandingCity}</p>
+                      <p className="text-[10px] font-extrabold text-slate-200 uppercase mb-1.5">Verified Singles in {selectedLandingCity}</p>
                       <div className="flex items-center gap-2 overflow-x-auto pb-1">
                         {cityPreviewSingles.slice(0, 4).map(single => (
                           <button
                             key={single.id}
-                            onClick={() => handleStartApp('guest', selectedLandingCity)}
-                            className="flex items-center gap-2 bg-white/10 hover:bg-white/15 px-2.5 py-1.5 rounded-xl border border-white/10 shrink-0 text-left transition-all"
+                            onClick={() => handleStartApp('google', selectedLandingCity)}
+                            className="flex items-center gap-2 bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded-xl border border-white/15 shrink-0 text-left transition-all"
                           >
-                            <img src={single.photoUrl} alt={single.name} className="w-7 h-7 rounded-full object-cover" />
+                            <img src={single.photoUrl} alt={single.name} width="28" height="28" loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover" />
                             <div>
                               <p className="text-[11px] font-bold text-white leading-none">{single.name}, {single.age}</p>
-                              <p className="text-[9px] text-emerald-300">{single.neighborhood || single.location} · {single.trustScore || 90}% Trust</p>
+                              <p className="text-[9px] text-emerald-300 font-medium">{single.neighborhood || single.location} · {single.trustScore || 90}% Trust</p>
                             </div>
                           </button>
                         ))}
@@ -1661,36 +1708,42 @@ const App: React.FC = () => {
 
                   {/* Curated Safe Date Venues */}
                   <div className="pt-1">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Curated Safe First-Date Spots</p>
+                    <p className="text-[10px] font-extrabold text-slate-200 uppercase mb-1">Curated Safe First-Date Spots</p>
                     <div className="space-y-1">
                       {activeCityData.safeVenues.map((v, i) => (
-                        <div key={i} className="flex items-center justify-between text-[11px] bg-black/25 px-2.5 py-1.5 rounded-lg">
-                          <span className="font-semibold text-white">{v.name} <span className="text-slate-400">({v.area})</span></span>
-                          <span className="text-[10px] text-rose-200">{v.vibe}</span>
+                        <div key={i} className="flex items-center justify-between text-[11px] bg-black/40 px-2.5 py-1.5 rounded-lg border border-white/5">
+                          <span className="font-semibold text-white">{v.name} <span className="text-slate-200 font-normal">({v.area})</span></span>
+                          <span className="text-[10px] text-rose-200 font-medium">{v.vibe}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
               </section>
+
+              {/* Google AdSense Responsive Display Slot */}
+              <AdSenseBanner
+                isGoldMember={userProfile.subscriptionTier === 'GOLD' || userProfile.subscriptionTier === 'VIP'}
+                className="max-w-sm mx-auto mt-4"
+              />
             </div>
             
-            <div className="relative z-10 text-center pb-2 text-[11px] text-rose-200/80">
+            <div className="relative z-10 text-center pb-2 text-[11px] text-white font-bold">
               <span>Protected by Pendo Ngao Trust Shield & Firebase Security Rules</span>
             </div>
-          </div>
+          </main>
         );
 
       case AppView.PROFILE_SETUP:
         return (
-          <div className="min-h-screen bg-slate-50 pt-8">
+          <main id="main-content" className="min-h-screen bg-slate-50 pt-8">
             <ProfileSetup initialProfile={userProfile} onSave={handleProfileSave} />
-          </div>
+          </main>
         );
 
       case AppView.DISCOVERY:
         return (
-          <div className="min-h-screen bg-slate-100 pb-20">
+          <main id="main-content" className="min-h-screen bg-slate-100 pb-20">
             <div className="bg-white px-3.5 py-3 shadow-sm flex items-center justify-between sticky top-0 z-10">
               <h1 className="text-xl font-black text-rose-600 flex items-center gap-1.5">
                 <Flame size={22} fill="currentColor" /> Pendo
@@ -1773,13 +1826,14 @@ const App: React.FC = () => {
               onBoost={() => handleBoost(30 * 60 * 1000)}
               onOpenMpesaModal={(tab) => setMpesaModal({ isOpen: true, tab })}
               onOpenSafetyModal={() => setSafetyModal({ isOpen: true, tab: 'TRUST' })}
+              onOpenAlikaModal={() => setIsAlikaModalOpen(true)}
             />
-          </div>
+          </main>
         );
 
       case AppView.HANGOUTS:
         return (
-           <div className="min-h-screen bg-slate-50 pb-20">
+           <main id="main-content" className="min-h-screen bg-slate-50 pb-20">
              <HangoutSpots
                venues={MOCK_VENUES}
                onCheckIn={handleCheckInVenue}
@@ -1787,12 +1841,12 @@ const App: React.FC = () => {
                  setMpesaModal({ isOpen: true, tab: 'RESERVE', reserveVenue: venue })
                }
              />
-           </div>
+           </main>
         );
 
       case AppView.CHAT_LIST:
         return (
-          <div className="min-h-screen bg-slate-50 pb-20">
+          <main id="main-content" className="min-h-screen bg-slate-50 pb-20">
             <div className="bg-white p-4 shadow-sm sticky top-0 z-10 flex items-center justify-between">
               <h1 className="text-2xl font-bold text-slate-900">Matches & Groups</h1>
               <button
@@ -1807,25 +1861,27 @@ const App: React.FC = () => {
               onSelectChat={handleSelectChat} 
               onCreateGroup={() => setView(AppView.GROUP_CREATION)}
             />
-          </div>
+          </main>
         );
 
       case AppView.GROUP_CREATION:
         return (
-          <GroupCreation 
-            onSave={handleGroupCreate} 
-            onCancel={() => setView(AppView.CHAT_LIST)} 
-          />
+          <main id="main-content">
+            <GroupCreation 
+              onSave={handleGroupCreate} 
+              onCancel={() => setView(AppView.CHAT_LIST)} 
+            />
+          </main>
         );
 
       case AppView.CHAT_ROOM:
         const activeSession = chats.find(c => c.matchId === activeChatId);
         const activeMatch = matches.find(m => m.id === activeChatId);
         
-        if (!activeSession) return <div>Error loading chat</div>;
+        if (!activeSession) return <main id="main-content">Error loading chat</main>;
         
         return (
-          <div className="h-screen relative z-50">
+          <main id="main-content" className="h-screen relative z-50">
             <ChatRoom 
               session={activeSession}
               userProfile={userProfile}
@@ -1845,22 +1901,26 @@ const App: React.FC = () => {
                 setVoiceCall({ isOpen: true, isIncoming: false, match: match || activeMatch || null })
               }
             />
-          </div>
+          </main>
         );
 
       case AppView.VOICE_COACH:
           return (
-              <VoiceCoach onClose={() => setView(AppView.DISCOVERY)} />
+              <main id="main-content">
+                <VoiceCoach onClose={() => setView(AppView.DISCOVERY)} />
+              </main>
           );
 
       case AppView.MEET:
           return (
-              <MeetHub 
-                chats={chats}
-                onBack={() => setView(AppView.DISCOVERY)}
-                onShareLinkInChat={handleShareMeetLinkInChat}
-                userProfile={userProfile}
-              />
+              <main id="main-content">
+                <MeetHub 
+                  chats={chats}
+                  onBack={() => setView(AppView.DISCOVERY)}
+                  onShareLinkInChat={handleShareMeetLinkInChat}
+                  userProfile={userProfile}
+                />
+              </main>
           );
     }
   };
@@ -1877,58 +1937,84 @@ const App: React.FC = () => {
         </div>
       )}
       <div className="flex-1 relative overflow-hidden flex flex-col font-sans">
-        {renderContent()}
+        <Suspense fallback={
+          <div className="h-screen flex flex-col items-center justify-center bg-white p-6">
+            <Loader2 size={32} className="animate-spin text-rose-500 mb-2" />
+            <p className="text-xs text-slate-400 font-medium">Loading Pendo...</p>
+          </div>
+        }>
+          {renderContent()}
+        </Suspense>
       </div>
 
-      {isAuntieShoshOpen && (
-        <AuntieShosh 
-          userProfile={userProfile} 
-          onClose={() => setIsAuntieShoshOpen(false)} 
-        />
-      )}
+      <Suspense fallback={null}>
+        {isAuntieShoshOpen && (
+          <AuntieShosh 
+            userProfile={userProfile} 
+            onClose={() => setIsAuntieShoshOpen(false)} 
+          />
+        )}
 
-      {/* M-Pesa Express (Daraja 2.0) Modal for Boosts, Pendo Gold, Virtual Zawadi & Date Table Reserve */}
-      <MpesaModal
-        isOpen={mpesaModal.isOpen}
-        onClose={() => setMpesaModal(prev => ({ ...prev, isOpen: false }))}
-        initialTab={mpesaModal.tab}
-        userProfile={userProfile}
-        recipientId={mpesaModal.recipientId}
-        recipientName={mpesaModal.recipientName}
-        reserveVenue={mpesaModal.reserveVenue}
-        onBoostActivated={handleBoost}
-        onGoldUpgraded={handleGoldUpgraded}
-        onGiftSent={handleMpesaGiftSent}
-        onVenueReserved={(venueName, receipt, code) => {
-          if (activeChatId) {
-            handleSendMessageToChat(activeChatId, `🍽️ Reserved our date table at ${venueName}! (Booking Code: ${code})`);
-          }
-        }}
-      />
+        {/* M-Pesa Express (Daraja 2.0) Modal for Boosts, Pendo Gold, Virtual Zawadi & Date Table Reserve */}
+        {mpesaModal.isOpen && (
+          <MpesaModal
+            isOpen={mpesaModal.isOpen}
+            onClose={() => setMpesaModal(prev => ({ ...prev, isOpen: false }))}
+            initialTab={mpesaModal.tab}
+            userProfile={userProfile}
+            recipientId={mpesaModal.recipientId}
+            recipientName={mpesaModal.recipientName}
+            reserveVenue={mpesaModal.reserveVenue}
+            onBoostActivated={handleBoost}
+            onGoldUpgraded={handleGoldUpgraded}
+            onGiftSent={handleMpesaGiftSent}
+            onVenueReserved={(venueName, receipt, code) => {
+              if (activeChatId) {
+                handleSendMessageToChat(activeChatId, `🍽️ Reserved our date table at ${venueName}! (Booking Code: ${code})`);
+              }
+            }}
+          />
+        )}
 
-      {/* 1-on-1 Voice Call Experience */}
-      <VoiceCallModal
-        isOpen={voiceCall.isOpen}
-        isIncoming={voiceCall.isIncoming}
-        match={voiceCall.match}
-        currentUser={userProfile}
-        onClose={() => setVoiceCall(prev => ({ ...prev, isOpen: false }))}
-      />
+        {/* 1-on-1 Voice Call Experience */}
+        {voiceCall.isOpen && (
+          <VoiceCallModal
+            isOpen={voiceCall.isOpen}
+            isIncoming={voiceCall.isIncoming}
+            match={voiceCall.match}
+            currentUser={userProfile}
+            onClose={() => setVoiceCall(prev => ({ ...prev, isOpen: false }))}
+          />
+        )}
 
-      {/* Pendo Ngao Trust Score, Live Selfie Verification & Date Safety Check-In Modal */}
-      <SafetyVerificationModal
-        isOpen={safetyModal.isOpen}
-        onClose={() => setSafetyModal(prev => ({ ...prev, isOpen: false }))}
-        initialTab={safetyModal.tab}
-        userProfile={userProfile}
-        defaultMatchName={safetyModal.matchName}
-        onProfileVerified={handleProfileVerified}
-        onShareSafetyBeaconToChat={(beaconText) => {
-          if (activeChatId) {
-            handleSendMessageToChat(activeChatId, beaconText);
-          }
-        }}
-      />
+        {/* Pendo Ngao Trust Score, Live Selfie Verification & Date Safety Check-In Modal */}
+        {safetyModal.isOpen && (
+          <SafetyVerificationModal
+            isOpen={safetyModal.isOpen}
+            onClose={() => setSafetyModal(prev => ({ ...prev, isOpen: false }))}
+            initialTab={safetyModal.tab}
+            userProfile={userProfile}
+            defaultMatchName={safetyModal.matchName}
+            onProfileVerified={handleProfileVerified}
+            onShareSafetyBeaconToChat={(beaconText) => {
+              if (activeChatId) {
+                handleSendMessageToChat(activeChatId, beaconText);
+              }
+            }}
+          />
+        )}
+
+        {/* Alika Rafiki Viral WhatsApp Referral & Community Growth Modal */}
+        {isAlikaModalOpen && (
+          <AlikaRafikiModal
+            isOpen={isAlikaModalOpen}
+            onClose={() => setIsAlikaModalOpen(false)}
+            userName={userProfile.name}
+            userCity={userProfile.location}
+            onRewardEarned={handleReferralReward}
+          />
+        )}
+      </Suspense>
 
       {showNav && (
         <div className="fixed bottom-0 w-full max-w-md bg-white border-t border-slate-100 flex justify-around items-center py-4 px-2 z-40 pb-6">

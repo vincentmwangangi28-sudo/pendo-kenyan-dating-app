@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        hmr: false,
       },
       plugins: [
         react(),
@@ -104,6 +105,21 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY || ''),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || '')
+      },
+      build: {
+        target: 'esnext',
+        minify: 'esbuild',
+        cssCodeSplit: true,
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              'vendor-react': ['react', 'react-dom'],
+              'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+              'vendor-icons': ['lucide-react'],
+              'vendor-motion': ['motion/react'],
+            }
+          }
+        }
       },
       resolve: {
         alias: {
