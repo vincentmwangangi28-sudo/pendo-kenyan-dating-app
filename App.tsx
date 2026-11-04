@@ -12,11 +12,14 @@ import { GoogleAuthButton } from './components/GoogleAuthButton';
 import { AuthNotification } from './components/AuthNotification';
 import { MpesaModal } from './components/MpesaModal';
 import { SafetyVerificationModal, calculateTrustScore } from './components/SafetyVerificationModal';
-import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Shield, CheckCircle2, ShieldCheck, Crown, Sparkles, Globe, Check } from 'lucide-react';
+import { PWAInstallButton } from './components/PWAInstallButton';
+import { VoiceCallModal } from './components/VoiceCallModal';
+import { useOnlineStatus } from './hooks/usePWAInstall';
+import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Phone, Shield, CheckCircle2, ShieldCheck, Crown, Sparkles, Globe, Check, WifiOff } from 'lucide-react';
 import { findRealtimeEvents } from './services/geminiService';
-import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut, getOrCreateGuestUser, AppAuthUser } from './services/firebase';
+import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut, getOrCreateGuestUser, AppAuthUser, checkFirestoreConnectivity } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, getDocFromServer, collection, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { safeStorage } from './services/storage';
 import { googleAuthLogger } from './services/googleAuthLogger';
 
@@ -826,12 +829,15 @@ const App: React.FC = () => {
   const [isOffline, setIsOffline] = useState(false);
   const [isAuntieShoshOpen, setIsAuntieShoshOpen] = useState(false);
 
+  const isNetworkOnline = useOnlineStatus();
+
   // Connected Modals: M-Pesa Express & Pendo Ngao Trust/Safety
   const [mpesaModal, setMpesaModal] = useState<{
     isOpen: boolean;
-    tab: 'BOOST' | 'GOLD' | 'GIFT';
+    tab: 'BOOST' | 'GOLD' | 'GIFT' | 'RESERVE';
     recipientId?: string;
     recipientName?: string;
+    reserveVenue?: any;
   }>({ isOpen: false, tab: 'GOLD' });
 
   const [safetyModal, setSafetyModal] = useState<{
@@ -840,24 +846,32 @@ const App: React.FC = () => {
     matchName?: string;
   }>({ isOpen: false, tab: 'TRUST' });
 
+  // 1-on-1 Voice Call State
+  const [voiceCall, setVoiceCall] = useState<{
+    isOpen: boolean;
+    isIncoming: boolean;
+    match: MatchProfile | null;
+  }>({ isOpen: false, isIncoming: false, match: null });
+
   // Kenyan City Directory state on Landing
   const [selectedLandingCity, setSelectedLandingCity] = useState<string>('Nairobi');
-  const [indexNowSubmitting, setIndexNowSubmitting] = useState(false);
-  const [indexNowStatus, setIndexNowStatus] = useState<string | null>(null);
+
+  // Automatic background SEO & IndexNow sync (running in backend without UI)
+  useEffect(() => {
+    fetch('/api/indexnow/submit', { method: 'POST' }).catch(() => {});
+  }, []);
 
   // Connection Test
   useEffect(() => {
-    async function testConnection() {
-      try {
-        await getDocFromServer(doc(db, 'test', 'connection'));
-      } catch (error) {
-        if(error instanceof Error && (error.message.includes('the client is offline') || error.message.includes('unreachable') || error.message.includes('Could not reach'))) {
-          console.warn("Firestore offline - setting fallback offline mode.");
-          setIsOffline(true);
-        }
+    let mounted = true;
+    checkFirestoreConnectivity().then((online) => {
+      if (mounted && !online) {
+        setIsOffline(true);
       }
-    }
-    testConnection();
+    });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Auth Listener
@@ -1250,23 +1264,6 @@ const App: React.FC = () => {
     });
   };
 
-  const handleTriggerIndexNow = async () => {
-    setIndexNowSubmitting(true);
-    setIndexNowStatus(null);
-    try {
-      const res = await fetch('/api/indexnow/submit', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        setIndexNowStatus(`Submitted ${data.submittedUrls?.length || 10} Kenyan City URLs to Bing & Yandex IndexNow!`);
-      } else {
-        setIndexNowStatus('IndexNow ping queued.');
-      }
-    } catch {
-      setIndexNowStatus('IndexNow ping verified locally.');
-    } finally {
-      setIndexNowSubmitting(false);
-    }
-  };
 
   const handleSelectChat = (matchId: string) => {
     setActiveChatId(matchId);
@@ -1354,6 +1351,35 @@ const App: React.FC = () => {
       }
       return chat;
     }));
+
+    // Resilient background Firestore sync when authenticated & online
+    if (auth.currentUser && !isOffline) {
+      (async () => {
+        try {
+          const sessionDocRef = doc(db, 'chatSessions', chatId);
+          await setDoc(sessionDocRef, {
+            participants: [auth.currentUser!.uid, chatId],
+            matchName: currentChat?.matchName || 'Chat',
+            isGroup: Boolean(currentChat?.isGroup),
+            lastMessage: text ? text.slice(0, 500) : (imageUrl ? 'Sent a photo' : 'Sent a voice note'),
+            updaterId: auth.currentUser!.uid,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+
+          const messageDocRef = doc(db, 'chatSessions', chatId, 'messages', newMessage.id);
+          await setDoc(messageDocRef, {
+            senderId: auth.currentUser!.uid,
+            text: text ? text.slice(0, 1000) : '',
+            ...(imageUrl ? { imageUrl } : {}),
+            ...(audioUrl ? { audioUrl } : {}),
+            status: 'sent',
+            timestamp: serverTimestamp()
+          });
+        } catch (e) {
+          console.warn('Firestore message sync fallback to local state:', e);
+        }
+      })();
+    }
 
     // Simulate "Delivered" and "Read"
     setTimeout(() => {
@@ -1564,25 +1590,9 @@ const App: React.FC = () => {
                 </button>
               </div>
 
-              {/* 4 Connected Pillars Highlight */}
-              <div className="grid grid-cols-2 gap-2 text-left mb-6">
-                <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-sm border border-white/15 text-xs">
-                  <span className="font-bold text-emerald-300 block">💚 M-Pesa Daraja 2.0</span>
-                  <span className="text-[10px] text-rose-100/80">Send Chai, Dawa & Boosts via STK Push</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-sm border border-white/15 text-xs">
-                  <span className="font-bold text-amber-300 block">🛡️ Pendo Ngao Shield</span>
-                  <span className="text-[10px] text-rose-100/80">Selfie AI Check & Matatu Fare Reserve</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-sm border border-white/15 text-xs">
-                  <span className="font-bold text-rose-200 block">🎙️ Live Voice Lounges</span>
-                  <span className="text-[10px] text-rose-100/80">15s Voice Intros & Sheng Translator</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-black/25 backdrop-blur-sm border border-white/15 text-xs">
-                  <span className="font-bold text-purple-200 block">📹 Google Meet Dates</span>
-                  <span className="text-[10px] text-rose-100/80">Safe 1-on-1 virtual video first dates</span>
-                </div>
-              </div>
+              {/* Installable PWA Banner */}
+              <PWAInstallButton variant="banner" className="mb-6 shadow-xl" />
+
 
               {/* Interactive Kenyan City Dating Directory (SEO & Local Discovery) */}
               <section aria-label="Kenyan City Dating Directory" className="bg-slate-900/80 backdrop-blur-md rounded-2xl p-4 border border-white/15 text-left">
@@ -1663,24 +1673,6 @@ const App: React.FC = () => {
                   </div>
                 </div>
               </section>
-
-              {/* Search Engine IndexNow Verification Bar */}
-              <div className="mt-4 flex items-center justify-between bg-black/30 px-3 py-2 rounded-xl border border-white/10 text-[10px] text-slate-300">
-                <span className="flex items-center gap-1.5">
-                  <Globe size={12} className="text-emerald-400" />
-                  <span>Bing & Google SEO Ready · JSON-LD + Sitemap</span>
-                </span>
-                <button
-                  onClick={handleTriggerIndexNow}
-                  disabled={indexNowSubmitting}
-                  className="text-amber-300 hover:text-amber-200 font-bold underline cursor-pointer"
-                >
-                  {indexNowSubmitting ? 'Pinging...' : 'Ping IndexNow'}
-                </button>
-              </div>
-              {indexNowStatus && (
-                <p className="mt-1.5 text-[10px] text-emerald-300 font-semibold">{indexNowStatus}</p>
-              )}
             </div>
             
             <div className="relative z-10 text-center pb-2 text-[11px] text-rose-200/80">
@@ -1726,6 +1718,19 @@ const App: React.FC = () => {
                  >
                     <Crown size={12} className="text-amber-600" />
                     <span>{userProfile.subscriptionTier && userProfile.subscriptionTier !== 'FREE' ? userProfile.subscriptionTier : 'Gold'}</span>
+                 </button>
+
+                 {/* PWA Install Button Badge */}
+                 <PWAInstallButton variant="badge" />
+
+                 {/* 1-on-1 Voice Call simulation button */}
+                 <button
+                   onClick={() => setVoiceCall({ isOpen: true, isIncoming: true, match: matches[0] || null })}
+                   className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-full font-black text-[11px] flex items-center gap-1 shadow-xs transition-all active:scale-95"
+                   title="Simulate 1-on-1 Voice Call from Match"
+                 >
+                   <Phone size={12} className="text-emerald-600" />
+                   <span>Call</span>
                  </button>
 
                  <button 
@@ -1775,7 +1780,13 @@ const App: React.FC = () => {
       case AppView.HANGOUTS:
         return (
            <div className="min-h-screen bg-slate-50 pb-20">
-             <HangoutSpots venues={MOCK_VENUES} onCheckIn={handleCheckInVenue} />
+             <HangoutSpots
+               venues={MOCK_VENUES}
+               onCheckIn={handleCheckInVenue}
+               onReserveVenue={(venue) =>
+                 setMpesaModal({ isOpen: true, tab: 'RESERVE', reserveVenue: venue })
+               }
+             />
            </div>
         );
 
@@ -1830,6 +1841,9 @@ const App: React.FC = () => {
               onOpenSafetyCheckin={(matchName) =>
                 setSafetyModal({ isOpen: true, tab: 'CHECKIN', matchName })
               }
+              onStartVoiceCall={(match) =>
+                setVoiceCall({ isOpen: true, isIncoming: false, match: match || activeMatch || null })
+              }
             />
           </div>
         );
@@ -1856,10 +1870,10 @@ const App: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden flex flex-col">
-      {isOffline && (
+      {(!isNetworkOnline || isOffline) && (
         <div className="bg-amber-600 text-white text-[11px] py-1.5 px-4 font-bold text-center z-50 flex items-center justify-center gap-1.5 shrink-0 shadow-sm">
           <span className="w-2 h-2 rounded-full bg-amber-200 animate-pulse shrink-0"></span>
-          Resilient Local Sandbox Mode (Offline Fallback)
+          <span>Offline Mode — Cached Kenyan singles & date venues active</span>
         </div>
       )}
       <div className="flex-1 relative overflow-hidden flex flex-col font-sans">
@@ -1873,7 +1887,7 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* M-Pesa Express (Daraja 2.0) Modal for Boosts, Pendo Gold & Virtual Zawadi */}
+      {/* M-Pesa Express (Daraja 2.0) Modal for Boosts, Pendo Gold, Virtual Zawadi & Date Table Reserve */}
       <MpesaModal
         isOpen={mpesaModal.isOpen}
         onClose={() => setMpesaModal(prev => ({ ...prev, isOpen: false }))}
@@ -1881,9 +1895,24 @@ const App: React.FC = () => {
         userProfile={userProfile}
         recipientId={mpesaModal.recipientId}
         recipientName={mpesaModal.recipientName}
+        reserveVenue={mpesaModal.reserveVenue}
         onBoostActivated={handleBoost}
         onGoldUpgraded={handleGoldUpgraded}
         onGiftSent={handleMpesaGiftSent}
+        onVenueReserved={(venueName, receipt, code) => {
+          if (activeChatId) {
+            handleSendMessageToChat(activeChatId, `🍽️ Reserved our date table at ${venueName}! (Booking Code: ${code})`);
+          }
+        }}
+      />
+
+      {/* 1-on-1 Voice Call Experience */}
+      <VoiceCallModal
+        isOpen={voiceCall.isOpen}
+        isIncoming={voiceCall.isIncoming}
+        match={voiceCall.match}
+        currentUser={userProfile}
+        onClose={() => setVoiceCall(prev => ({ ...prev, isOpen: false }))}
       />
 
       {/* Pendo Ngao Trust Score, Live Selfie Verification & Date Safety Check-In Modal */}

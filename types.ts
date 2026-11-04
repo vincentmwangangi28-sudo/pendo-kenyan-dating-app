@@ -63,13 +63,20 @@ export interface MpesaTransaction {
   userId: string;
   phone: string;
   amountKes: number;
-  purpose: 'BOOST' | 'GOLD_SUBSCRIPTION' | 'VIRTUAL_GIFT' | 'FARE_SHIELD';
+  purpose: 'BOOST' | 'GOLD_SUBSCRIPTION' | 'VIRTUAL_GIFT' | 'FARE_SHIELD' | 'VENUE_RESERVATION';
   itemName: string;
   recipientId?: string;
   recipientName?: string;
   receiptNumber: string;
   status: 'COMPLETED' | 'PENDING' | 'FAILED';
   createdAt: number;
+  reservationDetails?: {
+    venueName: string;
+    venueLocation: string;
+    dateSlot: string;
+    guestCount: number;
+    reservationCode: string;
+  };
 }
 
 export interface SafetyCheckin {

@@ -111,5 +111,23 @@ This plan unifies and connects all four core pillars of **Pendo — Kenya's #1 D
   - Validates Kenyan phone numbers, calls `/api/mpesa/stk-push`, writes the verified transaction to Firestore, increments the user's boost timer or Gold badge, or dispatches an animated Virtual Gift message directly into the Firestore `messages` subcollection.
 - **Selfie Verification & Safety Center (`SafetyVerificationModal` & `MeetHub`)**:
   - Opens live webcam preview, captures base64 frame, invokes Gemini verification check to confirm a real human face/pose, updates `isVerified = true` and `trustScore` in Firestore, and allows creating/completing live Date Safety Check-Ins synced to Firestore.
-- **Hardened Firestore Security Rules (` firebase-blueprint.json` & `firestore.rules`)**:
+- **Hardened Firestore Security Rules (`firebase-blueprint.json` & `firestore.rules`)**:
   - Updates `firebase-blueprint.json` and `firestore.rules` to cover all collections (`users`, `chatSessions`, `messages`, `voiceRooms`, `swipes`, `transactions`, `safetyCheckins`) with strict schema validation helpers, size bounds, and `DeployRules` synchronization.
+
+---
+
+## 5. Execution & Verification Status (Completed)
+
+| Milestone | Status | Key Deliverable |
+| :--- | :---: | :--- |
+| **Firestore Resilient Long-Polling & 0-Timeout Probing** | ✅ Completed | `setLogLevel('silent')`, `experimentalForceLongPolling: true`, memory cache, and 3.5s fast-failing connection probe preventing any 10s hang or noisy console errors. |
+| **Kenyan City SEO Directories & IndexNow** | ✅ Completed | Semantic `<h1>`, 5-city directories (Nairobi, Mombasa, Kisumu, Nakuru, Eldoret) with verified singles and safe date venues, JSON-LD, Bing SiteAuth XML, and `/api/indexnow/submit`. |
+| **Voice Lounge & Real-Time Rooms** | ✅ Completed | Curated live Kenyan lounges, Web Audio synth soundboard (Vuvuzela, Claps, Cheer, Laughs) with live visual reaction badges, Auntie Shosh AI co-host with TTS, and guest/offline fallback. |
+| **M-Pesa Express & Virtual Zawadi** | ✅ Completed | STK Push API (`/api/mpesa/stk-push`), Safaricom phone format validator, Pendo Gold, Profile Boosts, Virtual Gifts (Chai, Dawa, Mahamri, Mara safari), and Firestore transaction logging. |
+| **Pendo Ngao Date Safety & Selfie Verification** | ✅ Completed | Live webcam capture with Gemini Vision pose check, explainable Trust Score (0–100), and Matatu Fare Shield check-in synced to `/api/safety/checkin` and Firestore. |
+| **Chat Message Persistence** | ✅ Completed | Background optimistic Firestore chat message syncing (`chatSessions/{id}/messages/{id}`) with `serverTimestamp` and local instant delivery fallback. |
+| **PWA Compliance & In-App Installation** | ✅ Completed | `vite-plugin-pwa` integration, compliant Web App Manifest (`id`, `standalone`), 192px/512px/maskable PNG icons + Apple Touch Icon, `usePWAInstall` hook, banner & badge install prompts, and offline caching. |
+| **1-on-1 Audio Voice Calls & Ringtone Synth** | ✅ Completed | Web Audio synthesis for authentic cellular ringing cadence, live audio waveform visualizer, Sheng greeting utterance, icebreaker cards, and in-chat call triggers. |
+| **M-Pesa Date Table Reservations** | ✅ Completed | Guaranteed date booth/table reservations with KES 500 M-Pesa STK push deposit (100% credited at venue), slot selector, and digital Pendo Date Reservation Pass. |
+| **ESLint & Applet Compilation** | ✅ Completed | 0 lint errors (`eslint .`), successful production build (`npm run build`), and active dev server on port 3000. |
+| **Backend Automation & UI Streamlining** | ✅ Completed | Removed developer diagnostic cards (4 pillars grid) and manual IndexNow bar from the Landing UI; moved IndexNow and service routines to silent backend/server tasks. |

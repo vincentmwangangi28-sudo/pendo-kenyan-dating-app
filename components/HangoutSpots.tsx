@@ -11,6 +11,7 @@ import { Map as PigeonMap, Overlay } from 'pigeon-maps';
 interface HangoutSpotsProps {
   venues: HangoutSpot[];
   onCheckIn: (venue: HangoutSpot) => void;
+  onReserveVenue?: (venue: HangoutSpot) => void;
 }
 
 const CATEGORIES = [
@@ -39,7 +40,7 @@ const DEFAULT_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'Tokyo': { lat: 35.6762, lng: 139.6503 }
 };
 
-export const HangoutSpots: React.FC<HangoutSpotsProps> = ({ venues: initialVenues, onCheckIn }) => {
+export const HangoutSpots: React.FC<HangoutSpotsProps> = ({ venues: initialVenues, onCheckIn, onReserveVenue }) => {
   const [venues, setVenues] = useState<HangoutSpot[]>(initialVenues);
   const [cities, setCities] = useState<string[]>(DEFAULT_CITIES);
   const [cityCoordinates, setCityCoordinates] = useState<Record<string, { lat: number; lng: number }>>(DEFAULT_COORDINATES);
@@ -431,12 +432,20 @@ export const HangoutSpots: React.FC<HangoutSpotsProps> = ({ venues: initialVenue
                 </button>
               )}
 
-              <button 
-                onClick={() => onCheckIn(venue)}
-                className="w-full py-2.5 bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-800 transition active:scale-98 cursor-pointer"
-              >
-                <MessageCircle size={15} /> Check In & Join Local Dating Chat
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button 
+                  onClick={() => onCheckIn(venue)}
+                  className="py-2.5 bg-slate-900 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-slate-800 transition active:scale-98 cursor-pointer"
+                >
+                  <MessageCircle size={14} /> Join Chat
+                </button>
+                <button 
+                  onClick={() => onReserveVenue ? onReserveVenue(venue) : null}
+                  className="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer shadow-xs"
+                >
+                  <span>🍽️</span> Reserve Table
+                </button>
+              </div>
             </div>
           </div>
         ))}

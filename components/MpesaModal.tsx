@@ -65,13 +65,15 @@ export const VIRTUAL_GIFTS_CATALOG: VirtualGift[] = [
 interface MpesaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: 'BOOST' | 'GOLD' | 'GIFT';
+  initialTab?: 'BOOST' | 'GOLD' | 'GIFT' | 'RESERVE';
   userProfile: UserProfile;
   recipientId?: string;
   recipientName?: string;
+  reserveVenue?: any;
   onBoostActivated?: (durationMinutes: number) => void;
   onGoldUpgraded?: (tier: 'GOLD' | 'VIP', phone: string) => void;
   onGiftSent?: (gift: VirtualGift, receiptNumber: string) => void;
+  onVenueReserved?: (venueName: string, receiptNumber: string, reservationCode: string) => void;
 }
 
 export const MpesaModal: React.FC<MpesaModalProps> = ({
@@ -81,15 +83,19 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
   userProfile,
   recipientId,
   recipientName,
+  reserveVenue,
   onBoostActivated,
   onGoldUpgraded,
-  onGiftSent
+  onGiftSent,
+  onVenueReserved
 }) => {
-  const [activeTab, setActiveTab] = useState<'BOOST' | 'GOLD' | 'GIFT'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'BOOST' | 'GOLD' | 'GIFT' | 'RESERVE'>(initialTab);
   const [phone, setPhone] = useState<string>(userProfile.mpesaPhone || '0712345678');
   const [selectedBoostPlan, setSelectedBoostPlan] = useState<'30M' | '120M'>('30M');
   const [selectedGoldPlan, setSelectedGoldPlan] = useState<'WEEKLY' | 'MONTHLY' | 'VIP'>('MONTHLY');
   const [selectedGift, setSelectedGift] = useState<VirtualGift>(VIRTUAL_GIFTS_CATALOG[0]);
+  const [selectedDateSlot, setSelectedDateSlot] = useState<string>('Tonight 7:30 PM (Sundowner)');
+  const [selectedVenueName, setSelectedVenueName] = useState<string>(reserveVenue?.name || 'The Alchemist (Westlands, Nairobi)');
   const [step, setStep] = useState<'SELECT' | 'STK_PUSH' | 'SUCCESS'>('SELECT');
   const [error, setError] = useState<string | null>(null);
   const [lastTransaction, setLastTransaction] = useState<MpesaTransaction | null>(null);
@@ -138,6 +144,13 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
       }
       return { purpose: 'GOLD_SUBSCRIPTION' as const, itemName: 'Pendo Gold Monthly Membership', amountKes: 950 };
     }
+    if (activeTab === 'RESERVE') {
+      return {
+        purpose: 'VENUE_RESERVATION' as const,
+        itemName: `Date Table Deposit: ${selectedVenueName}`,
+        amountKes: 500
+      };
+    }
     return {
       purpose: 'VIRTUAL_GIFT' as const,
       itemName: `${selectedGift.name} (${selectedGift.icon})`,
@@ -175,6 +188,8 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
       const receiptCode = data?.receiptNumber || `SGK${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 
       const uid = auth.currentUser?.uid || userProfile.uid || 'guest_user';
+      const reservationCode = `PND-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
       const tx: MpesaTransaction = {
         id: `tx_${Date.now()}`,
         userId: uid,
@@ -186,7 +201,16 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
         ...(recipientName ? { recipientName } : {}),
         receiptNumber: receiptCode,
         status: 'COMPLETED',
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        ...(activeTab === 'RESERVE' ? {
+          reservationDetails: {
+            venueName: selectedVenueName,
+            venueLocation: reserveVenue?.location || 'Nairobi',
+            dateSlot: selectedDateSlot,
+            guestCount: 2,
+            reservationCode
+          }
+        } : {})
       };
 
       // Save to Firestore transactions collection (with resilient fallback)
@@ -211,6 +235,8 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
           onGoldUpgraded(selectedGoldPlan === 'VIP' ? 'VIP' : 'GOLD', formattedPhone);
         } else if (activeTab === 'GIFT' && onGiftSent) {
           onGiftSent(selectedGift, receiptCode);
+        } else if (activeTab === 'RESERVE' && onVenueReserved) {
+          onVenueReserved(selectedVenueName, receiptCode, reservationCode);
         }
       }, 1200);
     } catch (err: any) {
@@ -248,42 +274,53 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
             {activeTab === 'GOLD' && 'Upgrade to Pendo Gold 🇰🇪'}
             {activeTab === 'BOOST' && 'Spotlight Profile Boost ⚡'}
             {activeTab === 'GIFT' && `Send Zawadi to ${recipientName || 'Your Match'} 🎁`}
+            {activeTab === 'RESERVE' && 'Reserve Date Table (M-Pesa) 🍽️'}
           </h2>
           <p className="text-xs text-emerald-100 mt-0.5">
             Zero card fees · Instant activation across Nairobi, Mombasa & all 47 counties
           </p>
 
           {/* Mode Switcher Tabs */}
-          <div className="grid grid-cols-3 gap-1.5 bg-emerald-900/40 p-1 rounded-xl mt-4 border border-emerald-500/30">
+          <div className="grid grid-cols-4 gap-1 bg-emerald-900/40 p-1 rounded-xl mt-4 border border-emerald-500/30">
             <button
               type="button"
               onClick={() => { setActiveTab('GOLD'); setStep('SELECT'); }}
-              className={`py-2 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-1.5 px-1 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all ${
                 activeTab === 'GOLD' ? 'bg-white text-emerald-900 shadow-sm' : 'text-emerald-100 hover:bg-white/10'
               }`}
             >
-              <Crown size={13} className={activeTab === 'GOLD' ? 'text-amber-500' : ''} />
-              Pendo Gold
+              <Crown size={12} className={activeTab === 'GOLD' ? 'text-amber-500' : ''} />
+              Gold
             </button>
             <button
               type="button"
               onClick={() => { setActiveTab('BOOST'); setStep('SELECT'); }}
-              className={`py-2 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-1.5 px-1 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all ${
                 activeTab === 'BOOST' ? 'bg-white text-emerald-900 shadow-sm' : 'text-emerald-100 hover:bg-white/10'
               }`}
             >
-              <Zap size={13} className={activeTab === 'BOOST' ? 'text-purple-600' : ''} />
+              <Zap size={12} className={activeTab === 'BOOST' ? 'text-purple-600' : ''} />
               Boost
             </button>
             <button
               type="button"
               onClick={() => { setActiveTab('GIFT'); setStep('SELECT'); }}
-              className={`py-2 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-1.5 px-1 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all ${
                 activeTab === 'GIFT' ? 'bg-white text-emerald-900 shadow-sm' : 'text-emerald-100 hover:bg-white/10'
               }`}
             >
-              <Gift size={13} className={activeTab === 'GIFT' ? 'text-rose-600' : ''} />
-              Zawadi Gifts
+              <Gift size={12} className={activeTab === 'GIFT' ? 'text-rose-600' : ''} />
+              Zawadi
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('RESERVE'); setStep('SELECT'); }}
+              className={`py-1.5 px-1 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all ${
+                activeTab === 'RESERVE' ? 'bg-white text-emerald-900 shadow-sm' : 'text-emerald-100 hover:bg-white/10'
+              }`}
+            >
+              <span className="text-xs">🍽️</span>
+              Table
             </button>
           </div>
         </div>
@@ -421,6 +458,66 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
                 </div>
               )}
 
+              {/* TAB 4: DATE TABLE RESERVATION */}
+              {activeTab === 'RESERVE' && (
+                <div className="space-y-3">
+                  <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-3 text-xs text-emerald-950 space-y-1">
+                    <div className="font-extrabold flex items-center gap-1.5 text-emerald-900">
+                      🍽️ Guaranteed First Date Table Reservation
+                    </div>
+                    <p className="text-[11px] text-emerald-800 leading-relaxed">
+                      KES 500 deposit secures an intimate table for 2. The full amount is 100% credited toward your food & drinks at the venue!
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                      Select Date Spot Venue
+                    </label>
+                    <select
+                      value={selectedVenueName}
+                      onChange={(e) => setSelectedVenueName(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-emerald-600"
+                    >
+                      <option value="The Alchemist (Westlands, Nairobi)">The Alchemist (Westlands, Nairobi)</option>
+                      <option value="Nairobi Street Kitchen (Mpaka Rd)">Nairobi Street Kitchen (Mpaka Rd)</option>
+                      <option value="Tamarind Dhow & Restaurant (Nyali, Mombasa)">Tamarind Dhow & Restaurant (Nyali, Mombasa)</option>
+                      <option value="Dunga Hill Camp (Lakeside, Kisumu)">Dunga Hill Camp (Lakeside, Kisumu)</option>
+                      <option value="Java House Coffee & Dining (Nairobi CBD)">Java House Coffee & Dining (Nairobi CBD)</option>
+                      <option value="Karura River Cafe (Karura Forest)">Karura River Cafe (Karura Forest)</option>
+                      <option value="T-Klub Lounge (Nakuru)">T-Klub Lounge (Nakuru)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                      Preferred Date Time Slot
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        'Tonight 7:30 PM (Sundowner)',
+                        'Tomorrow 8:00 PM (Dinner & Cocktails)',
+                        'Friday 6:30 PM (Friday Sherehe)',
+                        'Saturday 1:00 PM (Weekend Brunch)'
+                      ].map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => setSelectedDateSlot(slot)}
+                          className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
+                            selectedDateSlot === slot
+                              ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-600/20'
+                              : 'border-slate-200 text-slate-600 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* M-Pesa Phone Number Input */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
@@ -485,12 +582,26 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
                   Confirmed · M-Pesa Receipt #{lastTransaction.receiptNumber}
                 </span>
                 <h3 className="text-xl font-extrabold text-slate-900 mt-2">
-                  Malipo Imekamilika! 🎉
+                  {lastTransaction.purpose === 'VENUE_RESERVATION' ? 'Date Table Confirmed! 🍽️' : 'Malipo Imekamilika! 🎉'}
                 </h3>
                 <p className="text-xs text-slate-600 mt-1">
                   KES {lastTransaction.amountKes} paid for <strong>{lastTransaction.itemName}</strong>.
                 </p>
               </div>
+
+              {lastTransaction.purpose === 'VENUE_RESERVATION' && lastTransaction.reservationDetails && (
+                <div className="bg-emerald-950 text-white rounded-2xl p-4 text-left shadow-lg space-y-2 border border-emerald-700/50">
+                  <div className="flex items-center justify-between border-b border-emerald-800 pb-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Pendo Date Pass</span>
+                    <span className="font-mono text-xs font-black text-amber-300">{lastTransaction.reservationDetails.reservationCode}</span>
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-bold text-white text-sm">{lastTransaction.reservationDetails.venueName}</p>
+                    <p className="text-emerald-300 text-[11px]">{lastTransaction.reservationDetails.dateSlot}</p>
+                    <p className="text-[10px] text-emerald-400 mt-1">Table for 2 Guests · KES 500 Food & Drink Credit Included</p>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-left text-xs space-y-1.5 font-mono">
                 <div className="flex justify-between">

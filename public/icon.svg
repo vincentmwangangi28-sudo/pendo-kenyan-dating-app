@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="pendoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E11D48" />
+      <stop offset="50%" stop-color="#F43F5E" />
+      <stop offset="100%" stop-color="#BE123C" />
+    </linearGradient>
+    <linearGradient id="shieldAccent" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0F172A" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="512" height="512" rx="112" fill="#FAF8F5" />
+  
+  <!-- Outer Glow Ring -->
+  <circle cx="256" cy="256" r="210" fill="url(#pendoGradient)" filter="url(#shadow)" opacity="0.95" />
+
+  <!-- Inner Protective Shield Motif (Pendo Ngao) -->
+  <path d="M256 90 L370 140 C370 260 256 360 256 360 C256 360 142 260 142 140 Z" fill="#FFFFFF" opacity="0.16" />
+
+  <!-- Heart Icon (Love & Connection) -->
+  <path d="M256 385 C248 377 150 286 150 205 C150 156 189 125 235 125 C247 125 253 130 256 135 C259 130 265 125 277 125 C323 125 362 156 362 205 C362 286 264 377 256 385 Z" fill="#FFFFFF" />
+
+  <!-- Cultural Maasai / Kenyan beadwork accent dots -->
+  <circle cx="256" cy="215" r="16" fill="#E11D48" />
+  <circle cx="220" cy="215" r="9" fill="#059669" />
+  <circle cx="292" cy="215" r="9" fill="#059669" />
+  <circle cx="256" cy="180" r="8" fill="#F59E0B" />
+  <circle cx="256" cy="250" r="8" fill="#F59E0B" />
+
+  <!-- Small Shield Emblem at Bottom Right -->
+  <g transform="translate(320, 320)">
+    <circle cx="40" cy="40" r="36" fill="url(#shieldAccent)" filter="url(#shadow)" />
+    <path d="M40 22 L58 31 C58 52 40 62 40 62 C40 62 22 52 22 31 Z" fill="#FFFFFF" />
+    <path d="M33 39 L38 44 L49 33" stroke="#059669" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  </g>
+</svg>

@@ -46,6 +46,10 @@ service cloud.firestore {
                (!('reactions' in data) || data.reactions is map);
     }
 
+    match /test/connection {
+       allow read: if true;
+    }
+
     match /users/{userId} {
        allow read: if isSignedIn();
        allow write: if isSignedIn() && userId == request.auth.uid && isValidUserProfile(incoming());

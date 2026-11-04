@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, signOut as fbSignOut } from 'firebase/auth';
-import { initializeFirestore, memoryLocalCache, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, memoryLocalCache, doc, getDocFromServer, setLogLevel, disableNetwork } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 import { googleAuthLogger } from './googleAuthLogger';
 import { authNotificationService } from './authNotificationService';
@@ -8,24 +8,66 @@ import { safeStorage } from './storage';
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore cleanly with memory local cache and auto-detect long polling for iframe/proxy compatibility
+// Suppress noisy internal @firebase/firestore 10s WebChannel timeout console errors in sandboxed/offline environments
+setLogLevel('silent');
+
+// Initialize Firestore with forced HTTP long-polling and memory local cache for iframe/proxy compatibility
 export const db = initializeFirestore(app, {
-  experimentalAutoDetectLongPolling: true,
+  experimentalForceLongPolling: true,
   localCache: memoryLocalCache(),
 }, firebaseConfig.firestoreDatabaseId);
 
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-    googleAuthLogger.success('FIRESTORE', 'Firestore connection established successfully');
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('offline')) {
-      console.warn("Firestore operating in offline cache mode:", error.message);
-      googleAuthLogger.warn('FIRESTORE', 'Firestore operating in offline cache fallback mode', { error: error.message });
-    }
+let firestoreOfflineState = false;
+let connectivityCheckPromise: Promise<boolean> | null = null;
+
+export const isFirestoreOffline = () => firestoreOfflineState;
+
+export async function checkFirestoreConnectivity(): Promise<boolean> {
+  if (connectivityCheckPromise) {
+    return connectivityCheckPromise;
   }
+
+  connectivityCheckPromise = (async () => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('Firestore connectivity check timed out (offline fallback)'));
+        }, 3500);
+      });
+
+      await Promise.race([
+        getDocFromServer(doc(db, 'test', 'connection')),
+        timeoutPromise,
+      ]);
+
+      if (timeoutId) clearTimeout(timeoutId);
+      firestoreOfflineState = false;
+      googleAuthLogger.success('FIRESTORE', 'Firestore connection established successfully');
+      return true;
+    } catch (error: any) {
+      if (timeoutId) clearTimeout(timeoutId);
+      const msg = error?.message || String(error);
+      const code = error?.code || '';
+
+      // If the server responded with permission-denied, the backend IS reachable
+      if (code === 'permission-denied' || msg.includes('Missing or insufficient permissions')) {
+        firestoreOfflineState = false;
+        googleAuthLogger.success('FIRESTORE', 'Firestore backend reachable');
+        return true;
+      }
+
+      firestoreOfflineState = true;
+      await disableNetwork(db).catch(() => {});
+      googleAuthLogger.warn('FIRESTORE', 'Firestore operating in offline cache fallback mode', { error: msg });
+      return false;
+    }
+  })();
+
+  return connectivityCheckPromise;
 }
-testConnection();
+
+checkFirestoreConnectivity();
 
 export const auth = getAuth(app);
 

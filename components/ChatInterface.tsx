@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ChatSession, ChatMessage, MatchProfile, UserProfile } from '../types';
 import { generateIcebreaker, generateDateIdeas, explainMessage } from '../services/geminiService';
 import { safeGetMediaStream, safeGetDisplayMedia, safeCopyToClipboard } from '../services/compat';
-import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, Users as UsersIcon, Plus as Plus, PlusCircle, User, Crown, X, SmilePlus, Camera, Gift, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, Send, Sparkles, MoreVertical, Calendar, Loader2, Video, Phone, Mic, MicOff, VideoOff, PhoneOff, RefreshCw, Monitor, Hand, MonitorOff, Globe, Trash2, Users, Users as UsersIcon, Plus as Plus, PlusCircle, User, Crown, X, SmilePlus, Camera, Gift, ShieldCheck } from 'lucide-react';
 
 // --- Video Call Component ---
 interface VideoCallProps {
@@ -590,6 +590,7 @@ interface ChatRoomProps {
   typingUsers?: string[];
   onOpenMpesaGift?: (recipientId: string, recipientName: string) => void;
   onOpenSafetyCheckin?: (matchName: string) => void;
+  onStartVoiceCall?: (matchProfile: MatchProfile | null) => void;
 }
 
 export const KENYAN_GIFTS = [
@@ -602,7 +603,7 @@ export const KENYAN_GIFTS = [
   { id: 'safari', name: 'Maasai Mara Safari Pass 🦁', price: '2,500 KES', desc: 'A golden weekend safari voucher for an unforgettable savannah getaway.', color: 'from-purple-600 to-indigo-800', icon: '🦁' },
 ];
 
-export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchProfile, onBack, onSendMessage, onDeleteMessage, onBlockUser, typingUsers, onOpenMpesaGift, onOpenSafetyCheckin }) => {
+export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchProfile, onBack, onSendMessage, onDeleteMessage, onBlockUser, typingUsers, onOpenMpesaGift, onOpenSafetyCheckin, onStartVoiceCall }) => {
   const [inputText, setInputText] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
@@ -940,6 +941,13 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                   <ShieldCheck size={19} />
                 </button>
               )}
+              <button
+                onClick={() => onStartVoiceCall ? onStartVoiceCall(matchProfile || null) : null}
+                className="p-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-full transition-colors"
+                title="1-on-1 Voice Call"
+              >
+                <Phone size={19} />
+              </button>
               <button onClick={() => setIsInCall(true)} className="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-full transition-colors" title="Video Call"><Video size={20} /></button>
               <button onClick={() => handleDateIdeas(false)} className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors" title="AI Date Ideas"><Calendar size={20} /></button>
             </>

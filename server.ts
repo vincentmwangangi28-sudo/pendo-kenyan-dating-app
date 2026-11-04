@@ -238,6 +238,33 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
+
+    // Automatic backend IndexNow SEO notification (running in backend without UI)
+    setTimeout(async () => {
+      try {
+        const payload = {
+          host: "pendo-kenyan-dating-app.vercel.app",
+          key: "8zvbpmffgtwz251x44qqw5h5ugnvyyva",
+          keyLocation: "https://pendo-kenyan-dating-app.vercel.app/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt",
+          urlList: [
+            "https://pendo-kenyan-dating-app.vercel.app/",
+            "https://pendo-kenyan-dating-app.vercel.app/#city-nairobi",
+            "https://pendo-kenyan-dating-app.vercel.app/#city-mombasa",
+            "https://pendo-kenyan-dating-app.vercel.app/#city-kisumu",
+            "https://pendo-kenyan-dating-app.vercel.app/#city-nakuru",
+            "https://pendo-kenyan-dating-app.vercel.app/#city-eldoret",
+          ]
+        };
+        await fetch("https://api.indexnow.org/indexnow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+          body: JSON.stringify(payload),
+        });
+        console.log("[Backend Task] Automatic IndexNow ping to Bing/search engines completed.");
+      } catch (err: any) {
+        console.warn("[Backend Task] IndexNow background ping:", err?.message || err);
+      }
+    }, 3000);
   });
 }
 
