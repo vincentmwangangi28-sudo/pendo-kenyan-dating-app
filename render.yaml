@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: pendo-kenya-dating
+    runtime: node
+    region: frankfurt
+    plan: starter
+    branch: main
+    buildCommand: npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    domains:
+      - www.pendo.website
+      - pendo.website
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SQL_HOST
+        sync: false
+      - key: SQL_USER
+        sync: false
+      - key: SQL_PASSWORD
+        sync: false
+      - key: SQL_DB_NAME
+        sync: false

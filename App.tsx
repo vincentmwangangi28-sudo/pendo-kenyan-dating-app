@@ -908,21 +908,27 @@ const App: React.FC = () => {
     }
   };
 
-  // Automatic background SEO & IndexNow sync (running in backend without UI)
+  // Automatic background SEO & IndexNow sync (deferred so it never competes with initial LCP/FCP)
   useEffect(() => {
-    fetch('/api/indexnow/submit', { method: 'POST' }).catch(() => {});
+    const timer = setTimeout(() => {
+      fetch('/api/indexnow/submit', { method: 'POST' }).catch(() => {});
+    }, 5000);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Connection Test
+  // Connection Test (deferred after initial render to reduce main-thread TBT)
   useEffect(() => {
     let mounted = true;
-    checkFirestoreConnectivity().then((online) => {
-      if (mounted && !online) {
-        setIsOffline(true);
-      }
-    });
+    const timer = setTimeout(() => {
+      checkFirestoreConnectivity().then((online) => {
+        if (mounted && !online) {
+          setIsOffline(true);
+        }
+      });
+    }, 3500);
     return () => {
       mounted = false;
+      clearTimeout(timer);
     };
   }, []);
 

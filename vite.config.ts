@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
         port: 3000,
         host: '0.0.0.0',
         hmr: false,
+        ws: false,
       },
       plugins: [
         react(),
@@ -109,6 +110,7 @@ export default defineConfig(({ mode }) => {
       build: {
         target: 'esnext',
         minify: 'esbuild',
+        sourcemap: true,
         cssCodeSplit: true,
         rollupOptions: {
           output: {

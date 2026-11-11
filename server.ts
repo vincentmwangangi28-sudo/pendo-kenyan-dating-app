@@ -9,10 +9,24 @@ import * as geminiServer from "./services/geminiServerService.ts";
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
-  // CORS setup for Vercel & local deployment
+  // Trust Render's reverse proxy & load balancer
+  app.set("trust proxy", 1);
+
+  // Canonical domain redirect (pendo.website -> www.pendo.website) & security headers for Render
   app.use((req, res, next) => {
+    const host = (req.headers.host || "").toLowerCase();
+    if (host === "pendo.website") {
+      return res.redirect(301, `https://www.pendo.website${req.originalUrl}`);
+    }
+
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    if (req.secure || req.headers["x-forwarded-proto"] === "https") {
+      res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+    }
+
     const origin = req.headers.origin;
     if (origin) {
       res.setHeader('Access-Control-Allow-Origin', origin);
@@ -29,9 +43,18 @@ async function startServer() {
 
   app.use(express.json({ limit: '10mb' })); // Increase JSON limit to allow base64 images
 
-  // API routes FIRST
+  // Render Zero-Downtime Health Check Endpoint
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", service: "Pendo Dating Kenya API" });
+    res.status(200).json({
+      status: "ok",
+      service: "Pendo Dating Kenya API",
+      platform: process.env.RENDER ? "render" : "node",
+      renderService: process.env.RENDER_SERVICE_NAME || "pendo-kenya-dating",
+      externalUrl: process.env.RENDER_EXTERNAL_URL || "https://www.pendo.website",
+      commit: process.env.RENDER_GIT_COMMIT || "latest",
+      uptimeSeconds: Math.round(process.uptime()),
+      timestamp: new Date().toISOString(),
+    });
   });
 
   // M-Pesa Daraja 2.0 Express STK Push Endpoint
@@ -234,23 +257,51 @@ async function startServer() {
     }
   });
 
-  // Vite middleware for development
+  // Vite middleware for development, Express static with immutable caching for Render production
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true, hmr: false },
+      server: { middlewareMode: true, hmr: false, ws: false },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    // Immutable 1-year cache for hashed Vite bundles on Render
+    app.use(
+      '/assets',
+      express.static(path.join(distPath, 'assets'), {
+        maxAge: '1y',
+        immutable: true,
+      })
+    );
+    // Standard cache for icons, manifest, service worker, and verification files
+    app.use(
+      express.static(distPath, {
+        maxAge: '1d',
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith('index.html') || filePath.endsWith('sw.js') || filePath.endsWith('registerSW.js')) {
+            res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+          }
+        },
+      })
+    );
     app.get('*all', (req, res) => {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
+
+    // Render Keep-Alive Self-Ping (prevents instance spin-down & cold starts on Render)
+    const renderExternalUrl = process.env.RENDER_EXTERNAL_URL;
+    if (renderExternalUrl) {
+      const keepAliveIntervalMs = 14 * 60 * 1000; // 14 minutes
+      setInterval(() => {
+        fetch(`${renderExternalUrl}/api/health`).catch(() => {});
+      }, keepAliveIntervalMs);
+    }
 
     // Automatic backend IndexNow SEO notification (running in backend without UI)
     setTimeout(async () => {
