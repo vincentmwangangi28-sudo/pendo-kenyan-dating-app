@@ -5,6 +5,7 @@ import { AuthNotification } from './components/AuthNotification';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { AdSenseBanner } from './components/AdSenseBanner';
 import { calculateTrustScore } from './src/lib/trustScore';
+import { SEO_ROUTES, SeoRouteConfig, findSeoRouteByPathOrHash } from './src/lib/seoRoutes';
 import { useOnlineStatus } from './hooks/usePWAInstall';
 import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Phone, Shield, CheckCircle2, ShieldCheck, Crown, Sparkles, Globe, Check, WifiOff, Share2 } from 'lucide-react';
 
