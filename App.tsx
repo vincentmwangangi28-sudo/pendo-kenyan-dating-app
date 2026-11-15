@@ -154,6 +154,59 @@ const MOCK_MATCHES: MatchProfile[] = [
     trustScore: 95,
     badges: ['Verified'],
     coordinates: { latitude: 0.5143, longitude: 35.2698 } // Eldoret
+  },
+  {
+    id: '7',
+    name: 'Muthoni',
+    age: 25,
+    location: 'Thika',
+    neighborhood: 'Section 9 Thika',
+    zodiacSign: 'Virgo',
+    bio: 'Medical researcher & weekend waterfall explorer around Fourteen Falls. Looking for an honest, family-oriented gentleman.',
+    interests: ['Hiking', 'Cooking', 'Coffee'],
+    languages: ['English', 'Swahili', 'Kikuyu'],
+    photoUrl: 'https://picsum.photos/seed/muthoni_ke/400/600',
+    distance: 42,
+    isVerified: true,
+    trustScore: 94,
+    badges: ['Verified', 'Top Pick'],
+    coordinates: { latitude: -1.0332, longitude: 37.0693 } // Thika
+  },
+  {
+    id: '8',
+    name: 'Halima',
+    age: 26,
+    location: 'Diani',
+    neighborhood: 'Diani Beach Rd',
+    zodiacSign: 'Pisces',
+    bio: 'Boutique resort host in Diani. Love kitesurfing, coral reef diving, and candlelit dinners at Ali Barbour’s Cave.',
+    interests: ['Traveling', 'Safari', 'Cooking'],
+    languages: ['Swahili', 'English'],
+    photoUrl: 'https://picsum.photos/seed/halima_diani/400/600',
+    distance: 470,
+    isVerified: true,
+    trustScore: 95,
+    subscriptionTier: 'GOLD',
+    badges: ['Verified', 'Pendo Gold'],
+    coordinates: { latitude: -4.2798, longitude: 39.5947 } // Diani
+  },
+  {
+    id: '9',
+    name: 'Kiprop',
+    age: 29,
+    location: 'Diaspora',
+    neighborhood: 'London / Nairobi',
+    zodiacSign: 'Capricorn',
+    bio: 'Kenyan software architect splitting time between London and Westlands. Ready to build something real with a fellow Kenyan soul.',
+    interests: ['Tech', 'Traveling', 'Nyama Choma'],
+    languages: ['English', 'Swahili', 'Kalenjin'],
+    photoUrl: 'https://picsum.photos/seed/kiprop_uk/400/600',
+    distance: 15,
+    isVerified: true,
+    trustScore: 97,
+    subscriptionTier: 'VIP',
+    badges: ['Verified', 'Top Pick', 'Pendo Gold'],
+    coordinates: { latitude: -1.2667, longitude: 36.8042 }
   }
 ];
 
@@ -817,6 +870,76 @@ const KENYAN_CITY_DIRECTORY: Record<string, {
       { name: 'Rupas Mall Courtyard', area: 'Uganda Rd', vibe: 'Casual Dining & Cinema Date' },
       { name: 'Poa Place Resort', area: 'Kaptagat Rd', vibe: 'Nature Walk & Nyama Choma' }
     ]
+  },
+  Thika: {
+    tagline: 'Thika Superhighway energy, Chania waterfalls & Kiambu Road lounges',
+    activeCount: '980+ Verified Singles',
+    neighborhoods: ['Section 9', 'Landless', 'Ruiru', 'Juja', 'Thika Greens', 'Kiambu Rd'],
+    safeVenues: [
+      { name: 'Blue Post Hotel Gardens', area: 'Chania Falls', vibe: 'Waterfall View Lunch & Coffee' },
+      { name: 'Ananas Mall Terrace', area: 'Makongeni', vibe: 'Casual Coffee & Shopping Date' },
+      { name: 'Paleo Hotel & Spa', area: 'Thika CBD', vibe: 'Rooftop Sundowner & Mocktails' }
+    ]
+  },
+  Diani: {
+    tagline: 'White sand beaches, coral reef adventures & South Coast romance',
+    activeCount: '840+ Verified Singles',
+    neighborhoods: ['Diani Beach Rd', 'Galu Kinondo', 'Ukunda', 'Tiwi', 'Chale'],
+    safeVenues: [
+      { name: 'Ali Barbour’s Cave Restaurant', area: 'Diani Beach', vibe: 'Starlit Coral Cave Dining' },
+      { name: 'Nomad Beach Bar', area: 'Diani', vibe: 'Oceanfront Pizza & Cocktails' },
+      { name: 'Leonardo’s Ristorante', area: 'Ukunda', vibe: 'Italian Gelato & Espresso Date' }
+    ]
+  },
+  Naivasha: {
+    tagline: 'Lakeside getaways, Hell’s Gate biking & Great Rift weekend vibes',
+    activeCount: '760+ Verified Singles',
+    neighborhoods: ['Moi South Lake Rd', 'Milimani Naivasha', 'Kayole', 'Karagita'],
+    safeVenues: [
+      { name: 'Enashipai Resort Lounge', area: 'Moi South Lake', vibe: 'Lakeside High Tea & Spa' },
+      { name: 'Ranch House Bistro', area: 'Naivasha', vibe: 'Farm-to-Table Garden Brunch' },
+      { name: 'Buffalo Mall Cafe', area: 'Naivasha Highway', vibe: 'Casual First-Date Coffee' }
+    ]
+  },
+  Nanyuki: {
+    tagline: 'Mount Kenya views, Equator charm & Laikipia safari escapes',
+    activeCount: '690+ Verified Singles',
+    neighborhoods: ['Cedar Mall Area', 'Burguret', 'Timau', 'Muthaiga Nanyuki'],
+    safeVenues: [
+      { name: 'Trout Tree Restaurant', area: 'Burguret', vibe: 'Fig Tree Dining by the River' },
+      { name: 'Down Town Cafe Cedar Mall', area: 'Nanyuki CBD', vibe: 'Specialty Coffee & Pastries' },
+      { name: 'Barney’s Bar & Restaurant', area: 'Nanyuki Airstrip', vibe: 'Scenic Mt Kenya Views' }
+    ]
+  },
+  Nyeri: {
+    tagline: 'Aberdare highland breeze, rich coffee heritage & intentional courtship',
+    activeCount: '720+ Verified Singles',
+    neighborhoods: ['Ring Road', 'King’ong’o', 'Skuta', 'Karatina', 'Othaya'],
+    safeVenues: [
+      { name: 'White Rhino Hotel Terrace', area: 'Nyeri CBD', vibe: 'Historic Lounge & High Tea' },
+      { name: 'fk Resort & Spa', area: 'Chaka', vibe: 'Garden Nyama Choma & Mocktails' },
+      { name: 'Bantu Africa Resort', area: 'Mt Kenya Foot', vibe: 'Weekend Nature Walk & Lunch' }
+    ]
+  },
+  Machakos: {
+    tagline: 'Masaku hills, Syokimau expressway living & scenic weekend drives',
+    activeCount: '890+ Verified Singles',
+    neighborhoods: ['Syokimau', 'Kitengela', 'Athi River', 'Milimani Machakos'],
+    safeVenues: [
+      { name: 'Gelian Hotel Rooftop', area: 'Machakos CBD', vibe: 'Panoramic Hill Views & Dinner' },
+      { name: 'Machakos People’s Park', area: 'Masaku', vibe: 'Boat Ride & Sunset Stroll' },
+      { name: 'Signature Mall Java', area: 'Mombasa Rd / Syokimau', vibe: 'Easy First-Date Coffee' }
+    ]
+  },
+  Diaspora: {
+    tagline: 'Connecting Kenyans in UK, USA, UAE, Canada & Australia with home',
+    activeCount: '3,450+ Diaspora Singles',
+    neighborhoods: ['London', 'Dallas', 'Dubai', 'Toronto', 'Atlanta', 'Perth'],
+    safeVenues: [
+      { name: 'Pendo Google Meet Video Lounge', area: 'Virtual Date', vibe: 'Verified Face-to-Face Video Date' },
+      { name: 'Artcaffé Westlands', area: 'Nairobi Homecoming', vibe: 'Holiday Visit First Date' },
+      { name: 'Tribe Hotel GinJ', area: 'Gigiri Village Market', vibe: 'Upscale Homecoming Dinner' }
+    ]
   }
 };
 
@@ -861,28 +984,88 @@ const App: React.FC = () => {
 
   // Kenyan City Directory state on Landing
   const [selectedLandingCity, setSelectedLandingCity] = useState<string>('Nairobi');
+  const [activeSeoRoute, setActiveSeoRoute] = useState<SeoRouteConfig | null>(null);
 
   // Alika Rafiki (Viral WhatsApp Referral Program) Modal State
   const [isAlikaModalOpen, setIsAlikaModalOpen] = useState<boolean>(false);
 
-  // Hash Routing & Deep Link Listener (SEO Canonical Links, WhatsApp Invites & Kenyan Cities)
+  const applySeoRouteMetadata = (route: SeoRouteConfig | null, fallbackCity?: string) => {
+    const title = route
+      ? route.title
+      : fallbackCity && fallbackCity !== 'Nairobi'
+      ? `${fallbackCity} Dating App | Meet Verified Singles in ${fallbackCity} — Pendo`
+      : "Pendo | Kenya's #1 Dating & Matchmaking App";
+    const description = route
+      ? route.description
+      : "Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges and safe video dates on Pendo.";
+    const canonicalUrl = route
+      ? `https://www.pendo.website${route.path}`
+      : 'https://www.pendo.website/';
+
+    document.title = title;
+    const descEl = document.querySelector('meta[name="description"]');
+    if (descEl) descEl.setAttribute('content', description);
+    const ogTitleEl = document.querySelector('meta[property="og:title"]');
+    if (ogTitleEl) ogTitleEl.setAttribute('content', title);
+    const ogDescEl = document.querySelector('meta[property="og:description"]');
+    if (ogDescEl) ogDescEl.setAttribute('content', description);
+    const ogUrlEl = document.querySelector('meta[property="og:url"]');
+    if (ogUrlEl) ogUrlEl.setAttribute('content', canonicalUrl);
+    const canonicalEl = document.querySelector('link[rel="canonical"]');
+    if (canonicalEl) canonicalEl.setAttribute('href', canonicalUrl);
+  };
+
+  const handleNavigateSeoRoute = (route: SeoRouteConfig, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    try {
+      window.history.pushState({}, '', route.path);
+    } catch {}
+    setActiveSeoRoute(route);
+    if (KENYAN_CITY_DIRECTORY[route.city]) {
+      setSelectedLandingCity(route.city);
+    }
+    if (route.openModal === 'ALIKA') {
+      setIsAlikaModalOpen(true);
+    } else if (route.openModal === 'AUNTIE_SHOSH') {
+      setIsAuntieShoshOpen(true);
+    }
+    applySeoRouteMetadata(route, route.city);
+  };
+
+  // Pathname & Hash Routing Listener (SEO Canonical Routes, WhatsApp Invites & Kenyan Cities)
   useEffect(() => {
-    const handleHash = () => {
+    const syncLocation = () => {
+      const pathname = window.location.pathname || '/';
       const hash = (window.location.hash || '').toLowerCase();
-      if (hash.includes('nairobi')) setSelectedLandingCity('Nairobi');
-      else if (hash.includes('mombasa')) setSelectedLandingCity('Mombasa');
-      else if (hash.includes('kisumu')) setSelectedLandingCity('Kisumu');
-      else if (hash.includes('nakuru')) setSelectedLandingCity('Nakuru');
-      else if (hash.includes('eldoret')) setSelectedLandingCity('Eldoret');
+      const matchedRoute = findSeoRouteByPathOrHash(pathname, hash);
+
+      if (matchedRoute) {
+        setActiveSeoRoute(matchedRoute);
+        if (KENYAN_CITY_DIRECTORY[matchedRoute.city]) {
+          setSelectedLandingCity(matchedRoute.city);
+        }
+        if (matchedRoute.openModal === 'ALIKA') {
+          setIsAlikaModalOpen(true);
+        } else if (matchedRoute.openModal === 'AUNTIE_SHOSH') {
+          setIsAuntieShoshOpen(true);
+        }
+        applySeoRouteMetadata(matchedRoute, matchedRoute.city);
+        return;
+      }
 
       if (hash.includes('alika') || hash.includes('invite')) {
         setIsAlikaModalOpen(true);
       }
+      applySeoRouteMetadata(null);
     };
 
-    handleHash();
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
+    syncLocation();
+    window.addEventListener('hashchange', syncLocation);
+    window.addEventListener('popstate', syncLocation);
+    return () => {
+      window.removeEventListener('hashchange', syncLocation);
+      window.removeEventListener('popstate', syncLocation);
+    };
   }, []);
 
   const handleReferralReward = async (type: 'BOOST' | 'TRUST') => {
@@ -1660,30 +1843,40 @@ const App: React.FC = () => {
 
                 {/* City Tabs */}
                 <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 no-scrollbar">
-                  {Object.keys(KENYAN_CITY_DIRECTORY).map(city => (
-                    <button
-                      key={city}
-                      onClick={() => setSelectedLandingCity(city)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                        selectedLandingCity === city
-                          ? 'bg-rose-500 text-white shadow-md'
-                          : 'bg-white/15 text-white hover:bg-white/25'
-                      }`}
-                    >
-                      {city}
-                    </button>
-                  ))}
+                  {Object.keys(KENYAN_CITY_DIRECTORY).map(city => {
+                    const cityRoute = SEO_ROUTES.find(r => r.city.toLowerCase() === city.toLowerCase());
+                    return (
+                      <button
+                        key={city}
+                        onClick={() => {
+                          setSelectedLandingCity(city);
+                          if (cityRoute) handleNavigateSeoRoute(cityRoute);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                          selectedLandingCity === city
+                            ? 'bg-rose-500 text-white shadow-md'
+                            : 'bg-white/15 text-white hover:bg-white/25'
+                        }`}
+                      >
+                        {city}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Selected City Card */}
                 <div className="bg-white/10 rounded-xl p-3 border border-white/15 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-black text-white">{selectedLandingCity} Dating Hub</span>
+                    <span className="text-sm font-black text-white">
+                      {activeSeoRoute ? activeSeoRoute.label : `${selectedLandingCity} Dating Hub`}
+                    </span>
                     <span className="text-[10px] font-extrabold text-emerald-200 bg-emerald-500/30 px-2 py-0.5 rounded-md border border-emerald-400/40">
-                      {activeCityData.activeCount}
+                      {activeSeoRoute?.badge || activeCityData.activeCount}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-100 leading-snug">{activeCityData.tagline}</p>
+                  <p className="text-[11px] text-slate-100 leading-snug">
+                    {activeSeoRoute ? activeSeoRoute.description : activeCityData.tagline}
+                  </p>
 
                   {/* Neighborhoods inline metadata */}
                   <p className="text-[10px] text-amber-200 font-bold">
@@ -1725,6 +1918,29 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Crawlable SEO Acquisition Routes (Cities, Diaspora, Faith & Features) */}
+                <nav aria-label="Explore Kenyan & Diaspora Dating Routes" className="mt-3 pt-3 border-t border-white/15">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300 mb-2 flex items-center gap-1">
+                    <Globe size={11} /> Explore Kenyan & Diaspora Communities
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SEO_ROUTES.map(route => (
+                      <a
+                        key={route.path}
+                        href={route.path}
+                        onClick={(e) => handleNavigateSeoRoute(route, e)}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                          activeSeoRoute?.path === route.path
+                            ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-xs'
+                            : 'bg-black/35 text-slate-100 border-white/15 hover:bg-white/20'
+                        }`}
+                      >
+                        {route.label}
+                      </a>
+                    ))}
+                  </div>
+                </nav>
               </section>
 
               {/* Google AdSense Responsive Display Slot */}

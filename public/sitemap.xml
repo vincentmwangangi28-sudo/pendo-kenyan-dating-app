@@ -2,44 +2,110 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.pendo.website/</loc>
-    <lastmod>2026-11-04</lastmod>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.pendo.website/#city-nairobi</loc>
-    <lastmod>2026-11-04</lastmod>
+    <loc>https://www.pendo.website/nairobi-dating</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/mombasa-dating</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/kisumu-dating</loc>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.pendo.website/#city-mombasa</loc>
-    <lastmod>2026-11-04</lastmod>
+    <loc>https://www.pendo.website/nakuru-dating</loc>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.pendo.website/#city-kisumu</loc>
-    <lastmod>2026-11-04</lastmod>
+    <loc>https://www.pendo.website/eldoret-dating</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/thika-dating</loc>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.pendo.website/#city-nakuru</loc>
-    <lastmod>2026-11-04</lastmod>
+    <loc>https://www.pendo.website/diani-dating</loc>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.pendo.website/#city-eldoret</loc>
-    <lastmod>2026-11-04</lastmod>
+    <loc>https://www.pendo.website/naivasha-dating</loc>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.pendo.website/#voice-lounge</loc>
-    <lastmod>2026-11-04</lastmod>
+    <loc>https://www.pendo.website/nanyuki-dating</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/nyeri-dating</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/machakos-dating</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/kenyan-diaspora</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/serious-relationships-kenya</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/christian-dating-kenya</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/muslim-dating-kenya</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/voice-lounge</loc>
+    <lastmod>2026-11-15</lastmod>
     <changefreq>always</changefreq>
     <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/alika-rafiki</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
   </url>
 </urlset>

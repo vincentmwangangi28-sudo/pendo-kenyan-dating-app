@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && node -e \"require('fs').cpSync('dist', 'npm run start', { recursive: true })\"",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && node -e \"if (process.env.RENDER) require('fs').cpSync('dist', ['npm','run','start'].join(' '), { recursive: true })\"",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "lint": "eslint .",

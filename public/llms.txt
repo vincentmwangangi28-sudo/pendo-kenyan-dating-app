@@ -1,16 +1,26 @@
 # Pendo — Kenya's #1 Dating & Matchmaking Platform
 
-> Pendo is the leading Kenyan dating and matchmaking web application designed for verified singles in Nairobi, Mombasa, Kisumu, Nakuru, and Eldoret. Featuring M-Pesa Zawadi gifts, Live Date Safety Shield (Matatu Fare Shield), Sheng AI Wingman, and real-time Voice Lounges.
+> Pendo is the leading Kenyan dating and matchmaking web application designed for verified singles in Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, Thika, Diani, Naivasha, Nanyuki, Nyeri, Machakos, and the Kenyan Diaspora. Featuring M-Pesa Zawadi gifts, Live Date Safety Shield (Matatu Fare Shield), Sheng AI Wingman, and real-time Voice Lounges.
 
-## Canonical Web Resources
-- [Home & City Dating Directory](https://www.pendo.website/): Discover verified singles across Kenyan urban hubs with zero catfishing.
-- [Nairobi Dating Hub](https://www.pendo.website/#city-nairobi): Connect with verified singles and curated first-date venues in Westlands, Kilimani, and Karen.
-- [Mombasa Dating Hub](https://www.pendo.website/#city-mombasa): Coastal matchmaking and safe beach date spots in Nyali and Old Town.
-- [Kisumu Dating Hub](https://www.pendo.website/#city-kisumu): Lakeside singles directory and Dunga Hill sunset lounges.
-- [Nakuru Dating Hub](https://www.pendo.website/#city-nakuru): Rift Valley dating and Great Rift romance spots.
-- [Eldoret Dating Hub](https://www.pendo.website/#city-eldoret): Champions hub dating and safe rendezvous lounges.
-- [Voice Lounges](https://www.pendo.website/#voice-lounge): Live audio hangouts and icebreaker speed dating hosted with Auntie Shosh AI.
-- [Alika Rafiki Referral](https://www.pendo.website/#alika): Viral WhatsApp referral program with Trust Score rewards and free Profile Boosts.
+## Canonical Web Resources & City Hubs
+- [Home & Kenyan Singles Directory](https://www.pendo.website/): Discover verified singles across Kenyan urban hubs with zero catfishing.
+- [Nairobi Dating Hub](https://www.pendo.website/nairobi-dating): Connect with 6,840+ verified singles and curated first-date venues in Westlands, Kilimani, Lavington, and Karen.
+- [Mombasa & Coast Dating Hub](https://www.pendo.website/mombasa-dating): Coastal matchmaking and safe beach date spots in Nyali, Bamburi, and Old Town.
+- [Kisumu Lakeside Dating Hub](https://www.pendo.website/kisumu-dating): Lakeside singles directory in Milimani and Dunga Hill sunset lounges.
+- [Nakuru Rift Valley Dating Hub](https://www.pendo.website/nakuru-dating): Rift Valley dating in Milimani, Section 58, and Great Rift romance spots.
+- [Eldoret Highland Dating Hub](https://www.pendo.website/eldoret-dating): Home of Champions dating in Elgon View and safe rendezvous lounges.
+- [Thika & Kiambu Road Dating Hub](https://www.pendo.website/thika-dating): Connect with singles in Thika, Ruiru, Juja, and Kiambu Road.
+- [Diani Beach & South Coast Dating Hub](https://www.pendo.website/diani-dating): Meet verified singles in Diani Beach, Ukunda, and the South Coast.
+- [Naivasha Weekend & Lakeside Dating Hub](https://www.pendo.website/naivasha-dating): Connect with singles in Naivasha and Moi South Lake Road.
+- [Nanyuki & Mount Kenya Dating Hub](https://www.pendo.website/nanyuki-dating): Meet verified singles across Nanyuki and Laikipia.
+- [Nyeri Central Highlands Dating Hub](https://www.pendo.website/nyeri-dating): Verified matchmaking in Nyeri, Karatina, and Othaya.
+- [Machakos, Syokimau & Kitengela Dating Hub](https://www.pendo.website/machakos-dating): Connect with singles across Machakos, Syokimau, and Kitengela.
+- [Kenyan Diaspora Dating Hub](https://www.pendo.website/kenyan-diaspora): Connect with Kenyan singles in the UK, USA, UAE, Canada, and East Africa.
+- [Serious Relationships & Marriage in Kenya](https://www.pendo.website/serious-relationships-kenya): Intentional dating for marriage-minded Kenyan professionals.
+- [Christian Dating Kenya](https://www.pendo.website/christian-dating-kenya): Faith-centered courtship for Christian singles across Kenya.
+- [Muslim Dating & Halal Nikah Kenya](https://www.pendo.website/muslim-dating-kenya): Respectful Halal matchmaking for Kenyan Muslim singles.
+- [Live Voice Lounges & Auntie Shosh Baraza](https://www.pendo.website/voice-lounge): Live audio hangouts and icebreaker speed dating hosted with Auntie Shosh AI.
+- [Alika Rafiki WhatsApp Referral](https://www.pendo.website/alika-rafiki): Viral WhatsApp referral program with Trust Score rewards and free Profile Boosts.
 
 ## Trust & Safety Architecture
 - Pendo Ngao Trust Score: Explainable 0–100 identity verification score based on Google Auth, live camera selfie pose checks, and community standing.

@@ -2,6 +2,7 @@ import express from "express";
 import { requireAuth, AuthRequest } from "../src/middleware/auth.ts";
 import { getOrCreateUser } from "../src/db/users.ts";
 import * as geminiServer from "../services/geminiServerService.ts";
+import { CANONICAL_URLS } from "../src/lib/seoRoutes.ts";
 
 const app = express();
 
@@ -38,13 +39,23 @@ app.get(["/llms.txt", "/api/llms.txt"], (req, res) => {
 
 ## Canonical Web Resources
 - [Home & City Dating Directory](https://www.pendo.website/): Discover verified singles across Kenyan urban hubs with zero catfishing.
-- [Nairobi Dating Hub](https://www.pendo.website/#city-nairobi): Connect with verified singles and curated first-date venues in Westlands, Kilimani, and Karen.
-- [Mombasa Dating Hub](https://www.pendo.website/#city-mombasa): Coastal matchmaking and safe beach date spots in Nyali and Old Town.
-- [Kisumu Dating Hub](https://www.pendo.website/#city-kisumu): Lakeside singles directory and Dunga Hill sunset lounges.
-- [Nakuru Dating Hub](https://www.pendo.website/#city-nakuru): Rift Valley dating and Great Rift romance spots.
-- [Eldoret Dating Hub](https://www.pendo.website/#city-eldoret): Champions hub dating and safe rendezvous lounges.
-- [Voice Lounges](https://www.pendo.website/#voice-lounge): Live audio hangouts and icebreaker speed dating hosted with Auntie Shosh AI.
-- [Alika Rafiki Referral](https://www.pendo.website/#alika): Viral WhatsApp referral program with Trust Score rewards and free Profile Boosts.
+- [Nairobi Dating Hub](https://www.pendo.website/nairobi-dating): Connect with verified singles and curated first-date venues in Westlands, Kilimani, and Karen.
+- [Mombasa Dating Hub](https://www.pendo.website/mombasa-dating): Coastal matchmaking and safe beach date spots in Nyali and Old Town.
+- [Kisumu Dating Hub](https://www.pendo.website/kisumu-dating): Lakeside singles directory and Dunga Hill sunset lounges.
+- [Nakuru Dating Hub](https://www.pendo.website/nakuru-dating): Rift Valley dating and Great Rift romance spots.
+- [Eldoret Dating Hub](https://www.pendo.website/eldoret-dating): Champions hub dating and safe rendezvous lounges.
+- [Thika Dating Hub](https://www.pendo.website/thika-dating): Thika Road & Kiambu verified singles.
+- [Diani & Ukunda Dating Hub](https://www.pendo.website/diani-dating): South Coast beach dating.
+- [Naivasha Dating Hub](https://www.pendo.website/naivasha-dating): Lake Naivasha & Rift getaway singles.
+- [Nanyuki Dating Hub](https://www.pendo.website/nanyuki-dating): Mt. Kenya & Laikipia singles.
+- [Nyeri Dating Hub](https://www.pendo.website/nyeri-dating): Central Highlands verified dating.
+- [Machakos Dating Hub](https://www.pendo.website/machakos-dating): Masaku & Eastern Kenya singles.
+- [Kenyan Diaspora Dating Hub](https://www.pendo.website/kenyan-diaspora): Connect with Kenyans in UK, USA, UAE, Canada & Australia.
+- [Serious Relationships & Marriage](https://www.pendo.website/serious-relationships-kenya): Intentional long-term dating in Kenya.
+- [Christian Singles Kenya](https://www.pendo.website/christian-dating-kenya): Faith-centered Kenyan Christian dating.
+- [Muslim Singles & Nikah Kenya](https://www.pendo.website/muslim-dating-kenya): Halal courtship & Nikah matchmaking.
+- [Voice Lounges](https://www.pendo.website/voice-lounge): Live audio hangouts and icebreaker speed dating hosted with Auntie Shosh AI.
+- [Alika Rafiki Referral](https://www.pendo.website/alika-rafiki): Viral WhatsApp referral program with Trust Score rewards and free Profile Boosts.
 
 ## Trust & Safety Architecture
 - Pendo Ngao Trust Score: Explainable 0–100 identity verification score based on Google Auth, live camera selfie pose checks, and community standing.
@@ -188,22 +199,12 @@ app.post("/api/safety/checkin", async (req, res) => {
 // IndexNow API Submission Endpoint for Bing & Search Engines
 app.post("/api/indexnow/submit", async (req, res) => {
   try {
-    const host = req.headers.host || "www.pendo.website";
-    const hostClean = host.split(":")[0];
     const key = "8zvbpmffgtwz251x44qqw5h5ugnvyyva";
     const payload = {
-      host: hostClean.includes("pendo.website") ? "www.pendo.website" : hostClean,
+      host: "www.pendo.website",
       key: key,
       keyLocation: `https://www.pendo.website/${key}.txt`,
-      urlList: [
-        "https://www.pendo.website/",
-        "https://www.pendo.website/#city-nairobi",
-        "https://www.pendo.website/#city-mombasa",
-        "https://www.pendo.website/#city-kisumu",
-        "https://www.pendo.website/#city-nakuru",
-        "https://www.pendo.website/#city-eldoret",
-        "https://www.pendo.website/#voice-lounge",
-      ],
+      urlList: CANONICAL_URLS,
     };
 
     const response = await fetch("https://api.indexnow.org/indexnow", {

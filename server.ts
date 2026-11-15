@@ -6,6 +6,7 @@ import { getOrCreateUser } from "./src/db/users.ts";
 import { db } from "./src/db/index.ts";
 import { users } from "./src/db/schema.ts";
 import * as geminiServer from "./services/geminiServerService.ts";
+import { CANONICAL_URLS } from "./src/lib/seoRoutes.ts";
 
 async function startServer() {
   const app = express();
@@ -141,22 +142,13 @@ async function startServer() {
   // IndexNow API Submission Endpoint for Bing & Search Engines
   app.post("/api/indexnow/submit", async (req, res) => {
     try {
-      const host = req.headers.host || "www.pendo.website";
-      const hostClean = host.split(":")[0];
+      const canonicalHost = "www.pendo.website";
       const key = "8zvbpmffgtwz251x44qqw5h5ugnvyyva";
       const payload = {
-        host: hostClean,
+        host: canonicalHost,
         key: key,
-        keyLocation: `https://${hostClean}/${key}.txt`,
-        urlList: [
-          `https://${hostClean}/`,
-          `https://${hostClean}/#city-nairobi`,
-          `https://${hostClean}/#city-mombasa`,
-          `https://${hostClean}/#city-kisumu`,
-          `https://${hostClean}/#city-nakuru`,
-          `https://${hostClean}/#city-eldoret`,
-          `https://${hostClean}/#voice-lounge`,
-        ],
+        keyLocation: `https://${canonicalHost}/${key}.txt`,
+        urlList: CANONICAL_URLS,
       };
 
       const response = await fetch("https://api.indexnow.org/indexnow", {
@@ -203,52 +195,9 @@ async function startServer() {
   });
 
   app.get("/sitemap.xml", (req, res) => {
-    res.setHeader("Content-Type", "application/xml");
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://www.pendo.website/</loc>
-    <lastmod>2026-11-04</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://www.pendo.website/#city-nairobi</loc>
-    <lastmod>2026-11-04</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.pendo.website/#city-mombasa</loc>
-    <lastmod>2026-11-04</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.pendo.website/#city-kisumu</loc>
-    <lastmod>2026-11-04</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://www.pendo.website/#city-nakuru</loc>
-    <lastmod>2026-11-04</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://www.pendo.website/#city-eldoret</loc>
-    <lastmod>2026-11-04</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://www.pendo.website/#voice-lounge</loc>
-    <lastmod>2026-11-04</lastmod>
-    <changefreq>always</changefreq>
-    <priority>0.9</priority>
-  </url>
-</urlset>`);
+    const filePath = path.join(process.cwd(), "public", "sitemap.xml");
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.sendFile(filePath);
   });
 
   app.post("/api/gemini/call", async (req, res) => {
@@ -330,15 +279,7 @@ async function startServer() {
           host: "www.pendo.website",
           key: "8zvbpmffgtwz251x44qqw5h5ugnvyyva",
           keyLocation: "https://www.pendo.website/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt",
-          urlList: [
-            "https://www.pendo.website/",
-            "https://www.pendo.website/#city-nairobi",
-            "https://www.pendo.website/#city-mombasa",
-            "https://www.pendo.website/#city-kisumu",
-            "https://www.pendo.website/#city-nakuru",
-            "https://www.pendo.website/#city-eldoret",
-            "https://www.pendo.website/#voice-lounge",
-          ]
+          urlList: CANONICAL_URLS,
         };
         await fetch("https://api.indexnow.org/indexnow", {
           method: "POST",
