@@ -50,11 +50,31 @@ async function startServer() {
       service: "Pendo Dating Kenya API",
       platform: process.env.RENDER ? "render" : "node",
       renderService: process.env.RENDER_SERVICE_NAME || "pendo-kenya-dating",
+      renderServiceId: "srv-dbq6rflg1s2s739lb230",
       externalUrl: process.env.RENDER_EXTERNAL_URL || "https://www.pendo.website",
       commit: process.env.RENDER_GIT_COMMIT || "latest",
       uptimeSeconds: Math.round(process.uptime()),
       timestamp: new Date().toISOString(),
     });
+  });
+
+  // Render Automated Deploy Hook Endpoint
+  app.post("/api/render/deploy", async (req, res) => {
+    try {
+      const hookUrl =
+        process.env.RENDER_DEPLOY_HOOK_URL ||
+        "https://api.render.com/deploy/srv-dbq6rflg1s2s739lb230?key=7d_2_fgvGII";
+      const response = await fetch(hookUrl, { method: "POST" });
+      const data = await response.json().catch(() => ({}));
+      return res.status(response.status).json({
+        success: response.ok,
+        serviceId: "srv-dbq6rflg1s2s739lb230",
+        deploy: data.deploy || data,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || "Failed to trigger Render deploy hook" });
+    }
   });
 
   // M-Pesa Daraja 2.0 Express STK Push Endpoint

@@ -6,7 +6,17 @@ import { googleAuthLogger } from './googleAuthLogger';
 import { authNotificationService } from './authNotificationService';
 import { safeStorage } from './storage';
 
-const app = initializeApp(firebaseConfig);
+const resolvedFirebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey || "AIzaSyDK7DyMQ6KLGmFqurmspT1OTjaJxSKlTx4",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || "lexical-apex-gqvh5.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || "lexical-apex-gqvh5",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || "lexical-apex-gqvh5.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || "131484734930",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfig.appId || "1:131484734930:web:a5e7255be93021b250e40b",
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || "ai-studio-389731fa-e167-47fb-8cea-296d2b765f81",
+};
+
+const app = initializeApp(resolvedFirebaseConfig);
 
 // Suppress noisy internal @firebase/firestore 10s WebChannel timeout console errors in sandboxed/offline environments
 setLogLevel('silent');
@@ -15,7 +25,7 @@ setLogLevel('silent');
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
   localCache: memoryLocalCache(),
-}, firebaseConfig.firestoreDatabaseId);
+}, resolvedFirebaseConfig.firestoreDatabaseId);
 
 let firestoreOfflineState = false;
 let connectivityCheckPromise: Promise<boolean> | null = null;
@@ -67,15 +77,17 @@ export async function checkFirestoreConnectivity(): Promise<boolean> {
   return connectivityCheckPromise;
 }
 
-checkFirestoreConnectivity();
-
 export const auth = getAuth(app);
 
-const provider = new GoogleAuthProvider();
-// Add Google Meet scopes
-provider.addScope('https://www.googleapis.com/auth/meetings.space.created');
-provider.addScope('https://www.googleapis.com/auth/meetings.space.readonly');
-provider.addScope('https://www.googleapis.com/auth/meetings.space.settings');
+// Standard Google Sign-In provider (profile & email only for fast, frictionless login on www.pendo.website)
+const loginProvider = new GoogleAuthProvider();
+loginProvider.setCustomParameters({ prompt: 'select_account' });
+
+// Dedicated Google Meet provider (requests Meet scopes only when creating a video room)
+const meetProvider = new GoogleAuthProvider();
+meetProvider.addScope('https://www.googleapis.com/auth/meetings.space.created');
+meetProvider.addScope('https://www.googleapis.com/auth/meetings.space.readonly');
+meetProvider.addScope('https://www.googleapis.com/auth/meetings.space.settings');
 
 // In-memory token cache
 let cachedAccessToken: string | null = null;
@@ -138,7 +150,7 @@ export const setCachedAccessToken = (token: string | null) => {
 export const signInWithGoogle = async () => {
   googleAuthLogger.logGoogleSignInStart('popup');
   try {
-    const result = await signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, loginProvider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     cachedAccessToken = credential?.accessToken || null;
     
@@ -184,7 +196,7 @@ export const signInWithGoogle = async () => {
 export const signInForGoogleMeet = async (): Promise<string> => {
   googleAuthLogger.info('GOOGLE_MEET', 'Requesting Google Meet OAuth authorization popup');
   try {
-    const result = await signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, meetProvider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     if (!credential?.accessToken) {
       const err = new Error("Failed to get Google Meet access token from Google OAuth response");
