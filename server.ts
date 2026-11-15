@@ -18,7 +18,12 @@ async function startServer() {
   // Canonical domain redirect (pendo.website -> www.pendo.website) & security headers for Render
   app.use((req, res, next) => {
     const host = (req.headers.host || "").toLowerCase();
-    if (host === "pendo.website") {
+    const isVerificationPath =
+      req.path === "/cguyxqk3krxuvjeesrp67h8cmz7cvvmn.txt" ||
+      req.path === "/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt" ||
+      req.path === "/robots.txt" ||
+      req.path === "/sitemap.xml";
+    if (host === "pendo.website" && !isVerificationPath) {
       return res.redirect(301, `https://www.pendo.website${req.originalUrl}`);
     }
 
@@ -133,17 +138,22 @@ async function startServer() {
     res.send("google-site-verification: google00332d67777e965d.html");
   });
 
-  // IndexNow Key Verification Endpoint
-  app.get("/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt", (req, res) => {
-    res.setHeader("Content-Type", "text/plain");
-    res.send("8zvbpmffgtwz251x44qqw5h5ugnvyyva");
+  // IndexNow Key Verification Endpoints (Ahrefs & Bing)
+  app.get("/cguyxqk3krxuvjeesrp67h8cmz7cvvmn.txt", (req, res) => {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.status(200).send("cguyxqk3krxuvjeesrp67h8cmz7cvvmn");
   });
 
-  // IndexNow API Submission Endpoint for Bing & Search Engines
+  app.get("/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt", (req, res) => {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.status(200).send("8zvbpmffgtwz251x44qqw5h5ugnvyyva");
+  });
+
+  // IndexNow API Submission Endpoint for Ahrefs, Bing & Search Engines
   app.post("/api/indexnow/submit", async (req, res) => {
     try {
       const canonicalHost = "www.pendo.website";
-      const key = "8zvbpmffgtwz251x44qqw5h5ugnvyyva";
+      const key = "cguyxqk3krxuvjeesrp67h8cmz7cvvmn";
       const payload = {
         host: canonicalHost,
         key: key,
@@ -160,7 +170,7 @@ async function startServer() {
       return res.json({
         success: response.ok,
         status: response.status,
-        message: response.ok ? "Successfully notified IndexNow engines (Bing, Yandex, Naver)" : "IndexNow responded with code " + response.status,
+        message: response.ok ? "Successfully notified IndexNow engines (Ahrefs, Bing, Yandex, Naver)" : "IndexNow responded with code " + response.status,
         payload,
       });
     } catch (err: any) {
@@ -178,7 +188,7 @@ async function startServer() {
   // Search Engine Crawling & SEO Endpoints
   app.get("/robots.txt", (req, res) => {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.send("User-agent: *\nAllow: /\nSitemap: https://www.pendo.website/sitemap.xml\nAgentmap: https://www.pendo.website/ai-catalog.json\n");
+    res.send("User-agent: AhrefsBot\nAllow: /\n\nUser-agent: AhrefsSiteAudit\nAllow: /\n\nUser-agent: *\nAllow: /\n\nSitemap: https://www.pendo.website/sitemap.xml\nAgentmap: https://www.pendo.website/ai-catalog.json\n");
   });
 
   // Agentic Browsing & AI Discovery Endpoints
@@ -277,8 +287,8 @@ async function startServer() {
       try {
         const payload = {
           host: "www.pendo.website",
-          key: "8zvbpmffgtwz251x44qqw5h5ugnvyyva",
-          keyLocation: "https://www.pendo.website/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt",
+          key: "cguyxqk3krxuvjeesrp67h8cmz7cvvmn",
+          keyLocation: "https://www.pendo.website/cguyxqk3krxuvjeesrp67h8cmz7cvvmn.txt",
           urlList: CANONICAL_URLS,
         };
         await fetch("https://api.indexnow.org/indexnow", {

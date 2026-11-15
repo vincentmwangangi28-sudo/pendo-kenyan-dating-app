@@ -5,14 +5,14 @@
   "framework": "vite",
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/((?!cguyxqk3krxuvjeesrp67h8cmz7cvvmn\\.txt|8zvbpmffgtwz251x44qqw5h5ugnvyyva\\.txt|robots\\.txt).*)",
       "has": [
         {
           "type": "host",
           "value": "pendo.website"
         }
       ],
-      "destination": "https://www.pendo.website/:path*",
+      "destination": "https://www.pendo.website/$1",
       "permanent": true
     }
   ],
@@ -22,7 +22,7 @@
       "destination": "/api"
     },
     {
-      "source": "/((?!api|llms\\.txt|ai-catalog\\.json|robots\\.txt|sitemap\\.xml|assets/).*)",
+      "source": "/((?!api|llms\\.txt|ai-catalog\\.json|robots\\.txt|sitemap\\.xml|cguyxqk3krxuvjeesrp67h8cmz7cvvmn\\.txt|8zvbpmffgtwz251x44qqw5h5ugnvyyva\\.txt|BingSiteAuth\\.xml|bingsiteauth\\.xml|google00332d67777e965d\\.html|assets/).*)",
       "destination": "/index.html"
     }
   ],

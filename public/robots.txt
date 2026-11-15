@@ -1,4 +1,11 @@
+User-agent: AhrefsBot
+Allow: /
+
+User-agent: AhrefsSiteAudit
+Allow: /
+
 User-agent: *
 Allow: /
+
 Sitemap: https://www.pendo.website/sitemap.xml
 Agentmap: https://www.pendo.website/ai-catalog.json
