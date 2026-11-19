@@ -1,139 +1,178 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} { 
-      allow read, write: if false; 
+    match /{document=**} {
+      allow read, write: if false;
     }
-    
-    function isValidId(id) { 
-        return id is string && id.size() <= 128; 
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isSignedIn() { return request.auth != null; }
-    
+
     function isValidUserProfile(data) {
-       return data.name is string && data.name.size() <= 128 &&
-              data.age is number &&
-              data.location is string && data.location.size() <= 128 &&
-              data.bio is string && data.bio.size() <= 2000;
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 128 &&
+             data.age is number && data.age >= 18 && data.age <= 99 &&
+             data.location is string && data.location.size() <= 128 &&
+             data.bio is string && data.bio.size() <= 2000 &&
+             (!('neighborhood' in data) || (data.neighborhood is string && data.neighborhood.size() <= 128)) &&
+             (!('vibeCircle' in data) || (data.vibeCircle is string && data.vibeCircle.size() <= 64)) &&
+             (!('recommendedVibeCircle' in data) || (data.recommendedVibeCircle is string && data.recommendedVibeCircle.size() <= 64)) &&
+             (!('vibeQuizCompleted' in data) || data.vibeQuizCompleted is bool) &&
+             (!('ageVerified' in data) || data.ageVerified is bool) &&
+             (!('dataSaverEnabled' in data) || data.dataSaverEnabled is bool);
     }
-    
+
     function isValidChatSession(data) {
-        return data.keys().hasAll(['participants', 'matchName', 'isGroup']) &&
-               data.participants is list && data.participants.size() > 0 && data.participants.size() <= 100 &&
-               data.participants[0] is string && data.participants[0].size() <= 128 &&
-               data.matchName is string && data.matchName.size() <= 100 &&
-               data.isGroup is bool &&
-               (!('isVenue' in data) || data.isVenue is bool) &&
-               (!('matchPhoto' in data) || (data.matchPhoto is string && data.matchPhoto.size() <= 2048)) &&
-               (!('lastMessage' in data) || (data.lastMessage is string && data.lastMessage.size() <= 1000)) &&
-               (!('updaterId' in data) || data.updaterId is string && data.updaterId.size() <= 128) &&
-               (!('updatedAt' in data) || data.updatedAt == request.time);
+      return data.keys().hasAll(['participants', 'matchName', 'isGroup']) &&
+             data.participants is list && data.participants.size() > 0 && data.participants.size() <= 100 &&
+             data.participants[0] is string && data.participants[0].size() <= 128 &&
+             data.matchName is string && data.matchName.size() <= 100 &&
+             data.isGroup is bool &&
+             (!('isVenue' in data) || data.isVenue is bool) &&
+             (!('matchPhoto' in data) || (data.matchPhoto is string && data.matchPhoto.size() <= 2048)) &&
+             (!('lastMessage' in data) || (data.lastMessage is string && data.lastMessage.size() <= 1000)) &&
+             (!('updaterId' in data) || (data.updaterId is string && data.updaterId.size() <= 128)) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time);
     }
-    
+
     function isValidChatMessage(data) {
-        return data.keys().hasAll(['senderId', 'text', 'timestamp']) &&
-               data.senderId == request.auth.uid &&
-               data.text is string && data.text.size() <= 2000 &&
-               data.timestamp == request.time &&
-               (!('senderName' in data) || (data.senderName is string && data.senderName.size() <= 100)) &&
-               (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
-               (!('audioUrl' in data) || (data.audioUrl is string && data.audioUrl.size() <= 2000)) &&
-               (!('status' in data) || (data.status is string && data.status.size() <= 20)) &&
-               (!('isSystem' in data) || data.isSystem is bool) &&
-               (!('translation' in data) || (data.translation is string && data.translation.size() <= 2000)) &&
-               (!('reactions' in data) || data.reactions is map);
+      return data.keys().hasAll(['senderId', 'text', 'timestamp']) &&
+             data.senderId == request.auth.uid &&
+             data.text is string && data.text.size() <= 2000 &&
+             data.timestamp == request.time &&
+             (!('senderName' in data) || (data.senderName is string && data.senderName.size() <= 100)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2000)) &&
+             (!('audioUrl' in data) || (data.audioUrl is string && data.audioUrl.size() <= 2000)) &&
+             (!('status' in data) || (data.status is string && data.status.size() <= 20)) &&
+             (!('isSystem' in data) || data.isSystem is bool) &&
+             (!('translation' in data) || (data.translation is string && data.translation.size() <= 2000)) &&
+             (!('reactions' in data) || data.reactions is map);
+    }
+
+    function isValidVibeRsvp(data, eventId, userId) {
+      return data.keys().hasAll(['eventId', 'userId', 'userName', 'vibeCircle', 'status', 'createdAt']) &&
+             data.eventId == eventId &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.userName is string && data.userName.size() <= 128 &&
+             data.vibeCircle is string && data.vibeCircle.size() <= 64 &&
+             data.status in ['GOING', 'CANCELLED'] &&
+             data.createdAt is number;
+    }
+
+    function isValidNotificationItem(data, itemId, userId) {
+      return data.keys().hasAll(['id', 'userId', 'type', 'title', 'body', 'read', 'createdAt']) &&
+             data.id == itemId &&
+             data.userId == userId &&
+             data.userId == request.auth.uid &&
+             data.type in ['MATCH', 'ZAWADI', 'MEETUP', 'CIRCLE', 'MPESA'] &&
+             data.title is string && data.title.size() <= 160 &&
+             data.body is string && data.body.size() <= 500 &&
+             data.read is bool &&
+             data.createdAt is number;
     }
 
     match /test/connection {
-       allow read: if true;
+      allow read: if isSignedIn();
     }
 
     match /users/{userId} {
-       allow read: if isSignedIn();
-       allow write: if isSignedIn() && userId == request.auth.uid && isValidUserProfile(incoming());
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidId(userId) && userId == request.auth.uid && isValidUserProfile(incoming());
     }
 
     match /chatSessions/{sessionId} {
-       allow read: if isSignedIn() && isValidId(sessionId) && request.auth.uid in resource.data.participants;
-       allow list: if isSignedIn() && request.auth.uid in resource.data.participants;
-       
-       allow create: if isSignedIn() && isValidId(sessionId) && isValidChatSession(incoming()) && request.auth.uid in incoming().participants;
-       
-       allow update: if isSignedIn() && isValidId(sessionId) && request.auth.uid in existing().participants && isValidChatSession(incoming()) && request.auth.uid in incoming().participants &&
-         (
-           (incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'updaterId', 'updatedAt'])) ||
-           (incoming().diff(existing()).affectedKeys().hasOnly(['participants']))
-         );
+      allow read: if isSignedIn() && isValidId(sessionId) && request.auth.uid in resource.data.participants;
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participants;
+
+      allow create: if isSignedIn() && isValidId(sessionId) && isValidChatSession(incoming()) && request.auth.uid in incoming().participants;
+
+      allow update: if isSignedIn() && isValidId(sessionId) && request.auth.uid in existing().participants && isValidChatSession(incoming()) && request.auth.uid in incoming().participants &&
+        (
+          (incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'updaterId', 'updatedAt'])) ||
+          (incoming().diff(existing()).affectedKeys().hasOnly(['participants']))
+        );
     }
 
     match /chatSessions/{sessionId}/messages/{messageId} {
-       function isSessionMember() {
-           return request.auth.uid in get(/databases/$(database)/documents/chatSessions/$(sessionId)).data.participants;
-       }
-       
-       allow get: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember();
-       // Don't apply isValidId(messageId) to 'list'
-       allow list: if isSignedIn() && isValidId(sessionId) && isSessionMember();
-       
-       allow create: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember() && isValidChatMessage(incoming());
-       
-       allow update: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember() && isValidChatMessage(incoming()) &&
-         (
-           (incoming().diff(existing()).affectedKeys().hasOnly(['reactions', 'translation', 'timestamp', 'senderId', 'text', 'imageUrl', 'audioUrl', 'status'])) // allowing immutable things just for diff match
-         ) && 
-         // Enforce immutability
-         incoming().senderId == existing().senderId &&
-         incoming().text == existing().text &&
-         (!('imageUrl' in incoming()) || !('imageUrl' in existing()) || incoming().imageUrl == existing().imageUrl) &&
-         (!('audioUrl' in incoming()) || !('audioUrl' in existing()) || incoming().audioUrl == existing().audioUrl) &&
-         incoming().timestamp == existing().timestamp;
-       
-       allow delete: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember() && existing().senderId == request.auth.uid;
+      function isSessionMember() {
+        return request.auth.uid in get(/databases/$(database)/documents/chatSessions/$(sessionId)).data.participants;
+      }
+
+      allow get: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember();
+      allow list: if isSignedIn() && isValidId(sessionId) && isSessionMember();
+
+      allow create: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember() && isValidChatMessage(incoming());
+
+      allow update: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember() && isValidChatMessage(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['reactions', 'translation', 'status']) &&
+        incoming().senderId == existing().senderId &&
+        incoming().text == existing().text &&
+        incoming().timestamp == existing().timestamp;
+
+      allow delete: if isSignedIn() && isValidId(sessionId) && isValidId(messageId) && isSessionMember() && existing().senderId == request.auth.uid;
     }
 
     match /voiceRooms/{roomId} {
-       allow read, list: if isSignedIn();
-       allow create: if isSignedIn() && isValidId(roomId) && incoming().creatorId == request.auth.uid && incoming().name.size() <= 100 && incoming().participants.size() <= 10;
-       allow update: if isSignedIn() && isValidId(roomId) && incoming().participants.size() <= 10;
-       allow delete: if isSignedIn() && isValidId(roomId) && resource.data.creatorId == request.auth.uid;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(roomId) && incoming().creatorId == request.auth.uid && incoming().name is string && incoming().name.size() <= 100 && incoming().participants is list && incoming().participants.size() <= 10;
+      allow update: if isSignedIn() && isValidId(roomId) && incoming().participants is list && incoming().participants.size() <= 10;
+      allow delete: if isSignedIn() && isValidId(roomId) && resource.data.creatorId == request.auth.uid;
     }
 
     match /swipes/{swipeId} {
-       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-       allow create, update: if isSignedIn() && isValidId(swipeId) &&
-         incoming().userId == request.auth.uid &&
-         incoming().targetId is string && incoming().targetId.size() <= 128 &&
-         incoming().action in ['LIKE', 'PASS'] &&
-         incoming().createdAt is number;
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create, update: if isSignedIn() && isValidId(swipeId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().targetId is string && incoming().targetId.size() <= 128 &&
+        incoming().action in ['LIKE', 'PASS'] &&
+        incoming().createdAt is number;
     }
 
     match /transactions/{txId} {
-       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-       allow create: if isSignedIn() && isValidId(txId) &&
-         incoming().userId == request.auth.uid &&
-         incoming().phone is string && incoming().phone.size() <= 32 &&
-         incoming().amountKes is number && incoming().amountKes > 0 &&
-         incoming().purpose in ['BOOST', 'GOLD', 'GIFT'] &&
-         incoming().itemName is string && incoming().itemName.size() <= 128 &&
-         incoming().receiptNumber is string && incoming().receiptNumber.size() <= 64 &&
-         incoming().status in ['PENDING', 'COMPLETED', 'FAILED'] &&
-         incoming().createdAt is number;
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(txId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().phone is string && incoming().phone.size() <= 32 &&
+        incoming().amountKes is number && incoming().amountKes > 0 &&
+        incoming().purpose in ['BOOST', 'GOLD', 'GOLD_SUBSCRIPTION', 'GIFT', 'VIRTUAL_GIFT', 'VENUE_RESERVATION', 'FARE_SHIELD'] &&
+        incoming().itemName is string && incoming().itemName.size() <= 128 &&
+        incoming().receiptNumber is string && incoming().receiptNumber.size() <= 64 &&
+        incoming().status in ['PENDING', 'COMPLETED', 'FAILED'] &&
+        incoming().createdAt is number;
     }
 
     match /safetyCheckins/{checkinId} {
-       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-       allow create, update: if isSignedIn() && isValidId(checkinId) &&
-         incoming().userId == request.auth.uid &&
-         incoming().userName is string && incoming().userName.size() <= 128 &&
-         incoming().matchName is string && incoming().matchName.size() <= 128 &&
-         incoming().venueName is string && incoming().venueName.size() <= 200 &&
-         incoming().city is string && incoming().city.size() <= 64 &&
-         incoming().emergencyContactName is string && incoming().emergencyContactName.size() <= 128 &&
-         incoming().emergencyContactPhone is string && incoming().emergencyContactPhone.size() <= 32 &&
-         incoming().status in ['ACTIVE', 'SAFE', 'ALERT'] &&
-         incoming().createdAt is number;
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create, update: if isSignedIn() && isValidId(checkinId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().userName is string && incoming().userName.size() <= 128 &&
+        incoming().matchName is string && incoming().matchName.size() <= 128 &&
+        incoming().venueName is string && incoming().venueName.size() <= 200 &&
+        incoming().city is string && incoming().city.size() <= 64 &&
+        incoming().emergencyContactName is string && incoming().emergencyContactName.size() <= 128 &&
+        incoming().emergencyContactPhone is string && incoming().emergencyContactPhone.size() <= 32 &&
+        incoming().status in ['ACTIVE', 'SAFE', 'SAFE_COMPLETED', 'ALERT', 'ALERT_TRIGGERED'] &&
+        incoming().createdAt is number;
+    }
+
+    match /vibeMeetups/{eventId}/rsvps/{userId} {
+      allow get: if isSignedIn() && isValidId(eventId) && isValidId(userId) && (userId == request.auth.uid || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && isValidId(eventId) && resource.data.userId == request.auth.uid;
+      allow create, update: if isSignedIn() && isValidId(eventId) && isValidId(userId) && isValidVibeRsvp(incoming(), eventId, userId);
+      allow delete: if isSignedIn() && isValidId(eventId) && isValidId(userId) && userId == request.auth.uid;
+    }
+
+    match /notifications/{userId}/items/{itemId} {
+      allow get: if isSignedIn() && isValidId(userId) && isValidId(itemId) && userId == request.auth.uid;
+      allow list: if isSignedIn() && isValidId(userId) && userId == request.auth.uid && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(userId) && isValidId(itemId) && isValidNotificationItem(incoming(), itemId, userId);
+      allow update: if isSignedIn() && isValidId(userId) && isValidId(itemId) && userId == request.auth.uid && isValidNotificationItem(incoming(), itemId, userId) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+      allow delete: if isSignedIn() && isValidId(userId) && isValidId(itemId) && userId == request.auth.uid;
     }
   }
 }

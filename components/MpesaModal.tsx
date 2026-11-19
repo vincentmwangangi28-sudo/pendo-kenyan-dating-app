@@ -74,6 +74,7 @@ interface MpesaModalProps {
   onGoldUpgraded?: (tier: 'GOLD' | 'VIP', phone: string) => void;
   onGiftSent?: (gift: VirtualGift, receiptNumber: string) => void;
   onVenueReserved?: (venueName: string, receiptNumber: string, reservationCode: string) => void;
+  onTransactionConfirmed?: (tx: MpesaTransaction) => void;
 }
 
 export const MpesaModal: React.FC<MpesaModalProps> = ({
@@ -87,7 +88,8 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
   onBoostActivated,
   onGoldUpgraded,
   onGiftSent,
-  onVenueReserved
+  onVenueReserved,
+  onTransactionConfirmed
 }) => {
   const [activeTab, setActiveTab] = useState<'BOOST' | 'GOLD' | 'GIFT' | 'RESERVE'>(initialTab);
   const [phone, setPhone] = useState<string>(userProfile.mpesaPhone || '0712345678');
@@ -97,6 +99,7 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
   const [selectedDateSlot, setSelectedDateSlot] = useState<string>('Tonight 7:30 PM (Sundowner)');
   const [selectedVenueName, setSelectedVenueName] = useState<string>(reserveVenue?.name || 'The Alchemist (Westlands, Nairobi)');
   const [step, setStep] = useState<'SELECT' | 'STK_PUSH' | 'SUCCESS'>('SELECT');
+  const [stkStatusLabel, setStkStatusLabel] = useState<string>('Daraja 2.0 Express Prompt Sent');
   const [error, setError] = useState<string | null>(null);
   const [lastTransaction, setLastTransaction] = useState<MpesaTransaction | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<MpesaTransaction[]>([]);
@@ -169,6 +172,8 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
     }
 
     const details = getCurrentCheckoutDetails();
+    const uid = auth.currentUser?.uid || userProfile.uid || 'guest_user';
+    setStkStatusLabel('Sending Daraja 2.0 STK Push...');
     setStep('STK_PUSH');
 
     try {
@@ -176,6 +181,7 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          userId: uid,
           phone: formattedPhone,
           amountKes: details.amountKes,
           purpose: details.purpose,
@@ -184,14 +190,54 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
         })
       });
 
-      const data = await response.json().catch(() => null);
-      const receiptCode = data?.receiptNumber || `SGK${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+      const initData = await response.json().catch(() => null);
+      if (!response.ok || !initData?.checkoutRequestId) {
+        throw new Error(initData?.error || 'M-Pesa STK Push rejected by gateway.');
+      }
 
-      const uid = auth.currentUser?.uid || userProfile.uid || 'guest_user';
+      let verifiedReceipt = initData.receiptNumber || '';
+      let verifiedStatus: 'COMPLETED' | 'FAILED' = 'COMPLETED';
+
+      if (initData.mode === 'SANDBOX') {
+        setStkStatusLabel('Confirming via Daraja Sandbox Ledger...');
+        await new Promise((r) => setTimeout(r, 700));
+        const confirmRes = await fetch('/api/mpesa/sandbox-confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ checkoutRequestId: initData.checkoutRequestId })
+        });
+        const confirmData = await confirmRes.json().catch(() => null);
+        if (!confirmRes.ok || !confirmData?.transaction?.receiptNumber) {
+          throw new Error(confirmData?.error || 'Sandbox confirmation failed.');
+        }
+        verifiedReceipt = confirmData.transaction.receiptNumber;
+      } else {
+        setStkStatusLabel('Waiting for Safaricom M-Pesa PIN callback...');
+        for (let attempt = 0; attempt < 15; attempt++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const statusRes = await fetch(`/api/mpesa/status/${encodeURIComponent(initData.checkoutRequestId)}`);
+          const statusData = await statusRes.json().catch(() => null);
+          const remoteTx = statusData?.transaction;
+          if (remoteTx?.status === 'COMPLETED') {
+            verifiedReceipt = remoteTx.receiptNumber || verifiedReceipt;
+            verifiedStatus = 'COMPLETED';
+            break;
+          }
+          if (remoteTx?.status === 'FAILED') {
+            verifiedStatus = 'FAILED';
+            throw new Error(remoteTx.resultDesc || 'M-Pesa payment was cancelled or declined.');
+          }
+        }
+      }
+
+      if (verifiedStatus !== 'COMPLETED' || !verifiedReceipt) {
+        throw new Error('Timed out waiting for M-Pesa callback confirmation.');
+      }
+
       const reservationCode = `PND-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
       const tx: MpesaTransaction = {
-        id: `tx_${Date.now()}`,
+        id: initData.checkoutRequestId || `tx_${Date.now()}`,
         userId: uid,
         phone: formattedPhone,
         amountKes: details.amountKes,
@@ -199,7 +245,7 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
         itemName: details.itemName,
         ...(recipientId ? { recipientId } : {}),
         ...(recipientName ? { recipientName } : {}),
-        receiptNumber: receiptCode,
+        receiptNumber: verifiedReceipt,
         status: 'COMPLETED',
         createdAt: Date.now(),
         ...(activeTab === 'RESERVE' ? {
@@ -226,19 +272,20 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
       setRecentTransactions(updatedHistory);
       safeStorage.setItem('pendo_mpesa_transactions', JSON.stringify(updatedHistory));
       setLastTransaction(tx);
+      setStep('SUCCESS');
 
-      setTimeout(() => {
-        setStep('SUCCESS');
-        if (activeTab === 'BOOST' && onBoostActivated) {
-          onBoostActivated(selectedBoostPlan === '30M' ? 30 : 120);
-        } else if (activeTab === 'GOLD' && onGoldUpgraded) {
-          onGoldUpgraded(selectedGoldPlan === 'VIP' ? 'VIP' : 'GOLD', formattedPhone);
-        } else if (activeTab === 'GIFT' && onGiftSent) {
-          onGiftSent(selectedGift, receiptCode);
-        } else if (activeTab === 'RESERVE' && onVenueReserved) {
-          onVenueReserved(selectedVenueName, receiptCode, reservationCode);
-        }
-      }, 1200);
+      if (activeTab === 'BOOST' && onBoostActivated) {
+        onBoostActivated(selectedBoostPlan === '30M' ? 30 : 120);
+      } else if (activeTab === 'GOLD' && onGoldUpgraded) {
+        onGoldUpgraded(selectedGoldPlan === 'VIP' ? 'VIP' : 'GOLD', formattedPhone);
+      } else if (activeTab === 'GIFT' && onGiftSent) {
+        onGiftSent(selectedGift, verifiedReceipt);
+      } else if (activeTab === 'RESERVE' && onVenueReserved) {
+        onVenueReserved(selectedVenueName, verifiedReceipt, reservationCode);
+      }
+      if (onTransactionConfirmed) {
+        onTransactionConfirmed(tx);
+      }
     } catch (err: any) {
       setError(err.message || 'Could not reach M-Pesa Express gateway. Please try again.');
       setStep('SELECT');
@@ -562,7 +609,7 @@ export const MpesaModal: React.FC<MpesaModalProps> = ({
               </div>
               <div className="space-y-1">
                 <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
-                  Daraja 2.0 Express Prompt Sent
+                  {stkStatusLabel}
                 </span>
                 <h3 className="text-lg font-extrabold text-slate-900 mt-2">Check your phone ({phone})</h3>
                 <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">

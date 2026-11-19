@@ -20,6 +20,11 @@
         "isVerified": { "type": "boolean" },
         "trustScore": { "type": "number" },
         "subscriptionTier": { "type": "string" },
+        "vibeCircle": { "type": "string", "description": "Kenyan Vibe Circle lifestyle tag" },
+        "recommendedVibeCircle": { "type": "string", "description": "Quiz recommended circle" },
+        "vibeQuizCompleted": { "type": "boolean" },
+        "ageVerified": { "type": "boolean" },
+        "dataSaverEnabled": { "type": "boolean" },
         "mpesaPhone": { "type": "string" },
         "coordinates": {
           "type": "object",
@@ -108,6 +113,35 @@
         "checkInBy": { "type": "number" }
       },
       "required": ["userId", "userName", "matchName", "venueName", "city", "emergencyContactName", "emergencyContactPhone", "status", "createdAt"]
+    },
+    "vibeMeetupRsvp": {
+      "title": "Vibe Meetup RSVP",
+      "description": "RSVP record for a Kenyan Vibe Circle meetup event.",
+      "type": "object",
+      "properties": {
+        "eventId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "vibeCircle": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["eventId", "userId", "userName", "vibeCircle", "status", "createdAt"]
+    },
+    "notificationItem": {
+      "title": "User Notification",
+      "description": "Real-time notification item for matches, Zawadi gifts, M-Pesa confirmations, and meetup RSVPs.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "type", "title", "body", "read", "createdAt"]
     }
   },
   "firestore": {
@@ -131,9 +165,17 @@
       "schema": { "$ref": "#/entities/safetyCheckin" },
       "description": "Live Date Safety Check-In beacons created by users."
     },
+    "/vibeMeetups/{eventId}/rsvps/{userId}": {
+      "schema": { "$ref": "#/entities/vibeMeetupRsvp" },
+      "description": "Vibe Circle meetup RSVPs owned by the signed-in user."
+    },
+    "/notifications/{userId}/items/{itemId}": {
+      "schema": { "$ref": "#/entities/notificationItem" },
+      "description": "Private real-time user notification inbox."
+    },
     "/test/connection": {
       "schema": "any",
-      "description": "Test connection document."
+      "description": "Test connection document (authenticated read)."
     }
   }
 }

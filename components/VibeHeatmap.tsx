@@ -16,6 +16,7 @@ interface HotspotData {
   latOffset: number; // For plotting relative to city center (-100 to 100)
   lngOffset: number; // For plotting relative to city center (-100 to 100)
   baseActiveCount: number;
+  activeCount?: number;
   interests: string[];
   vibeType: 'chill' | 'sherehe' | 'foodie' | 'outdoor' | 'cultural';
   popularTime: 'morning' | 'afternoon' | 'evening' | 'night';
@@ -651,7 +652,7 @@ export const VibeHeatmap: React.FC<VibeHeatmapProps> = ({ userProfile }) => {
                         📍 {hoveredSpot.area}
                       </span>
                       <span className="text-[10px] font-mono font-bold text-emerald-400">
-                        ⚡ {hoveredSpot.activeCount} online now
+                        ⚡ {hoveredSpot.activeCount ?? hoveredSpot.baseActiveCount} online now
                       </span>
                     </div>
                     <h5 className="font-extrabold text-sm tracking-tight text-white">{hoveredSpot.name}</h5>

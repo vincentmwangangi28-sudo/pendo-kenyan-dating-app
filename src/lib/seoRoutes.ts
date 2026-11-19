@@ -11,6 +11,7 @@ export interface SeoRouteConfig {
   priority: string;
   changefreq: 'always' | 'hourly' | 'daily' | 'weekly';
   openModal?: 'ALIKA' | 'AUNTIE_SHOSH';
+  openView?: 'VIBES';
   defaultVibe?: string;
 }
 
@@ -310,6 +311,48 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     priority: '0.90',
     changefreq: 'daily',
     defaultVibe: 'Wababa'
+  },
+  {
+    path: '/campus-dating-kenya',
+    city: 'Nairobi',
+    label: 'Campus Singles KE',
+    h1: 'Kenyan Campus Dating — UoN, KU, JKUAT & Strathmore',
+    heroSubtitle: 'Connect safely with verified Kenyan university and college students across Nairobi, Juja, Eldoret, and Nakuru for study coffee dates and weekend vibes.',
+    title: 'Kenyan Campus Dating App | UoN, KU, JKUAT — Pendo',
+    description: 'Meet verified Kenyan university singles from UoN, Kenyatta University, JKUAT, Strathmore, Moi & Egerton with Ngao Trust Shield on Pendo.',
+    keywords: 'Kenyan campus dating, UoN singles, KU dating app, JKUAT Juja singles, Strathmore dating, Pendo Campus',
+    badge: '2,150+ Campus Singles',
+    priority: '0.90',
+    changefreq: 'daily',
+    defaultVibe: 'Sherehe Crew'
+  },
+  {
+    path: '/diaspora-uk-usa-kenyans',
+    city: 'Diaspora',
+    label: 'UK & USA Kenyans',
+    h1: 'Kenyans in UK, USA & Canada — Diaspora Matchmaking',
+    heroSubtitle: 'Meet verified Kenyans living in London, Manchester, Dallas, Houston, Atlanta, and Toronto ready for serious love, video dates, and Nairobi homecomings.',
+    title: 'Kenyans in UK & USA Dating | Diaspora Singles — Pendo',
+    description: 'Connect with verified Kenyan professionals in London, Dallas, Atlanta, Toronto & UAE looking for authentic Kenyan relationships on Pendo.',
+    keywords: 'Kenyans in UK dating, Kenyans in USA singles, Kenyan diaspora marriage, Kenyans in Dallas dating, London Kenyan singles',
+    badge: 'London · Dallas · Toronto',
+    priority: '0.90',
+    changefreq: 'daily',
+    defaultVibe: 'Serious & Marriage'
+  },
+  {
+    path: '/vibe-circles',
+    city: 'Nairobi',
+    label: 'Vibe Circles & Events',
+    h1: 'Kenyan Vibe Circles — Lounges, Quizzes & Meetups',
+    heroSubtitle: 'Take the 30-second Vibe Compatibility Quiz and RSVP to verified Kilimani Mums, Mama wa Harrier, Ben 10, Wababa & Soft Life meetups in Kenya.',
+    title: 'Kenyan Vibe Circles & Meetup Events | Pendo Kenya',
+    description: 'Join gated Kenyan Vibe Circles including Kilimani Mums, Mama wa Harrier, Ben 10 & Wababa. Take the Vibe Quiz and RSVP to safe meetups on Pendo.',
+    keywords: 'Kenyan Vibe Circles, Pendo meetups Nairobi, Kilimani brunch dating, Naivasha singles road trip, Pendo quiz',
+    badge: 'Live Meetups & Quiz',
+    priority: '0.95',
+    changefreq: 'daily',
+    openView: 'VIBES'
   }
 ];
 

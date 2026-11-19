@@ -3,6 +3,24 @@ import { requireAuth, AuthRequest } from "../src/middleware/auth.ts";
 import { getOrCreateUser } from "../src/db/users.ts";
 import * as geminiServer from "../services/geminiServerService.ts";
 import { CANONICAL_URLS, generateSitemapXml } from "../src/lib/seoRoutes.ts";
+import {
+  recordMpesaCheckout,
+  getMpesaCheckout,
+  finalizeMpesaCheckout,
+  listVibeMeetups,
+  toggleVibeMeetupRsvp,
+  addUserNotification,
+  getUserNotifications,
+  markUserNotificationsRead,
+  savePushSubscription,
+} from "../src/db/ledger.ts";
+import {
+  normalizeKenyanMsisdn,
+  generateSandboxReceiptCode,
+  initiateDarajaStkPush,
+  parseDarajaCallbackPayload,
+} from "../src/lib/mpesaDaraja.ts";
+import { AppNotification, AppView } from "../types.ts";
 
 const app = express();
 
@@ -167,39 +185,175 @@ app.post("/api/users/sync", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-// Simulated & Live M-Pesa STK Push Express Endpoint (Safaricom Daraja)
+// M-Pesa STK Push Express Endpoint (Safaricom Daraja 2.0 + Ledger)
 app.post("/api/mpesa/stk-push", async (req, res) => {
   try {
-    const { phone, amountKes, purpose, itemName, recipientName } = req.body;
-    const sanitizedPhone = (phone || "").replace(/[^0-9]/g, "");
+    const { phone, amountKes, purpose, itemName, recipientName, userId } = req.body || {};
+    const msisdn = normalizeKenyanMsisdn(phone);
 
-    if (!sanitizedPhone || sanitizedPhone.length < 9) {
+    if (!msisdn) {
       return res.status(400).json({ error: "Invalid Kenyan phone number format. Provide 07... or 254..." });
     }
 
-    // Generate realistic Daraja STK Push Simulation Response
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let code = "QK";
-    for (let i = 0; i < 8; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    const resolvedAmount = Math.max(1, Number(amountKes) || 150);
+    const resolvedPurpose = String(purpose || "GOLD_SUBSCRIPTION");
+    const resolvedItemName = String(itemName || "Pendo Gold");
+
+    const stk = await initiateDarajaStkPush({
+      msisdn,
+      amountKes: resolvedAmount,
+      purpose: resolvedPurpose,
+      itemName: resolvedItemName,
+    });
+
+    const pendingRecord = await recordMpesaCheckout({
+      checkoutRequestId: stk.checkoutRequestId,
+      merchantRequestId: stk.merchantRequestId,
+      userId: String(userId || "guest_user"),
+      phone: `+${msisdn}`,
+      amountKes: resolvedAmount,
+      purpose: resolvedPurpose,
+      itemName: resolvedItemName,
+      recipientName: recipientName || null,
+      receiptNumber: stk.receiptPreview || null,
+      status: "PENDING",
+      resultDesc: stk.customerMessage,
+      mode: stk.mode,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
 
     return res.json({
       success: true,
-      merchantRequestId: `29115-34620561-${Date.now()}`,
-      checkoutRequestId: `ws_CO_${Date.now()}`,
-      responseCode: "0",
-      customerMessage: "Success. Request accepted for processing",
-      receiptNumber: code,
-      amountKes: Number(amountKes) || 150,
-      purpose: purpose || "GOLD_SUBSCRIPTION",
-      itemName: itemName || "Pendo Gold",
+      mode: stk.mode,
+      merchantRequestId: stk.merchantRequestId,
+      checkoutRequestId: stk.checkoutRequestId,
+      responseCode: stk.responseCode,
+      customerMessage: stk.customerMessage,
+      receiptNumber: pendingRecord.receiptNumber,
+      status: pendingRecord.status,
+      amountKes: resolvedAmount,
+      purpose: resolvedPurpose,
+      itemName: resolvedItemName,
       recipientName: recipientName || null,
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "M-Pesa STK Push gateway error" });
   }
+});
+
+app.post("/api/mpesa/callback", async (req, res) => {
+  try {
+    const parsed = parseDarajaCallbackPayload(req.body);
+    if (!parsed.checkoutRequestId) {
+      return res.status(400).json({ error: "Missing CheckoutRequestID." });
+    }
+    const nextStatus = parsed.resultCode === 0 ? "COMPLETED" : "FAILED";
+    const receipt =
+      nextStatus === "COMPLETED"
+        ? parsed.receiptNumber || generateSandboxReceiptCode("QKL")
+        : null;
+    const updated = await finalizeMpesaCheckout(
+      parsed.checkoutRequestId,
+      nextStatus,
+      receipt,
+      parsed.resultDesc
+    );
+    if (!updated) {
+      return res.status(404).json({ error: "Checkout transaction not found." });
+    }
+    return res.json({ ResultCode: 0, ResultDesc: "Accepted", transaction: updated });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Callback processing failed" });
+  }
+});
+
+app.post("/api/mpesa/sandbox-confirm", async (req, res) => {
+  try {
+    const { checkoutRequestId } = req.body || {};
+    if (!checkoutRequestId) return res.status(400).json({ error: "checkoutRequestId is required." });
+    const existing = await getMpesaCheckout(String(checkoutRequestId));
+    if (!existing) return res.status(404).json({ error: "Transaction not found." });
+    if (existing.mode !== "SANDBOX") return res.status(403).json({ error: "Forbidden in Live mode." });
+    const updated = await finalizeMpesaCheckout(
+      existing.checkoutRequestId,
+      "COMPLETED",
+      existing.receiptNumber || generateSandboxReceiptCode("SGK"),
+      "Sandbox Verified"
+    );
+    return res.json({ success: true, transaction: updated });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Sandbox confirm failed" });
+  }
+});
+
+app.get("/api/mpesa/status/:checkoutRequestId", async (req, res) => {
+  const tx = await getMpesaCheckout(req.params.checkoutRequestId);
+  if (!tx) return res.status(404).json({ error: "Transaction not found" });
+  return res.json({ success: true, transaction: tx });
+});
+
+app.get("/api/vibes/meetups", async (req, res) => {
+  const userId = typeof req.query.userId === "string" ? req.query.userId : undefined;
+  return res.json({ meetups: await listVibeMeetups(userId) });
+});
+
+app.post("/api/vibes/rsvp", async (req, res) => {
+  const { eventId, userId, userName, userAge, userTrustScore } = req.body || {};
+  if (!eventId || !userId) return res.status(400).json({ error: "eventId and userId required." });
+  const result = await toggleVibeMeetupRsvp({
+    eventId: String(eventId),
+    userId: String(userId),
+    userName: String(userName || "Pendo Member"),
+    userAge: Number(userAge) || 18,
+    userTrustScore: Number(userTrustScore) || 0,
+  });
+  if ('error' in result) return res.status(result.status).json({ error: result.error });
+  return res.json({ success: true, action: result.action, event: result.event });
+});
+
+app.get("/api/notifications/:userId", (req, res) => {
+  return res.json({ notifications: getUserNotifications(req.params.userId) });
+});
+
+app.post("/api/notifications/read", (req, res) => {
+  const { userId, notificationId } = req.body || {};
+  if (!userId) return res.status(400).json({ error: "userId required." });
+  return res.json({
+    success: true,
+    notifications: markUserNotificationsRead(String(userId), notificationId ? String(notificationId) : undefined),
+  });
+});
+
+app.post("/api/notifications/trigger", (req, res) => {
+  const { userId, type, title, body, targetView, targetId } = req.body || {};
+  if (!userId || !title) return res.status(400).json({ error: "userId and title required." });
+  const notif: AppNotification = {
+    id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    userId: String(userId),
+    type: (type as AppNotification["type"]) || "CIRCLE",
+    title: String(title),
+    body: String(body || ""),
+    read: false,
+    targetView,
+    targetId,
+    createdAt: Date.now(),
+  };
+  addUserNotification(notif);
+  return res.json({ success: true, notification: notif });
+});
+
+app.post("/api/notifications/subscribe", async (req, res) => {
+  const { userId, endpoint, keys } = req.body || {};
+  if (!userId || !endpoint) return res.status(400).json({ error: "userId and endpoint required." });
+  const result = await savePushSubscription({
+    userId: String(userId),
+    endpoint: String(endpoint),
+    p256dh: keys?.p256dh,
+    authKey: keys?.auth,
+  });
+  return res.json({ success: true, ...result });
 });
 
 // Live Date Safety Check-In Endpoint

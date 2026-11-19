@@ -14,6 +14,18 @@
       "url": "https://www.pendo.website/nairobi-dating"
     },
     {
+      "identifier": "urn:air:pendo.website:vibe-circles",
+      "displayName": "Kenyan Vibe Circles & Meetup Events",
+      "type": "web",
+      "url": "https://www.pendo.website/vibe-circles"
+    },
+    {
+      "identifier": "urn:air:pendo.website:campus-dating-kenya",
+      "displayName": "Kenyan Campus Singles Hub",
+      "type": "web",
+      "url": "https://www.pendo.website/campus-dating-kenya"
+    },
+    {
       "identifier": "urn:air:pendo.website:kenyan-diaspora",
       "displayName": "Kenyan Diaspora Singles Hub",
       "type": "web",
@@ -21,7 +33,7 @@
     },
     {
       "identifier": "urn:air:pendo.website:mpesa-checkout",
-      "displayName": "M-Pesa STK Push Integration",
+      "displayName": "M-Pesa Daraja 2.0 STK Push Integration",
       "type": "api",
       "url": "https://www.pendo.website/api/mpesa/stk-push"
     },
@@ -30,6 +42,12 @@
       "displayName": "Pendo Ngao Date Safety Check-In",
       "type": "api",
       "url": "https://www.pendo.website/api/safety/checkin"
+    },
+    {
+      "identifier": "urn:air:pendo.website:vibe-meetups",
+      "displayName": "Kenyan Vibe Circle Meetups API",
+      "type": "api",
+      "url": "https://www.pendo.website/api/vibes/meetups"
     },
     {
       "identifier": "urn:air:pendo.website:indexnow",

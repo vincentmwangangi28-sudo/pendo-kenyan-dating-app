@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
-import { UserProfile, MatchProfile, AppView, ChatSession, ChatMessage, GroupProfile, HangoutSpot, VirtualGift } from './types';
+import { UserProfile, MatchProfile, AppView, ChatSession, ChatMessage, GroupProfile, HangoutSpot, VirtualGift, AppNotification } from './types';
 import { GoogleAuthButton } from './components/GoogleAuthButton';
 import { AuthNotification } from './components/AuthNotification';
 import { PWAInstallButton } from './components/PWAInstallButton';
@@ -7,7 +7,8 @@ import { AdSenseBanner } from './components/AdSenseBanner';
 import { calculateTrustScore } from './src/lib/trustScore';
 import { SEO_ROUTES, SeoRouteConfig, findSeoRouteByPathOrHash, getFaqsForRoute, buildFaqPageSchema, KENYAN_VIBE_CIRCLES } from './src/lib/seoRoutes';
 import { useOnlineStatus } from './hooks/usePWAInstall';
-import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Phone, Shield, CheckCircle2, ShieldCheck, Crown, Sparkles, Globe, Check, WifiOff, Share2 } from 'lucide-react';
+import { useRealtimeNotifications } from './hooks/useRealtimeNotifications';
+import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Phone, Shield, CheckCircle2, ShieldCheck, Crown, Sparkles, Globe, Check, WifiOff, Share2, Bell, Users, Gauge } from 'lucide-react';
 
 // Code-split heavy interactive modules for fast mobile FCP & 90+ Lighthouse Performance
 const ProfileSetup = lazy(() => import('./components/ProfileSetup').then(m => ({ default: m.ProfileSetup })));
@@ -23,6 +24,8 @@ const MpesaModal = lazy(() => import('./components/MpesaModal').then(m => ({ def
 const SafetyVerificationModal = lazy(() => import('./components/SafetyVerificationModal').then(m => ({ default: m.SafetyVerificationModal })));
 const VoiceCallModal = lazy(() => import('./components/VoiceCallModal').then(m => ({ default: m.VoiceCallModal })));
 const AlikaRafikiModal = lazy(() => import('./components/AlikaRafikiModal').then(m => ({ default: m.AlikaRafikiModal })));
+const VibeCirclesHub = lazy(() => import('./components/VibeCirclesHub').then(m => ({ default: m.VibeCirclesHub })));
+const NotificationCenterModal = lazy(() => import('./components/NotificationCenterModal').then(m => ({ default: m.NotificationCenterModal })));
 import { findRealtimeEvents } from './services/geminiService';
 import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut, getOrCreateGuestUser, AppAuthUser, checkFirestoreConnectivity } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -1119,6 +1122,20 @@ const App: React.FC = () => {
   const [isAuntieShoshOpen, setIsAuntieShoshOpen] = useState(false);
 
   const isNetworkOnline = useOnlineStatus();
+  const activeUserId = authUser?.uid || userProfile.uid || 'guest_user';
+  const {
+    notifications,
+    unreadCount,
+    wsConnected,
+    pushPermission,
+    lastMeetupUpdate,
+    requestPushPermission,
+    triggerNotification,
+    markAsRead,
+  } = useRealtimeNotifications(activeUserId);
+
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [discoveryVibeOverride, setDiscoveryVibeOverride] = useState<string | null>(null);
 
   // Connected Modals: M-Pesa Express & Pendo Ngao Trust/Safety
   const [mpesaModal, setMpesaModal] = useState<{
@@ -1133,6 +1150,7 @@ const App: React.FC = () => {
     isOpen: boolean;
     tab: 'TRUST' | 'CHECKIN';
     matchName?: string;
+    defaultVenue?: string;
   }>({ isOpen: false, tab: 'TRUST' });
 
   // 1-on-1 Voice Call State
@@ -1212,6 +1230,8 @@ const App: React.FC = () => {
       setIsAlikaModalOpen(true);
     } else if (route.openModal === 'AUNTIE_SHOSH') {
       setIsAuntieShoshOpen(true);
+    } else if (route.openView === 'VIBES' && authUser) {
+      setView(AppView.VIBES);
     }
     applySeoRouteMetadata(route, route.city);
   };
@@ -1527,7 +1547,7 @@ const App: React.FC = () => {
           name: guestUser.displayName || 'Kenyan Guest',
           photoUrl: guestUser.photoURL || prev.photoUrl,
         }));
-        setView(AppView.PROFILE_SETUP);
+        setView(activeSeoRoute?.openView === 'VIBES' ? AppView.VIBES : AppView.PROFILE_SETUP);
       }
     } catch (e: any) {
       googleAuthLogger.warn('GOOGLE_AUTH', "Sign in handled with guest state fallback:", { error: e?.message || e });
@@ -1541,15 +1561,58 @@ const App: React.FC = () => {
         name: guestUser.displayName || 'Kenyan Guest',
         photoUrl: guestUser.photoURL || prev.photoUrl,
       }));
-      setView(AppView.PROFILE_SETUP);
+      setView(activeSeoRoute?.openView === 'VIBES' ? AppView.VIBES : AppView.PROFILE_SETUP);
     } finally {
       setIsSigningInGoogle(false);
     }
   };
 
+  const handleToggleDataSaver = async () => {
+    const nextValue = !userProfile.dataSaverEnabled;
+    const updated: UserProfile = { ...userProfile, dataSaverEnabled: nextValue };
+    setUserProfile(updated);
+    safeStorage.setItem('pendo_user_profile', JSON.stringify(updated));
+    if (authUser && !isOffline && auth.currentUser) {
+      try {
+        await setDoc(doc(db, 'users', authUser.uid), { dataSaverEnabled: nextValue }, { merge: true });
+      } catch {}
+    }
+  };
+
+  const handleSaveQuizResult = async (result: { recommendedCircle: string; vibeCircle: string }) => {
+    const updated: UserProfile = {
+      ...userProfile,
+      recommendedVibeCircle: result.recommendedCircle,
+      vibeCircle: result.vibeCircle,
+      vibeQuizCompleted: true,
+    };
+    setUserProfile(updated);
+    safeStorage.setItem('pendo_user_profile', JSON.stringify(updated));
+    if (authUser && !isOffline && auth.currentUser) {
+      try {
+        await setDoc(
+          doc(db, 'users', authUser.uid),
+          {
+            recommendedVibeCircle: result.recommendedCircle,
+            vibeCircle: result.vibeCircle,
+            vibeQuizCompleted: true,
+          },
+          { merge: true }
+        );
+      } catch {}
+    }
+    triggerNotification({
+      type: 'CIRCLE',
+      title: `Vibe Match · ${result.recommendedCircle}`,
+      body: `Your Kenyan Vibe Quiz unlocked ${result.recommendedCircle} lounges & meetups.`,
+      targetView: AppView.VIBES,
+    });
+  };
+
   const handleProfileSave = async (profile: UserProfile) => {
     const activeUid = authUser?.uid || userProfile.uid || 'guest_user';
     const computedScore = calculateTrustScore(profile).total;
+    const isAdult = (profile.age || 18) >= 18;
     const profileToSave = {
         uid: activeUid,
         name: profile.name || 'New User',
@@ -1558,6 +1621,10 @@ const App: React.FC = () => {
         bio: profile.bio || 'New member',
         trustScore: computedScore,
         subscriptionTier: profile.subscriptionTier || 'FREE',
+        ageVerified: isAdult,
+        dataSaverEnabled: Boolean(profile.dataSaverEnabled),
+        ...(profile.vibeQuizCompleted ? { vibeQuizCompleted: true } : {}),
+        ...((profile.recommendedVibeCircle && profile.recommendedVibeCircle.length > 0) && { recommendedVibeCircle: profile.recommendedVibeCircle }),
         ...((profile.neighborhood && profile.neighborhood.length > 0) && { neighborhood: profile.neighborhood }),
         ...((profile.vibeCircle && profile.vibeCircle.length > 0) && { vibeCircle: profile.vibeCircle }),
         ...((profile.interests && profile.interests.length > 0) && { interests: profile.interests }),
@@ -1585,10 +1652,16 @@ const App: React.FC = () => {
       setIsOffline(true);
     }
 
-    const updatedFullProfile: UserProfile = { ...profile, uid: activeUid, trustScore: computedScore };
+    const updatedFullProfile: UserProfile = {
+      ...profile,
+      uid: activeUid,
+      trustScore: computedScore,
+      ageVerified: isAdult,
+      dataSaverEnabled: Boolean(profile.dataSaverEnabled),
+    };
     safeStorage.setItem('pendo_user_profile', JSON.stringify(updatedFullProfile));
     setUserProfile(updatedFullProfile);
-    setView(AppView.DISCOVERY);
+    setView(activeSeoRoute?.openView === 'VIBES' ? AppView.VIBES : AppView.DISCOVERY);
   };
 
   const handleLike = async (match: MatchProfile) => {
@@ -1629,6 +1702,13 @@ const App: React.FC = () => {
         ]
       };
       setChats(prev => [newChat, ...prev]);
+      triggerNotification({
+        type: 'MATCH',
+        title: `New Match · ${match.name}`,
+        body: `You connected with ${match.name} (${match.location}). Say Sema Vipi!`,
+        targetView: AppView.CHAT_LIST,
+        targetId: match.id,
+      });
     }
   };
 
@@ -1684,6 +1764,12 @@ const App: React.FC = () => {
       const giftMsg = `🎁 Sent M-Pesa Zawadi: **${gift.icon} ${gift.name}** (${gift.swahiliTag} · KES ${gift.priceKes}) — Receipt #${receiptNumber}`;
       handleSendMessageToChat(targetChatId, giftMsg);
     }
+    triggerNotification({
+      type: 'ZAWADI',
+      title: `Zawadi Sent · ${gift.name}`,
+      body: `KES ${gift.priceKes} M-Pesa Receipt #${receiptNumber} delivered.`,
+      targetView: AppView.CHAT_LIST,
+    });
   };
 
   const handleProfileVerified = (updatedFields: Partial<UserProfile>) => {
@@ -1987,15 +2073,35 @@ const App: React.FC = () => {
       case AppView.LANDING:
         return (
           <main id="main-content" className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-rose-600 via-rose-700 to-slate-950 text-white p-5 relative overflow-y-auto">
-            {/* Ambient Background */}
-            <div className="absolute top-0 left-0 w-72 h-72 bg-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-25 pointer-events-none"></div>
-            <div className="absolute bottom-0 right-0 w-72 h-72 bg-amber-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none"></div>
+            {/* Ambient Background (paused in Mobile Data Saver mode) */}
+            {!userProfile.dataSaverEnabled && (
+              <>
+                <div className="absolute top-0 left-0 w-72 h-72 bg-rose-400 rounded-full mix-blend-multiply filter blur-3xl opacity-25 pointer-events-none"></div>
+                <div className="absolute bottom-0 right-0 w-72 h-72 bg-amber-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none"></div>
+              </>
+            )}
 
             {/* Hero Section */}
             <div className="relative z-10 text-center pt-4 pb-6 w-full max-w-sm mx-auto">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/30 text-[11px] font-extrabold text-amber-300 mb-4 shadow-sm">
-                <ShieldCheck size={14} className="text-emerald-400" />
-                <span>Kenya's #1 Verified Dating & Matchmaking Community</span>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/30 text-[11px] font-extrabold text-amber-300 shadow-sm">
+                  <ShieldCheck size={14} className="text-emerald-400" />
+                  <span>Kenya's #1 Verified Dating Community</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleDataSaver}
+                  aria-pressed={Boolean(userProfile.dataSaverEnabled)}
+                  className={`min-h-[34px] px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                    userProfile.dataSaverEnabled
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                      : 'bg-slate-900/75 text-white border-white/25 hover:bg-slate-900'
+                  }`}
+                  title="Toggle Kenyan Mobile Data Saver Mode"
+                >
+                  <Gauge size={13} />
+                  <span>{userProfile.dataSaverEnabled ? 'Data Saver ON' : 'Save Data'}</span>
+                </button>
               </div>
 
               <div className="w-16 h-16 bg-white/15 backdrop-blur-lg rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xl rotate-3 border border-white/25">
@@ -2019,9 +2125,18 @@ const App: React.FC = () => {
                   text={activeVibeFilter ? `Join ${activeVibeFilter} with Google` : `Join ${selectedLandingCity} Singles with Google`}
                   className="w-full shadow-xl"
                 />
-                <p className="text-[11px] text-white font-semibold">
-                  Free instant registration · Verified singles only
-                </p>
+                <div className="flex items-center justify-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleStartApp('guest', selectedLandingCity, activeVibeFilter)}
+                    className="min-h-[44px] px-4 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-xs font-bold text-white transition-colors cursor-pointer"
+                  >
+                    Preview as Guest
+                  </button>
+                  <span className="text-[11px] text-white/90 font-semibold">
+                    Free · Verified singles 18+
+                  </span>
+                </div>
               </div>
 
               {/* Installable PWA Banner */}
@@ -2216,15 +2331,47 @@ const App: React.FC = () => {
       case AppView.DISCOVERY:
         return (
           <main id="main-content" className="min-h-screen bg-slate-100 pb-20">
-            <div className="bg-white px-3.5 py-3 shadow-sm flex items-center justify-between sticky top-0 z-10">
+            <div className="bg-white px-3.5 py-2.5 shadow-sm flex items-center justify-between sticky top-0 z-10 border-b border-slate-100">
               <h1 className="text-xl font-black text-rose-600 flex items-center gap-1.5">
                 <Flame size={22} fill="currentColor" /> Pendo
               </h1>
               <div className="flex items-center gap-1.5">
+                 {/* Real-Time Notifications Bell */}
+                 <button
+                    type="button"
+                    onClick={() => setIsNotificationModalOpen(true)}
+                    className="relative min-w-[40px] min-h-[40px] p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full flex items-center justify-center transition-colors cursor-pointer"
+                    title="Real-time Alerts & Web Push"
+                    aria-label="Open Notifications"
+                 >
+                    <Bell size={17} />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-mono font-bold tabular-nums flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                 </button>
+
+                 {/* Mobile Data Saver Toggle */}
+                 <button
+                    type="button"
+                    onClick={handleToggleDataSaver}
+                    aria-pressed={Boolean(userProfile.dataSaverEnabled)}
+                    className={`min-h-[36px] px-2 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                      userProfile.dataSaverEnabled
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                    title="Toggle Mobile Data Saver Mode"
+                 >
+                    <Gauge size={13} />
+                    <span className="hidden sm:inline">{userProfile.dataSaverEnabled ? 'Lite' : 'Data'}</span>
+                 </button>
+
                  {/* Trust Score & Safety Shield Button */}
                  <button
                     onClick={() => setSafetyModal({ isOpen: true, tab: 'TRUST' })}
-                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-full font-bold text-[11px] flex items-center gap-1 shadow-xs transition-all active:scale-95"
+                    className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-full font-bold text-[11px] font-mono tabular-nums flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
                     title="Pendo Ngao Trust Score & Date Safety Shield"
                  >
                     <ShieldCheck size={13} className="text-emerald-600" />
@@ -2234,7 +2381,7 @@ const App: React.FC = () => {
                  {/* Pendo Gold / M-Pesa Pass Button */}
                  <button
                     onClick={() => setMpesaModal({ isOpen: true, tab: 'GOLD' })}
-                    className={`px-2.5 py-1 rounded-full font-black text-[11px] flex items-center gap-1 shadow-xs transition-all active:scale-95 ${
+                    className={`px-2.5 py-1.5 rounded-full font-black text-[11px] flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer ${
                       userProfile.subscriptionTier && userProfile.subscriptionTier !== 'FREE'
                         ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950'
                         : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'
@@ -2251,7 +2398,7 @@ const App: React.FC = () => {
                  {/* 1-on-1 Voice Call simulation button */}
                  <button
                    onClick={() => setVoiceCall({ isOpen: true, isIncoming: true, match: matches[0] || null })}
-                   className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-full font-black text-[11px] flex items-center gap-1 shadow-xs transition-all active:scale-95"
+                   className="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-full font-black text-[11px] hidden sm:flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
                    title="Simulate 1-on-1 Voice Call from Match"
                  >
                    <Phone size={12} className="text-emerald-600" />
@@ -2260,7 +2407,7 @@ const App: React.FC = () => {
 
                  <button 
                     onClick={() => setIsAuntieShoshOpen(true)}
-                    className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 rounded-full font-black text-[11px] flex items-center gap-1 shadow-xs transition-all active:scale-95"
+                    className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 rounded-full font-black text-[11px] flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
                     title="Auntie Shosh's Baraza"
                  >
                     <span>👵</span>
@@ -2268,21 +2415,14 @@ const App: React.FC = () => {
                  </button>
                  <button 
                     onClick={() => setView(AppView.VOICE_COACH)}
-                    className="p-1.5 bg-rose-100 text-rose-600 rounded-full shadow-xs"
+                    className="p-2 bg-rose-100 text-rose-600 rounded-full shadow-xs cursor-pointer"
                     title="AI Dating Coach"
                  >
                     <Mic size={16} />
                  </button>
-                 <button 
-                    onClick={async () => { await signOut(); setView(AppView.LANDING); }}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full"
-                    title="Log Out"
-                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                 </button>
                  <button
                    onClick={() => setSafetyModal({ isOpen: true, tab: 'TRUST' })}
-                   className={`w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300 relative ${userProfile.boostExpiresAt && userProfile.boostExpiresAt > Date.now() ? 'ring-2 ring-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : ''}`}
+                   className={`w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300 relative cursor-pointer ${userProfile.boostExpiresAt && userProfile.boostExpiresAt > Date.now() ? 'ring-2 ring-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : ''}`}
                    title="View Profile & Verification"
                  >
                    <img src={userProfile.photoUrl} alt="Me" className="w-full h-full object-cover"/>
@@ -2294,13 +2434,36 @@ const App: React.FC = () => {
               matches={matches}
               hangoutSpots={MOCK_VENUES}
               initialCity={activeSeoRoute && !activeSeoRoute.defaultVibe ? activeSeoRoute.city : (selectedLandingCity !== 'Nairobi' && !activeVibeFilter ? selectedLandingCity : 'All Kenya')}
-              initialVibe={activeVibeFilter || 'All Vibes'}
+              initialVibe={discoveryVibeOverride || activeVibeFilter || 'All Vibes'}
               onLike={handleLike} 
               onPass={handlePass} 
               onBoost={() => handleBoost(30 * 60 * 1000)}
               onOpenMpesaModal={(tab) => setMpesaModal({ isOpen: true, tab })}
               onOpenSafetyModal={() => setSafetyModal({ isOpen: true, tab: 'TRUST' })}
               onOpenAlikaModal={() => setIsAlikaModalOpen(true)}
+            />
+          </main>
+        );
+
+      case AppView.VIBES:
+        return (
+          <main id="main-content" className="min-h-screen bg-[#FAF8F5] pb-20">
+            <VibeCirclesHub
+              userProfile={userProfile}
+              lastMeetupUpdate={lastMeetupUpdate}
+              onSaveQuizResult={handleSaveQuizResult}
+              onEnterCircleChat={(groupChatId) => {
+                setActiveChatId(groupChatId);
+                setView(AppView.CHAT_ROOM);
+              }}
+              onExploreCircleProfiles={(circleName) => {
+                setDiscoveryVibeOverride(circleName);
+                setView(AppView.DISCOVERY);
+              }}
+              onOpenVerification={() => setSafetyModal({ isOpen: true, tab: 'TRUST' })}
+              onOpenSafetyCheckin={(venueName) =>
+                setSafetyModal({ isOpen: true, tab: 'CHECKIN', defaultVenue: venueName })
+              }
             />
           </main>
         );
@@ -2400,7 +2563,7 @@ const App: React.FC = () => {
   };
 
   // --- Bottom Navigation (Conditional) ---
-  const showNav = [AppView.DISCOVERY, AppView.HANGOUTS, AppView.CHAT_LIST, AppView.MEET].includes(view);
+  const showNav = [AppView.DISCOVERY, AppView.VIBES, AppView.HANGOUTS, AppView.CHAT_LIST, AppView.MEET].includes(view);
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden flex flex-col">
@@ -2426,6 +2589,25 @@ const App: React.FC = () => {
           <AuntieShosh 
             userProfile={userProfile} 
             onClose={() => setIsAuntieShoshOpen(false)} 
+          />
+        )}
+
+        {/* Real-Time Match, Zawadi & Meetup Notification Center */}
+        {isNotificationModalOpen && (
+          <NotificationCenterModal
+            isOpen={isNotificationModalOpen}
+            onClose={() => setIsNotificationModalOpen(false)}
+            notifications={notifications}
+            pushPermission={pushPermission}
+            wsConnected={wsConnected}
+            onRequestPush={requestPushPermission}
+            onMarkAllRead={() => markAsRead()}
+            onSelectNotification={(item: AppNotification) => {
+              markAsRead(item.id);
+              if (item.targetView) {
+                setView(item.targetView);
+              }
+            }}
           />
         )}
 
@@ -2469,6 +2651,7 @@ const App: React.FC = () => {
             initialTab={safetyModal.tab}
             userProfile={userProfile}
             defaultMatchName={safetyModal.matchName}
+            defaultVenue={safetyModal.defaultVenue}
             onProfileVerified={handleProfileVerified}
             onShareSafetyBeaconToChat={(beaconText) => {
               if (activeChatId) {
@@ -2491,51 +2674,62 @@ const App: React.FC = () => {
       </Suspense>
 
       {showNav && (
-        <div className="fixed bottom-0 w-full max-w-md bg-white border-t border-slate-100 flex justify-around items-center py-4 px-2 z-40 pb-6">
+        <nav
+          aria-label="Primary App Navigation"
+          className="fixed bottom-0 w-full max-w-md bg-white border-t border-slate-100 flex justify-around items-center py-2 px-1 z-40 pb-3"
+        >
           <button 
             onClick={() => setView(AppView.DISCOVERY)}
-            className={`flex flex-col items-center gap-1 transition-colors ${view === AppView.DISCOVERY ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.DISCOVERY ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
           >
-            <Heart size={24} fill={view === AppView.DISCOVERY ? "currentColor" : "none"} />
-            <span className="text-[10px] font-medium">Discover</span>
+            <Heart size={20} fill={view === AppView.DISCOVERY ? "currentColor" : "none"} />
+            <span className="text-[10px] font-semibold">Discover</span>
+          </button>
+
+          <button 
+            onClick={() => setView(AppView.VIBES)}
+            className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.VIBES ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            <Users size={20} />
+            <span className="text-[10px] font-semibold">Vibes</span>
           </button>
 
           <button 
             onClick={() => setView(AppView.HANGOUTS)}
-            className={`flex flex-col items-center gap-1 transition-colors ${view === AppView.HANGOUTS ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.HANGOUTS ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
           >
-            <MapPin size={24} fill={view === AppView.HANGOUTS ? "currentColor" : "none"} />
-            <span className="text-[10px] font-medium">Hangouts</span>
+            <MapPin size={20} fill={view === AppView.HANGOUTS ? "currentColor" : "none"} />
+            <span className="text-[10px] font-semibold">Hangouts</span>
           </button>
 
           <button 
             onClick={() => setView(AppView.MEET)}
-            className={`flex flex-col items-center gap-1 transition-colors ${view === AppView.MEET ? 'text-purple-600' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.MEET ? 'text-purple-600' : 'text-slate-500 hover:text-slate-800'}`}
             title="Video Date Hub (Google Meet)"
           >
-            <Video size={24} fill={view === AppView.MEET ? "currentColor" : "none"} className={view === AppView.MEET ? 'text-purple-600' : 'text-purple-400'} />
-            <span className={`text-[10px] font-bold ${view === AppView.MEET ? 'text-purple-600' : 'text-slate-400'}`}>VidDate</span>
+            <Video size={20} fill={view === AppView.MEET ? "currentColor" : "none"} className={view === AppView.MEET ? 'text-purple-600' : 'text-purple-500'} />
+            <span className={`text-[10px] font-bold ${view === AppView.MEET ? 'text-purple-600' : 'text-slate-500'}`}>VidDate</span>
           </button>
           
           <button 
             onClick={() => setView(AppView.CHAT_LIST)}
-            className={`relative flex flex-col items-center gap-1 transition-colors ${view === AppView.CHAT_LIST ? 'text-rose-600' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`relative min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.CHAT_LIST ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
           >
-            <MessageCircle size={24} fill={view === AppView.CHAT_LIST ? "currentColor" : "none"} />
-            <span className="text-[10px] font-medium">Chats</span>
+            <MessageCircle size={20} fill={view === AppView.CHAT_LIST ? "currentColor" : "none"} />
+            <span className="text-[10px] font-semibold">Chats</span>
             {chats.some(c => c.unreadCount > 0) && (
-              <span className="absolute top-0 right-2 w-2 h-2 bg-rose-600 rounded-full"></span>
+              <span className="absolute top-1.5 right-2.5 w-2 h-2 bg-rose-600 rounded-full"></span>
             )}
           </button>
           
           <button 
             onClick={() => setView(AppView.PROFILE_SETUP)}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600"
+            className="min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 text-slate-500 hover:text-slate-800 cursor-pointer"
           >
-            <UserIcon size={24} />
-            <span className="text-[10px] font-medium">Profile</span>
+            <UserIcon size={20} />
+            <span className="text-[10px] font-semibold">Profile</span>
           </button>
-        </div>
+        </nav>
       )}
 
       {/* Global Auth Error & Status Notifications */}

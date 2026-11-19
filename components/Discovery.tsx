@@ -364,8 +364,14 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
         
         <div className="absolute inset-0 rounded-3xl overflow-hidden">
           <img 
-            src={currentMatch.photoUrl} 
+            src={
+              userProfile.dataSaverEnabled && currentMatch.photoUrl.includes('picsum.photos')
+                ? currentMatch.photoUrl.replace('/400/600', '/240/360')
+                : currentMatch.photoUrl
+            } 
             alt={currentMatch.name}
+            loading={userProfile.dataSaverEnabled ? 'lazy' : 'eager'}
+            decoding="async"
             className="w-full h-full object-cover pointer-events-none" 
           />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80" />
@@ -407,7 +413,9 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
               <h2 className="text-3xl font-bold flex items-center gap-2 pointer-events-none">
                 {currentMatch.name}, {currentMatch.age}
                 {currentMatch.isVerified && (
-                  <ShieldCheck size={24} className="text-emerald-400" fill="currentColor" stroke="white" title="Verified Kenyan Profile" />
+                  <span title="Verified Kenyan Profile" className="inline-flex items-center">
+                    <ShieldCheck size={24} className="text-emerald-400" fill="currentColor" stroke="white" />
+                  </span>
                 )}
                 {currentMatch.voiceUrl && (
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" title="Voice Intro Available"></div>

@@ -36,7 +36,8 @@ const SAFE_KENYAN_DATE_SPOTS = [
   'Rupas Mall Cafe (Eldoret)'
 ];
 
-export { calculateTrustScore } from '../src/lib/trustScore';
+import { calculateTrustScore } from '../src/lib/trustScore';
+export { calculateTrustScore };
 
 export const SafetyVerificationModal: React.FC<SafetyVerificationModalProps> = ({
   isOpen,
@@ -69,7 +70,8 @@ export const SafetyVerificationModal: React.FC<SafetyVerificationModalProps> = (
   useEffect(() => {
     setActiveTab(initialTab);
     if (defaultMatchName) setMatchName(defaultMatchName);
-  }, [initialTab, defaultMatchName, isOpen]);
+    if (defaultVenue) setVenueName(defaultVenue);
+  }, [initialTab, defaultMatchName, defaultVenue, isOpen]);
 
   useEffect(() => {
     const saved = safeStorage.getItem('pendo_active_safety_checkin');

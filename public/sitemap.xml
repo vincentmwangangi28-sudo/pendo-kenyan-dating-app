@@ -55,6 +55,19 @@
     </image:image>
   </url>
   <url>
+    <loc>https://www.pendo.website/vibe-circles</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/vibe-circles" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/vibe-circles" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Kenyan Vibe Circles — Lounges, Quizzes &amp; Meetups</image:title>
+      <image:caption>Join gated Kenyan Vibe Circles including Kilimani Mums, Mama wa Harrier, Ben 10 &amp; Wababa. Take the Vibe Quiz and RSVP to safe meetups on Pendo.</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://www.pendo.website/kisumu-dating</loc>
     <lastmod>2026-11-19</lastmod>
     <changefreq>daily</changefreq>
@@ -195,6 +208,32 @@
       <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
       <image:title>Wababa &amp; Soft Life — VIP Kenyan Matchmaking</image:title>
       <image:caption>Meet established Kenyan Wababa gentlemen and Soft Life enthusiasts in Runda, Karen &amp; Westlands for VIP dinners, Diani trips, and M-Pesa Zawadi.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/campus-dating-kenya</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/campus-dating-kenya" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/campus-dating-kenya" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Kenyan Campus Dating — UoN, KU, JKUAT &amp; Strathmore</image:title>
+      <image:caption>Meet verified Kenyan university singles from UoN, Kenyatta University, JKUAT, Strathmore, Moi &amp; Egerton with Ngao Trust Shield on Pendo.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/diaspora-uk-usa-kenyans</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/diaspora-uk-usa-kenyans" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/diaspora-uk-usa-kenyans" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Kenyans in UK, USA &amp; Canada — Diaspora Matchmaking</image:title>
+      <image:caption>Connect with verified Kenyan professionals in London, Dallas, Atlanta, Toronto &amp; UAE looking for authentic Kenyan relationships on Pendo.</image:caption>
     </image:image>
   </url>
   <url>

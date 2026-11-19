@@ -17,6 +17,10 @@ export interface UserProfile {
   trustScore?: number; // Explainable 0-100 trust score
   subscriptionTier?: 'FREE' | 'GOLD' | 'VIP';
   vibeCircle?: string;
+  recommendedVibeCircle?: string;
+  vibeQuizCompleted?: boolean;
+  ageVerified?: boolean;
+  dataSaverEnabled?: boolean;
   mpesaPhone?: string;
   giftsSent?: number;
   giftsReceived?: number;
@@ -36,6 +40,8 @@ export interface MatchProfile {
   bio: string;
   interests: string[];
   languages: string[];
+  gender?: string;
+  lookingFor?: string;
   photoUrl: string;
   voiceUrl?: string; // Audio intro
   distance: number; // in km
@@ -147,10 +153,40 @@ export interface ChatSession {
   messages: ChatMessage[];
 }
 
+export interface VibeMeetupEvent {
+  id: string;
+  title: string;
+  vibeCircle: string;
+  city: string;
+  venueName: string;
+  dateLabel: string;
+  coverKes: number;
+  minAge: number;
+  minTrustScore: number;
+  maxCapacity: number;
+  rsvpCount: number;
+  hasRsvped?: boolean;
+  description: string;
+  safeHostName: string;
+}
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  type: 'MATCH' | 'ZAWADI' | 'MEETUP' | 'CIRCLE' | 'MPESA';
+  title: string;
+  body: string;
+  read: boolean;
+  targetView?: AppView;
+  targetId?: string;
+  createdAt: number;
+}
+
 export enum AppView {
   LANDING = 'LANDING',
   PROFILE_SETUP = 'PROFILE_SETUP',
   DISCOVERY = 'DISCOVERY',
+  VIBES = 'VIBES',
   HANGOUTS = 'HANGOUTS',
   CHAT_LIST = 'CHAT_LIST',
   CHAT_ROOM = 'CHAT_ROOM',

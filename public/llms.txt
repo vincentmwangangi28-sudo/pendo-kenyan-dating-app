@@ -25,8 +25,11 @@
 - [Mama wa Harrier](https://www.pendo.website/mama-wa-harrier): Confident Kenyan boss ladies for road trips, fine dining & companionship.
 - [Ben 10 Kenya](https://www.pendo.website/ben10-dating-kenya): Verified young Kenyan gentlemen (21+) bringing fitness, energy & attentive company.
 - [Wababa & Soft Life](https://www.pendo.website/wababa-soft-life-kenya): VIP matchmaking, fine dining & Diani getaways in Runda, Karen & Westlands.
+- [Kenyan Campus Dating](https://www.pendo.website/campus-dating-kenya): Verified Kenyan university singles at UoN, KU, JKUAT, Strathmore & Moi.
+- [Kenyans in UK & USA](https://www.pendo.website/diaspora-uk-usa-kenyans): Diaspora matchmaking in London, Dallas, Atlanta, Toronto & UAE.
+- [Kenyan Vibe Circles & Meetups](https://www.pendo.website/vibe-circles): Take the Vibe Compatibility Quiz and RSVP to safe Kenyan meetup events.
 
 ## Trust & Safety Architecture
 - Pendo Ngao Trust Score: Explainable 0–100 identity verification score based on Google Auth, live camera selfie pose checks, and community standing.
 - Matatu Fare Shield & Safe Date Check-in: Real-time emergency check-in sharing trusted contact emergency numbers and fare guarantees.
-- Local M-Pesa STK Push: Transparent KES transactions for date reservations, virtual gifts (Chai, Dawa, Nyama Choma), and Pendo Gold.
+- Local M-Pesa Daraja 2.0 STK Push: Transparent KES transactions and callback reconciliation for date reservations, virtual gifts (Chai, Dawa, Nyama Choma), and Pendo Gold.

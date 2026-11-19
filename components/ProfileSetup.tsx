@@ -693,12 +693,41 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
           </div>
         </div>
 
+        {/* Mobile Data Saver Mode (Safaricom / Airtel Low-Data Toggle) */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold text-slate-900">Mobile Data Saver Mode</p>
+            <p className="text-xs text-slate-600 mt-0.5">
+              Compresses profile thumbnails & pauses heavy animations to save Kenyan mobile bundles.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={Boolean(profile.dataSaverEnabled)}
+            onClick={() =>
+              setProfile((prev) => ({
+                ...prev,
+                dataSaverEnabled: !prev.dataSaverEnabled,
+                ageVerified: (prev.age || 18) >= 18,
+              }))
+            }
+            className={`min-h-[44px] min-w-[68px] px-3 rounded-xl text-xs font-extrabold transition-colors cursor-pointer ${
+              profile.dataSaverEnabled
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white border border-slate-300 text-slate-700'
+            }`}
+          >
+            {profile.dataSaverEnabled ? 'ON' : 'OFF'}
+          </button>
+        </div>
+
         {/* Google Account & Profile Sync Card */}
         <div className="pt-2">
           <GoogleAccountCard />
         </div>
 
-        <Button onClick={() => onSave(profile)} className="w-full mt-4">
+        <Button onClick={() => onSave({ ...profile, ageVerified: (profile.age || 18) >= 18 })} className="w-full mt-4">
           Save & Start Matching
         </Button>
       </div>
