@@ -209,7 +209,7 @@ app.post("/api/safety/checkin", async (req, res) => {
 // IndexNow API Submission Endpoint for Ahrefs, Bing & Search Engines
 app.post("/api/indexnow/submit", async (req, res) => {
   try {
-    const key = "cguyxqk3krxuvjeesrp67h8cmz7cvvmn";
+    const key = "8zvbpmffgtwz251x44qqw5h5ugnvyyva";
     const payload = {
       host: "www.pendo.website",
       key: key,

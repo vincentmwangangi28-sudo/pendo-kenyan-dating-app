@@ -153,7 +153,7 @@ async function startServer() {
   app.post("/api/indexnow/submit", async (req, res) => {
     try {
       const canonicalHost = "www.pendo.website";
-      const key = "cguyxqk3krxuvjeesrp67h8cmz7cvvmn";
+      const key = "8zvbpmffgtwz251x44qqw5h5ugnvyyva";
       const payload = {
         host: canonicalHost,
         key: key,
@@ -287,8 +287,8 @@ async function startServer() {
       try {
         const payload = {
           host: "www.pendo.website",
-          key: "cguyxqk3krxuvjeesrp67h8cmz7cvvmn",
-          keyLocation: "https://www.pendo.website/cguyxqk3krxuvjeesrp67h8cmz7cvvmn.txt",
+          key: "8zvbpmffgtwz251x44qqw5h5ugnvyyva",
+          keyLocation: "https://www.pendo.website/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt",
           urlList: CANONICAL_URLS,
         };
         await fetch("https://api.indexnow.org/indexnow", {
