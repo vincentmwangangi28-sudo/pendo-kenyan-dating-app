@@ -4,7 +4,7 @@ import { defineConfig, loadEnv, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { SEO_ROUTES } from './src/lib/seoRoutes';
+import { SEO_ROUTES, SITE_ORIGIN, generateSitemapXml } from './src/lib/seoRoutes';
 
 function escapeHtml(str: string): string {
   return str
@@ -25,24 +25,61 @@ function seoPrerenderPlugin(): Plugin {
 
       const template = fs.readFileSync(indexHtmlPath, 'utf-8');
 
+      // 1. Always emit an up-to-date Google Sitemap XML (with hreflang & image tags)
+      fs.writeFileSync(path.join(distDir, 'sitemap.xml'), generateSitemapXml(), 'utf-8');
+
+      // 2. Build crawlable internal link nav for static HTML bots (Googlebot / Bingbot)
+      const crawlableNav = `<nav aria-label="Kenyan &amp; Diaspora Dating Routes" style="margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 32rem;">${SEO_ROUTES.map(
+        r => `<a href="${r.path}" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">${escapeHtml(r.label)}</a>`
+      ).join('')}</nav>`;
+
+      const rootHtml = template.replace(
+        /<div style="width: 1\.5rem; height: 1\.5rem;[^"]*"><\/div>/,
+        (match) => `${match}\n          ${crawlableNav}`
+      );
+      fs.writeFileSync(indexHtmlPath, rootHtml, 'utf-8');
+
       for (const route of SEO_ROUTES) {
         const slug = route.path.replace(/^\/+/, '');
         if (!slug) continue;
 
-        const canonicalUrl = `https://www.pendo.website${route.path}`;
+        const canonicalUrl = `${SITE_ORIGIN}${route.path}`;
         const safeTitle = escapeHtml(route.title);
         const safeDesc = escapeHtml(route.description);
-        const safeLabel = escapeHtml(route.label);
+        const safeKeywords = escapeHtml(route.keywords);
+        const safeH1 = escapeHtml(route.h1);
+        const safeSubtitle = escapeHtml(route.heroSubtitle);
 
-        let html = template
+        const breadcrumbJsonLd = `<script type="application/ld+json">${JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Pendo Kenya', item: `${SITE_ORIGIN}/` },
+            { '@type': 'ListItem', position: 2, name: route.label, item: canonicalUrl }
+          ]
+        })}</script>`;
+
+        let html = rootHtml
           .replace(/<title>[\s\S]*?<\/title>/, `<title>${safeTitle}</title>`)
           .replace(
             /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
             `<meta name="description" content="${safeDesc}" />`
           )
           .replace(
+            /<meta\s+name="keywords"\s+content="[^"]*"\s*\/?>/,
+            `<meta name="keywords" content="${safeKeywords}" />`
+          )
+          .replace(
             /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/,
             `<link rel="canonical" href="${canonicalUrl}" />`
+          )
+          .replace(
+            /<link\s+rel="alternate"\s+hreflang="en-KE"\s+href="[^"]*"\s*\/?>/,
+            `<link rel="alternate" hreflang="en-KE" href="${canonicalUrl}" />`
+          )
+          .replace(
+            /<link\s+rel="alternate"\s+hreflang="x-default"\s+href="[^"]*"\s*\/?>/,
+            `<link rel="alternate" hreflang="x-default" href="${canonicalUrl}" />`
           )
           .replace(
             /<meta\s+property="og:url"\s+content="[^"]*"\s*\/?>/,
@@ -73,15 +110,23 @@ function seoPrerenderPlugin(): Plugin {
             `"url": "${canonicalUrl}"`
           )
           .replace(
-            /Pendo — Kenya's #1 Dating & Matchmaking App/g,
-            `${safeLabel} — Pendo Kenya`
+            /<\/head>/,
+            `  ${breadcrumbJsonLd}\n  </head>`
+          )
+          .replace(
+            /(<h1[^>]*>)[\s\S]*?(<\/h1>)/g,
+            `$1${safeH1}$2`
+          )
+          .replace(
+            /(<p[^>]*>)[\s\S]*?(<\/p>)/g,
+            `$1${safeSubtitle}$2`
           );
 
         const routeDir = path.join(distDir, slug);
         fs.mkdirSync(routeDir, { recursive: true });
         fs.writeFileSync(path.join(routeDir, 'index.html'), html, 'utf-8');
       }
-      console.log(`[SEO Prerender] Generated ${SEO_ROUTES.length} static route HTML pages in dist/`);
+      console.log(`[SEO Prerender] Generated sitemap.xml + ${SEO_ROUTES.length} static route HTML pages in dist/`);
     },
   };
 }

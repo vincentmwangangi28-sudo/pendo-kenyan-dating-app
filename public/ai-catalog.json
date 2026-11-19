@@ -8,10 +8,16 @@
   },
   "entries": [
     {
-      "identifier": "urn:air:pendo.website:city-directory",
-      "displayName": "Kenyan City Dating Directory",
+      "identifier": "urn:air:pendo.website:nairobi-dating",
+      "displayName": "Nairobi Verified Singles Directory",
       "type": "web",
-      "url": "https://www.pendo.website/#city-nairobi"
+      "url": "https://www.pendo.website/nairobi-dating"
+    },
+    {
+      "identifier": "urn:air:pendo.website:kenyan-diaspora",
+      "displayName": "Kenyan Diaspora Singles Hub",
+      "type": "web",
+      "url": "https://www.pendo.website/kenyan-diaspora"
     },
     {
       "identifier": "urn:air:pendo.website:mpesa-checkout",

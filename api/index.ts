@@ -2,7 +2,7 @@ import express from "express";
 import { requireAuth, AuthRequest } from "../src/middleware/auth.ts";
 import { getOrCreateUser } from "../src/db/users.ts";
 import * as geminiServer from "../services/geminiServerService.ts";
-import { CANONICAL_URLS } from "../src/lib/seoRoutes.ts";
+import { CANONICAL_URLS, generateSitemapXml } from "../src/lib/seoRoutes.ts";
 
 const app = express();
 
@@ -115,7 +115,15 @@ app.get(["/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt", "/api/8zvbpmffgtwz251x44qqw5h5
 
 app.get(["/robots.txt", "/api/robots.txt"], (req, res) => {
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
-  res.send("User-agent: AhrefsBot\nAllow: /\n\nUser-agent: AhrefsSiteAudit\nAllow: /\n\nUser-agent: *\nAllow: /\n\nSitemap: https://www.pendo.website/sitemap.xml\nAgentmap: https://www.pendo.website/ai-catalog.json\n");
+  res.send(
+    "User-agent: Googlebot\nAllow: /\nDisallow: /api/\n\nUser-agent: Googlebot-Image\nAllow: /\n\nUser-agent: Google-InspectionTool\nAllow: /\n\nUser-agent: Bingbot\nAllow: /\nDisallow: /api/\n\nUser-agent: AhrefsBot\nAllow: /\n\nUser-agent: AhrefsSiteAudit\nAllow: /\n\nUser-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://www.pendo.website/sitemap.xml\nAgentmap: https://www.pendo.website/ai-catalog.json\n"
+  );
+});
+
+app.get(["/sitemap.xml", "/api/sitemap.xml"], (req, res) => {
+  res.setHeader("Content-Type", "application/xml; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.send(generateSitemapXml());
 });
 
 // Health Check

@@ -1,4 +1,5 @@
 import express from "express";
+import fs from "fs";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
@@ -6,7 +7,7 @@ import { getOrCreateUser } from "./src/db/users.ts";
 import { db } from "./src/db/index.ts";
 import { users } from "./src/db/schema.ts";
 import * as geminiServer from "./services/geminiServerService.ts";
-import { CANONICAL_URLS } from "./src/lib/seoRoutes.ts";
+import { CANONICAL_URLS, generateSitemapXml } from "./src/lib/seoRoutes.ts";
 
 async function startServer() {
   const app = express();
@@ -188,7 +189,9 @@ async function startServer() {
   // Search Engine Crawling & SEO Endpoints
   app.get("/robots.txt", (req, res) => {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.send("User-agent: AhrefsBot\nAllow: /\n\nUser-agent: AhrefsSiteAudit\nAllow: /\n\nUser-agent: *\nAllow: /\n\nSitemap: https://www.pendo.website/sitemap.xml\nAgentmap: https://www.pendo.website/ai-catalog.json\n");
+    res.send(
+      "User-agent: Googlebot\nAllow: /\nDisallow: /api/\n\nUser-agent: Googlebot-Image\nAllow: /\n\nUser-agent: Google-InspectionTool\nAllow: /\n\nUser-agent: Bingbot\nAllow: /\nDisallow: /api/\n\nUser-agent: AhrefsBot\nAllow: /\n\nUser-agent: AhrefsSiteAudit\nAllow: /\n\nUser-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://www.pendo.website/sitemap.xml\nAgentmap: https://www.pendo.website/ai-catalog.json\n"
+    );
   });
 
   // Agentic Browsing & AI Discovery Endpoints
@@ -205,9 +208,9 @@ async function startServer() {
   });
 
   app.get("/sitemap.xml", (req, res) => {
-    const filePath = path.join(process.cwd(), "public", "sitemap.xml");
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
-    res.sendFile(filePath);
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(generateSitemapXml());
   });
 
   app.post("/api/gemini/call", async (req, res) => {
@@ -257,6 +260,8 @@ async function startServer() {
     app.use(
       express.static(distPath, {
         maxAge: '1d',
+        redirect: false,
+        extensions: ['html'],
         setHeaders: (res, filePath) => {
           if (filePath.endsWith('index.html') || filePath.endsWith('sw.js') || filePath.endsWith('registerSW.js')) {
             res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
@@ -266,6 +271,11 @@ async function startServer() {
     );
     app.get('*all', (req, res) => {
       res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      const cleanSlug = req.path.replace(/^\/+|\/+$/g, '');
+      const routeHtml = cleanSlug ? path.join(distPath, cleanSlug, 'index.html') : '';
+      if (routeHtml && routeHtml.startsWith(distPath) && fs.existsSync(routeHtml)) {
+        return res.sendFile(routeHtml);
+      }
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

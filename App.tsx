@@ -994,11 +994,14 @@ const App: React.FC = () => {
     const title = route
       ? route.title
       : fallbackCity && fallbackCity !== 'Nairobi'
-      ? `${fallbackCity} Dating App | Meet Verified Singles in ${fallbackCity} — Pendo`
+      ? `${fallbackCity} Dating App | Verified Singles in ${fallbackCity} — Pendo`
       : "Pendo | Kenya's #1 Dating & Matchmaking App";
     const description = route
       ? route.description
-      : "Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges and safe video dates on Pendo.";
+      : "Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges, M-Pesa Zawadi, and safe video dates on Pendo.";
+    const keywords = route
+      ? route.keywords
+      : "Kenya dating app, Nairobi dating, Kenyan singles, African matchmaking, Pendo Kenya, Kenya video date, Matatu Fare Shield, Voice Lounge Kenya";
     const canonicalUrl = route
       ? `https://www.pendo.website${route.path}`
       : 'https://www.pendo.website/';
@@ -1006,14 +1009,26 @@ const App: React.FC = () => {
     document.title = title;
     const descEl = document.querySelector('meta[name="description"]');
     if (descEl) descEl.setAttribute('content', description);
+    const keywordsEl = document.querySelector('meta[name="keywords"]');
+    if (keywordsEl) keywordsEl.setAttribute('content', keywords);
     const ogTitleEl = document.querySelector('meta[property="og:title"]');
     if (ogTitleEl) ogTitleEl.setAttribute('content', title);
     const ogDescEl = document.querySelector('meta[property="og:description"]');
     if (ogDescEl) ogDescEl.setAttribute('content', description);
     const ogUrlEl = document.querySelector('meta[property="og:url"]');
     if (ogUrlEl) ogUrlEl.setAttribute('content', canonicalUrl);
+    const twTitleEl = document.querySelector('meta[name="twitter:title"]');
+    if (twTitleEl) twTitleEl.setAttribute('content', title);
+    const twDescEl = document.querySelector('meta[name="twitter:description"]');
+    if (twDescEl) twDescEl.setAttribute('content', description);
+    const twUrlEl = document.querySelector('meta[name="twitter:url"]');
+    if (twUrlEl) twUrlEl.setAttribute('content', canonicalUrl);
     const canonicalEl = document.querySelector('link[rel="canonical"]');
     if (canonicalEl) canonicalEl.setAttribute('href', canonicalUrl);
+    const hreflangKeEl = document.querySelector('link[rel="alternate"][hreflang="en-KE"]');
+    if (hreflangKeEl) hreflangKeEl.setAttribute('href', canonicalUrl);
+    const hreflangDefEl = document.querySelector('link[rel="alternate"][hreflang="x-default"]');
+    if (hreflangDefEl) hreflangDefEl.setAttribute('href', canonicalUrl);
   };
 
   const handleNavigateSeoRoute = (route: SeoRouteConfig, e?: React.MouseEvent) => {
@@ -1808,10 +1823,12 @@ const App: React.FC = () => {
               </div>
 
               <h1 className="text-3xl font-black mb-2 tracking-tight text-white">
-                Pendo — Kenya's #1 Dating & Matchmaking App
+                {activeSeoRoute ? activeSeoRoute.h1 : "Pendo — Kenya's #1 Dating & Matchmaking App"}
               </h1>
               <p className="text-xs text-white font-medium mb-5 leading-relaxed">
-                Meet verified singles across Nairobi, Mombasa, Kisumu, Nakuru & Eldoret with M-Pesa Zawadi, Sheng AI & Live Date Safety Shield.
+                {activeSeoRoute
+                  ? activeSeoRoute.heroSubtitle
+                  : 'Meet verified singles across Nairobi, Mombasa, Kisumu, Nakuru & Eldoret with M-Pesa Zawadi, Sheng AI & Live Date Safety Shield.'}
               </p>
 
               {/* Login Actions */}
@@ -1942,6 +1959,37 @@ const App: React.FC = () => {
                     ))}
                   </div>
                 </nav>
+              </section>
+
+              {/* Kenyan & Diaspora Dating FAQ (Matches FAQPage JSON-LD for Google Rich Results) */}
+              <section aria-label="Frequently Asked Questions" className="bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 border border-white/20 text-left mt-4 space-y-2.5">
+                <h2 className="text-xs font-black uppercase tracking-wider text-amber-300">
+                  Pendo Kenya Dating FAQ
+                </h2>
+                <details className="bg-black/30 rounded-xl p-2.5 border border-white/10">
+                  <summary className="text-[11px] font-bold text-white cursor-pointer">
+                    How does Pendo verify Kenyan singles to prevent catfishing?
+                  </summary>
+                  <p className="text-[10px] text-slate-200 mt-1.5 leading-relaxed">
+                    Every member receives a 0–100% Pendo Ngao Trust Score backed by Google Authentication, live camera pose verification, and safe community standing.
+                  </p>
+                </details>
+                <details className="bg-black/30 rounded-xl p-2.5 border border-white/10">
+                  <summary className="text-[11px] font-bold text-white cursor-pointer">
+                    Which Kenyan cities and diaspora communities are on Pendo?
+                  </summary>
+                  <p className="text-[10px] text-slate-200 mt-1.5 leading-relaxed">
+                    Meet verified singles in Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, Thika, Diani, Naivasha, Nanyuki, Nyeri, Machakos, and Kenyans across the UK, USA, UAE, and Canada.
+                  </p>
+                </details>
+                <details className="bg-black/30 rounded-xl p-2.5 border border-white/10">
+                  <summary className="text-[11px] font-bold text-white cursor-pointer">
+                    What is Matatu Fare Shield and M-Pesa Zawadi?
+                  </summary>
+                  <p className="text-[10px] text-slate-200 mt-1.5 leading-relaxed">
+                    Matatu Fare Shield shares live date check-ins with your trusted contacts, while M-Pesa Zawadi enables safe table reservations and Kenyan gifts via Safaricom M-Pesa STK Push.
+                  </p>
+                </details>
               </section>
 
               {/* Google AdSense Responsive Display Slot */}

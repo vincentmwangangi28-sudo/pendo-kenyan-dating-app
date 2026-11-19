@@ -37,8 +37,10 @@
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pendo | Kenya's #1 Dating & Matchmaking App</title>
-    <meta name="description" content="Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges and safe video dates on Pendo." />
+    <meta name="description" content="Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges, M-Pesa Zawadi, and safe video dates on Pendo." />
     <meta name="keywords" content="Kenya dating app, Nairobi dating, Kenyan singles, African matchmaking, Pendo Kenya, Kenya video date, Matatu Fare Shield, Voice Lounge Kenya" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="theme-color" content="#e11d48" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -48,39 +50,89 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
     <link rel="canonical" href="https://www.pendo.website/" />
+    <link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/" />
+    <link rel="alternate" hreflang="x-default" href="https://www.pendo.website/" />
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="https://www.pendo.website/sitemap.xml" />
     <meta name="google-site-verification" content="google00332d67777e965d" />
     <meta name="msvalidate.01" content="1A704EBF4AD6B5D3CFBA2F15F6D5689E" />
 
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_KE" />
     <meta property="og:url" content="https://www.pendo.website/" />
     <meta property="og:title" content="Pendo | Kenya's #1 Dating & Matchmaking App" />
-    <meta property="og:description" content="Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges and safe video dates on Pendo." />
+    <meta property="og:description" content="Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges, M-Pesa Zawadi, and safe video dates on Pendo." />
     <meta property="og:image" content="https://www.pendo.website/pwa-512x512.png" />
+    <meta property="og:image:alt" content="Pendo — Kenya's #1 Verified Dating & Matchmaking App" />
     <meta property="og:site_name" content="Pendo Kenya" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://www.pendo.website/" />
     <meta name="twitter:title" content="Pendo | Kenya's #1 Dating & Matchmaking App" />
-    <meta name="twitter:description" content="Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges and safe video dates on Pendo." />
+    <meta name="twitter:description" content="Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges, M-Pesa Zawadi, and safe video dates on Pendo." />
     <meta name="twitter:image" content="https://www.pendo.website/pwa-512x512.png" />
 
-    <!-- Schema.org JSON-LD for Search Engine Optimization -->
+    <!-- Schema.org JSON-LD for Google Rich Results -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Pendo Dating Kenya",
-      "url": "https://www.pendo.website/",
-      "applicationCategory": "SocialNetworkingApplication",
-      "operatingSystem": "All",
-      "description": "Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges and safe video dates on Pendo.",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "KES"
-      }
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": "Pendo Dating Kenya",
+          "url": "https://www.pendo.website/",
+          "applicationCategory": "SocialNetworkingApplication",
+          "operatingSystem": "All",
+          "inLanguage": ["en-KE", "sw-KE"],
+          "areaServed": {
+            "@type": "Country",
+            "name": "Kenya"
+          },
+          "description": "Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges, M-Pesa Zawadi, and safe video dates on Pendo.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "KES"
+          }
+        },
+        {
+          "@type": "Organization",
+          "name": "Pendo Kenya",
+          "url": "https://www.pendo.website/",
+          "logo": "https://www.pendo.website/pwa-512x512.png",
+          "areaServed": ["KE", "GB", "US", "AE", "CA"]
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "How does Pendo verify Kenyan singles to prevent catfishing?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Pendo uses the Pendo Ngao Trust Shield combining Google Authentication, live camera pose selfie verification, and community standing to score every profile from 0 to 100%."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Which Kenyan cities and diaspora hubs are supported on Pendo?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Pendo connects verified singles in Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, Thika, Diani, Naivasha, Nanyuki, Nyeri, Machakos, and Kenyans in the diaspora (UK, USA, UAE, Canada, Australia)."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What is Matatu Fare Shield and M-Pesa Zawadi on Pendo?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Matatu Fare Shield provides live date check-ins with trusted emergency contacts, while M-Pesa Zawadi lets verified matches send Kenyan virtual gifts or reserve safe coffee date tables via Safaricom M-Pesa STK Push."
+              }
+            }
+          ]
+        }
+      ]
     }
     </script>
     <!-- Resource Preconnect & DNS Hints for Mobile Performance -->
