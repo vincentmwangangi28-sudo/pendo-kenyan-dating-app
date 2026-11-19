@@ -4,6 +4,7 @@ import { MatchProfile, UserProfile, HangoutSpot } from '../types';
 import { X, Heart, MapPin, Info, Sparkles, Loader2, SlidersHorizontal, Check, Mic, Volume2, Zap, ShieldCheck, MessageSquarePlus, Map as MapIcon, Users, Moon, Flame, Share2 } from 'lucide-react';
 import { analyzeCompatibility, generateSpeech, generateHoroscope } from '../services/geminiService';
 import { INTERESTS_LIST } from './ProfileSetup';
+import { KENYAN_VIBE_CIRCLES } from '../src/lib/seoRoutes';
 import { Map as PigeonMap, Marker, Overlay } from 'pigeon-maps';
 import { VibeHeatmap } from './VibeHeatmap';
 
@@ -11,6 +12,8 @@ interface DiscoveryProps {
   userProfile: UserProfile;
   matches: MatchProfile[];
   hangoutSpots?: HangoutSpot[];
+  initialCity?: string;
+  initialVibe?: string;
   onLike: (match: MatchProfile) => void;
   onPass: (matchId: string) => void;
   onBoost: () => void;
@@ -26,10 +29,11 @@ interface FilterState {
   interests: string[];
 }
 
-export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hangoutSpots = [], onLike, onPass, onBoost, onOpenMpesaModal, onOpenSafetyModal, onOpenAlikaModal }) => {
+export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hangoutSpots = [], initialCity, initialVibe, onLike, onPass, onBoost, onOpenMpesaModal, onOpenSafetyModal, onOpenAlikaModal }) => {
   const [viewMode, setViewMode] = useState<'cards' | 'map' | 'heatmap'>('cards');
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedCity, setSelectedCity] = useState<string>('All Kenya');
+  const [selectedCity, setSelectedCity] = useState<string>(initialCity || 'All Kenya');
+  const [selectedVibe, setSelectedVibe] = useState<string>(initialVibe || 'All Vibes');
   const [showInfo, setShowInfo] = useState(false);
   const [vibeCheck, setVibeCheck] = useState<string | null>(null);
   const [loadingVibe, setLoadingVibe] = useState(false);
@@ -61,10 +65,23 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
   const [isDragging, setIsDragging] = useState(false);
   const startXRef = useRef(0);
 
-  // Reset index when city filter changes
+  // Sync when deep-linked city or vibe changes from Landing/SEO routes
+  useEffect(() => {
+    if (initialCity) {
+      setSelectedCity(initialCity);
+    }
+  }, [initialCity]);
+
+  useEffect(() => {
+    if (initialVibe) {
+      setSelectedVibe(initialVibe);
+    }
+  }, [initialVibe]);
+
+  // Reset index when city or vibe filter changes
   useEffect(() => {
     setCurrentIndex(0);
-  }, [selectedCity]);
+  }, [selectedCity, selectedVibe]);
   
   // Timer for Boost
   useEffect(() => {
@@ -93,6 +110,13 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
         if (!matchLocation.includes(targetCity)) return false;
       }
 
+      // Kenyan Vibe Circle Filter (Kilimani Mums, Mama wa Harrier, Ben 10, Wababa, Soft Life, etc.)
+      if (selectedVibe !== 'All Vibes') {
+        if ((match.vibeCircle || '').toLowerCase() !== selectedVibe.toLowerCase()) {
+          return false;
+        }
+      }
+
       // Age Filter
       if (match.age < filters.minAge || match.age > filters.maxAge) return false;
       
@@ -110,7 +134,7 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
       
       return true;
     });
-  }, [matches, filters, selectedCity]);
+  }, [matches, filters, selectedCity, selectedVibe]);
 
   const currentMatch = filteredMatches[currentIndex];
 
@@ -397,6 +421,12 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
                 </span>
                 <span className="text-white/50">·</span>
                 <span>{currentMatch.distance} km away</span>
+                {currentMatch.vibeCircle && (
+                  <>
+                    <span className="text-white/50">·</span>
+                    <span className="font-bold text-amber-300">{currentMatch.vibeCircle}</span>
+                  </>
+                )}
                 {currentMatch.zodiacSign && (
                   <>
                     <span className="text-white/50">·</span>
@@ -732,22 +762,39 @@ export const Discovery: React.FC<DiscoveryProps> = ({ userProfile, matches, hang
         </div>
       )}
 
-      {/* Kenyan City Quick Filter Bar */}
+      {/* Kenyan City & Vibe Circle Quick Filter Bars */}
       {!showFilters && !showBoostModal && viewMode === 'cards' && (
-        <div className="mt-14 mb-2 z-20 flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar px-1 shrink-0">
-          {['All Kenya', 'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret'].map(city => (
-            <button
-              key={city}
-              onClick={() => setSelectedCity(city)}
-              className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shadow-sm cursor-pointer ${
-                selectedCity === city
-                  ? 'bg-rose-600 text-white shadow-rose-200'
-                  : 'bg-white/90 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-100'
-              }`}
-            >
-              {city}
-            </button>
-          ))}
+        <div className="mt-14 mb-2 z-20 space-y-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar px-1">
+            {['All Kenya', 'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Diani', 'Diaspora'].map(city => (
+              <button
+                key={city}
+                onClick={() => setSelectedCity(city)}
+                className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all shadow-sm cursor-pointer ${
+                  selectedCity === city
+                    ? 'bg-rose-600 text-white shadow-rose-200'
+                    : 'bg-white/90 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-100'
+                }`}
+              >
+                {city}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar px-1">
+            {KENYAN_VIBE_CIRCLES.map(vibe => (
+              <button
+                key={vibe}
+                onClick={() => setSelectedVibe(vibe)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold whitespace-nowrap transition-all shadow-xs cursor-pointer ${
+                  selectedVibe === vibe
+                    ? 'bg-amber-400 text-slate-950 border border-amber-500'
+                    : 'bg-slate-900/80 text-amber-100 hover:bg-slate-900 border border-slate-700'
+                }`}
+              >
+                {vibe}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

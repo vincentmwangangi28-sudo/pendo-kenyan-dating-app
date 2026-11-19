@@ -56,6 +56,10 @@ app.get(["/llms.txt", "/api/llms.txt"], (req, res) => {
 - [Muslim Singles & Nikah Kenya](https://www.pendo.website/muslim-dating-kenya): Halal courtship & Nikah matchmaking.
 - [Voice Lounges](https://www.pendo.website/voice-lounge): Live audio hangouts and icebreaker speed dating hosted with Auntie Shosh AI.
 - [Alika Rafiki Referral](https://www.pendo.website/alika-rafiki): Viral WhatsApp referral program with Trust Score rewards and free Profile Boosts.
+- [Kilimani Mums](https://www.pendo.website/kilimani-mums): Verified, established Nairobi queens in Kilimani, Kileleshwa & Lavington.
+- [Mama wa Harrier](https://www.pendo.website/mama-wa-harrier): Confident Kenyan boss ladies for road trips, fine dining & companionship.
+- [Ben 10 Kenya](https://www.pendo.website/ben10-dating-kenya): Verified young Kenyan gentlemen (21+) bringing fitness, energy & attentive company.
+- [Wababa & Soft Life](https://www.pendo.website/wababa-soft-life-kenya): VIP matchmaking, fine dining & Diani getaways in Runda, Karen & Westlands.
 
 ## Trust & Safety Architecture
 - Pendo Ngao Trust Score: Explainable 0–100 identity verification score based on Google Auth, live camera selfie pose checks, and community standing.

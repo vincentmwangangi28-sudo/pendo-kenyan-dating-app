@@ -6,12 +6,12 @@
     <loc>https://www.pendo.website/</loc>
     <lastmod>2026-11-19</lastmod>
     <changefreq>daily</changefreq>
-    <priority>1.0</priority>
+    <priority>1.00</priority>
     <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/" />
     <image:image>
       <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
-      <image:title>Pendo — Kenya's #1 Dating &amp; Matchmaking App</image:title>
+      <image:title>Pendo — Kenya&apos;s #1 Dating &amp; Matchmaking App</image:title>
       <image:caption>Verified Kenyan singles across Nairobi, Mombasa, Kisumu, Nakuru, Eldoret &amp; Diaspora</image:caption>
     </image:image>
   </url>
@@ -42,10 +42,23 @@
     </image:image>
   </url>
   <url>
+    <loc>https://www.pendo.website/kenyan-diaspora</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/kenyan-diaspora" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/kenyan-diaspora" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Kenyan Diaspora Dating — 3,450+ Global Singles</image:title>
+      <image:caption>Meet 3,450+ verified Kenyan diaspora singles in London, Dallas, Dubai, Toronto, and Nairobi. Enjoy video dates and M-Pesa Zawadi on Pendo.</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://www.pendo.website/kisumu-dating</loc>
     <lastmod>2026-11-19</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <priority>0.90</priority>
     <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/kisumu-dating" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/kisumu-dating" />
     <image:image>
@@ -58,7 +71,7 @@
     <loc>https://www.pendo.website/nakuru-dating</loc>
     <lastmod>2026-11-19</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <priority>0.90</priority>
     <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/nakuru-dating" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/nakuru-dating" />
     <image:image>
@@ -71,13 +84,117 @@
     <loc>https://www.pendo.website/eldoret-dating</loc>
     <lastmod>2026-11-19</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <priority>0.90</priority>
     <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/eldoret-dating" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/eldoret-dating" />
     <image:image>
       <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
       <image:title>Eldoret Dating — Meet 1,120+ Highland Singles</image:title>
       <image:caption>Meet 1,120+ verified singles in Eldoret, Elgon View, and Pioneer. Enjoy Highland matchmaking, voice lounges, and safe video dates on Pendo.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/serious-relationships-kenya</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/serious-relationships-kenya" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/serious-relationships-kenya" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Serious Relationships &amp; Marriage in Kenya</image:title>
+      <image:caption>Looking for a serious relationship or marriage partner in Kenya? Connect with ID-verified, intentional Kenyan professionals on Pendo.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/christian-dating-kenya</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/christian-dating-kenya" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/christian-dating-kenya" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Christian Dating Kenya — Faith-First Singles</image:title>
+      <image:caption>Meet verified Christian singles across Kenya for faith-centered courtship, church hangouts, and marriage-minded connections on Pendo.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/muslim-dating-kenya</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/muslim-dating-kenya" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/muslim-dating-kenya" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Muslim Dating &amp; Halal Nikah in Kenya</image:title>
+      <image:caption>Connect with respectful, verified Kenyan Muslim singles in Mombasa, Nairobi, and the Coast for intentional Halal courtship and Nikah.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/voice-lounge</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>always</changefreq>
+    <priority>0.90</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/voice-lounge" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/voice-lounge" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Live Kenyan Voice Lounges &amp; Auntie Shosh</image:title>
+      <image:caption>Join live audio dating lounges and speak with Auntie Shosh AI for Sheng icebreakers, dating advice, and voice speed dating on Pendo.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/kilimani-mums</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/kilimani-mums" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/kilimani-mums" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Kilimani Mums — Nairobi Queens &amp; Companionship</image:title>
+      <image:caption>Meet verified, independent Kilimani Mums and established Nairobi women in Kilimani, Kileleshwa &amp; Lavington for loyal companionship and soft-life dates.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/mama-wa-harrier</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/mama-wa-harrier" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/mama-wa-harrier" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Mama wa Harrier — Kenyan Boss Ladies &amp; Vibes</image:title>
+      <image:caption>Connect with verified Mama wa Harrier boss ladies across Nairobi, Mombasa &amp; Nakuru for luxurious road trips, brunch dates, and genuine companionship.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/ben10-dating-kenya</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/ben10-dating-kenya" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/ben10-dating-kenya" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Ben 10 Kenya — Charming Young Kings &amp; Vibes</image:title>
+      <image:caption>Connect with verified Ben 10 young Kenyan gentlemen in Nairobi, Mombasa &amp; Kisumu bringing fitness, style, and attentive companionship on Pendo.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.pendo.website/wababa-soft-life-kenya</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/wababa-soft-life-kenya" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/wababa-soft-life-kenya" />
+    <image:image>
+      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
+      <image:title>Wababa &amp; Soft Life — VIP Kenyan Matchmaking</image:title>
+      <image:caption>Meet established Kenyan Wababa gentlemen and Soft Life enthusiasts in Runda, Karen &amp; Westlands for VIP dinners, Diani trips, and M-Pesa Zawadi.</image:caption>
     </image:image>
   </url>
   <url>
@@ -156,71 +273,6 @@
       <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
       <image:title>Machakos &amp; Syokimau Dating — 890+ Singles</image:title>
       <image:caption>Connect with 890+ verified singles in Machakos, Syokimau, Athi River, and Kitengela. Enjoy safe dates and intentional matchmaking on Pendo.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.pendo.website/kenyan-diaspora</loc>
-    <lastmod>2026-11-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.95</priority>
-    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/kenyan-diaspora" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/kenyan-diaspora" />
-    <image:image>
-      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
-      <image:title>Kenyan Diaspora Dating — 3,450+ Global Singles</image:title>
-      <image:caption>Meet 3,450+ verified Kenyan diaspora singles in London, Dallas, Dubai, Toronto, and Nairobi. Enjoy video dates and M-Pesa Zawadi on Pendo.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.pendo.website/serious-relationships-kenya</loc>
-    <lastmod>2026-11-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/serious-relationships-kenya" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/serious-relationships-kenya" />
-    <image:image>
-      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
-      <image:title>Serious Relationships &amp; Marriage in Kenya</image:title>
-      <image:caption>Looking for a serious relationship or marriage partner in Kenya? Connect with ID-verified, intentional Kenyan professionals on Pendo.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.pendo.website/christian-dating-kenya</loc>
-    <lastmod>2026-11-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/christian-dating-kenya" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/christian-dating-kenya" />
-    <image:image>
-      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
-      <image:title>Christian Dating Kenya — Faith-First Singles</image:title>
-      <image:caption>Meet verified Christian singles across Kenya for faith-centered courtship, church hangouts, and marriage-minded connections on Pendo.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.pendo.website/muslim-dating-kenya</loc>
-    <lastmod>2026-11-19</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/muslim-dating-kenya" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/muslim-dating-kenya" />
-    <image:image>
-      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
-      <image:title>Muslim Dating &amp; Halal Nikah in Kenya</image:title>
-      <image:caption>Connect with respectful, verified Kenyan Muslim singles in Mombasa, Nairobi, and the Coast for intentional Halal courtship and Nikah.</image:caption>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://www.pendo.website/voice-lounge</loc>
-    <lastmod>2026-11-19</lastmod>
-    <changefreq>always</changefreq>
-    <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/voice-lounge" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.pendo.website/voice-lounge" />
-    <image:image>
-      <image:loc>https://www.pendo.website/pwa-512x512.png</image:loc>
-      <image:title>Live Kenyan Voice Lounges &amp; Auntie Shosh</image:title>
-      <image:caption>Join live audio dating lounges and speak with Auntie Shosh AI for Sheng icebreakers, dating advice, and voice speed dating on Pendo.</image:caption>
     </image:image>
   </url>
   <url>

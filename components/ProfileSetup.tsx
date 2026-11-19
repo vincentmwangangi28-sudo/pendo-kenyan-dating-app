@@ -4,6 +4,7 @@ import { Button } from './Button';
 import { enhanceBio, verifyPhotoGesture } from '../services/geminiService';
 import { safeGetMediaStream } from '../services/compat';
 import { GoogleAccountCard } from './GoogleAccountCard';
+import { KENYAN_VIBE_CIRCLES } from '../src/lib/seoRoutes';
 import { Sparkles, MapPin, Camera, Navigation, Mic, Square, Trash2, ShieldCheck, X, Loader2, CheckCircle2, RefreshCw, Info } from 'lucide-react';
 
 interface ProfileSetupProps {
@@ -46,7 +47,8 @@ const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
 
 export const INTERESTS_LIST = [
   "Safari", "Afrobeats", "Tech", "Cooking", "Football", "Rugby", "Hiking", 
-  "Nyama Choma", "Coffee", "Art", "Politics", "Traveling", "Dancing", "Matatu Culture", "Reggae"
+  "Nyama Choma", "Coffee", "Art", "Politics", "Traveling", "Dancing", "Matatu Culture", "Reggae",
+  "Soft Life", "Fine Dining", "Road Trips", "Gym & Fitness", "Brunch", "Jazz & Wine"
 ];
 
 const LANGUAGES_LIST = [
@@ -438,6 +440,20 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
               <option value="">Select Zodiac...</option>
               {['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'].map(z => (
                 <option key={z} value={z}>{z}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Kenyan Vibe Circle</label>
+            <select 
+              value={profile.vibeCircle || ''}
+              onChange={(e) => setProfile({...profile, vibeCircle: e.target.value})}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none bg-white"
+            >
+              <option value="">Select Your Kenyan Vibe...</option>
+              {KENYAN_VIBE_CIRCLES.filter(v => v !== 'All Vibes').map(vibe => (
+                <option key={vibe} value={vibe}>{vibe}</option>
               ))}
             </select>
           </div>

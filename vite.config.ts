@@ -4,7 +4,7 @@ import { defineConfig, loadEnv, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { SEO_ROUTES, SITE_ORIGIN, generateSitemapXml } from './src/lib/seoRoutes';
+import { SEO_ROUTES, SITE_ORIGIN, generateSitemapXml, getFaqsForRoute, buildFaqPageSchema } from './src/lib/seoRoutes';
 
 function escapeHtml(str: string): string {
   return str
@@ -28,16 +28,25 @@ function seoPrerenderPlugin(): Plugin {
       // 1. Always emit an up-to-date Google Sitemap XML (with hreflang & image tags)
       fs.writeFileSync(path.join(distDir, 'sitemap.xml'), generateSitemapXml(), 'utf-8');
 
-      // 2. Build crawlable internal link nav for static HTML bots (Googlebot / Bingbot)
+      // 2. Build crawlable internal link nav & visible root FAQ section for static HTML bots (Googlebot / Bingbot)
       const crawlableNav = `<nav aria-label="Kenyan &amp; Diaspora Dating Routes" style="margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 32rem;">${SEO_ROUTES.map(
         r => `<a href="${r.path}" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">${escapeHtml(r.label)}</a>`
       ).join('')}</nav>`;
 
-      const rootHtml = template.replace(
+      const renderVisibleFaqSection = (faqs: ReturnType<typeof getFaqsForRoute>) =>
+        `<section aria-label="Frequently Asked Questions" style="margin-top: 1rem; text-align: left; max-width: 24rem; width: 100%; font-size: 11px; color: #e2e8f0;">${faqs
+          .map(f => `<details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">${escapeHtml(f.question)}</summary><p style="margin-top: 0.25rem;">${escapeHtml(f.answer)}</p></details>`)
+          .join('')}</section>`;
+
+      const rootHtmlWithoutFaq = template.replace(
         /<div style="width: 1\.5rem; height: 1\.5rem;[^"]*"><\/div>/,
         (match) => `${match}\n          ${crawlableNav}`
       );
-      fs.writeFileSync(indexHtmlPath, rootHtml, 'utf-8');
+      const rootHtmlWithFaq = rootHtmlWithoutFaq.replace(
+        /(<nav aria-label="Kenyan &amp; Diaspora Dating Routes"[\s\S]*?<\/nav>)/,
+        `$1\n          ${renderVisibleFaqSection(getFaqsForRoute(null))}`
+      );
+      fs.writeFileSync(indexHtmlPath, rootHtmlWithFaq, 'utf-8');
 
       for (const route of SEO_ROUTES) {
         const slug = route.path.replace(/^\/+/, '');
@@ -59,7 +68,15 @@ function seoPrerenderPlugin(): Plugin {
           ]
         })}</script>`;
 
-        let html = rootHtml
+        const routeFaqs = getFaqsForRoute(route);
+        const routeFaqJsonLd = `<script id="pendo-faq-schema" type="application/ld+json">${JSON.stringify({
+          '@context': 'https://schema.org',
+          ...buildFaqPageSchema(routeFaqs)
+        })}</script>`;
+
+        const visibleFaqHtml = renderVisibleFaqSection(routeFaqs);
+
+        let html = rootHtmlWithoutFaq
           .replace(/<title>[\s\S]*?<\/title>/, `<title>${safeTitle}</title>`)
           .replace(
             /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
@@ -110,6 +127,10 @@ function seoPrerenderPlugin(): Plugin {
             `"url": "${canonicalUrl}"`
           )
           .replace(
+            /<script id="pendo-faq-schema" type="application\/ld\+json">[\s\S]*?<\/script>/,
+            routeFaqJsonLd
+          )
+          .replace(
             /<\/head>/,
             `  ${breadcrumbJsonLd}\n  </head>`
           )
@@ -120,6 +141,10 @@ function seoPrerenderPlugin(): Plugin {
           .replace(
             /(<p[^>]*>)[\s\S]*?(<\/p>)/g,
             `$1${safeSubtitle}$2`
+          )
+          .replace(
+            /(<nav aria-label="Kenyan &amp; Diaspora Dating Routes"[\s\S]*?<\/nav>)/,
+            `$1\n          ${visibleFaqHtml}`
           );
 
         const routeDir = path.join(distDir, slug);

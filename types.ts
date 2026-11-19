@@ -16,6 +16,7 @@ export interface UserProfile {
   isVerified?: boolean; // Profile verification status
   trustScore?: number; // Explainable 0-100 trust score
   subscriptionTier?: 'FREE' | 'GOLD' | 'VIP';
+  vibeCircle?: string;
   mpesaPhone?: string;
   giftsSent?: number;
   giftsReceived?: number;
@@ -41,6 +42,7 @@ export interface MatchProfile {
   isVerified?: boolean; // Profile verification status
   trustScore?: number; // 0-100 trust score
   subscriptionTier?: 'FREE' | 'GOLD' | 'VIP';
+  vibeCircle?: string;
   badges?: ('Verified' | 'Top Pick' | 'Newbie' | 'Compatible' | 'Pendo Gold')[];
   coordinates?: {
     latitude: number;

@@ -11,7 +11,19 @@ export interface SeoRouteConfig {
   priority: string;
   changefreq: 'always' | 'hourly' | 'daily' | 'weekly';
   openModal?: 'ALIKA' | 'AUNTIE_SHOSH';
+  defaultVibe?: string;
 }
+
+export const KENYAN_VIBE_CIRCLES = [
+  'All Vibes',
+  'Kilimani Mums',
+  'Mama wa Harrier',
+  'Ben 10',
+  'Wababa',
+  'Soft Life',
+  'Sherehe Crew',
+  'Serious & Marriage'
+] as const;
 
 export const SITE_ORIGIN = 'https://www.pendo.website';
 export const SITEMAP_LASTMOD = '2026-11-19';
@@ -184,7 +196,8 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     keywords: 'serious dating Kenya, Kenyan marriage matchmaking, intentional dating Nairobi, verified Kenyan singles',
     badge: '95%+ Trust Verified',
     priority: '0.9',
-    changefreq: 'daily'
+    changefreq: 'daily',
+    defaultVibe: 'Serious & Marriage'
   },
   {
     path: '/christian-dating-kenya',
@@ -197,7 +210,8 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     keywords: 'Christian dating Kenya, Kenyan Christian singles, Christian marriage Kenya, church singles Nairobi',
     badge: 'Faith-Centered Singles',
     priority: '0.9',
-    changefreq: 'daily'
+    changefreq: 'daily',
+    defaultVibe: 'Serious & Marriage'
   },
   {
     path: '/muslim-dating-kenya',
@@ -210,7 +224,8 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     keywords: 'Muslim dating Kenya, Halal matchmaking Kenya, Kenyan Muslim singles, Mombasa Nikah, Nairobi Muslim singles',
     badge: 'Halal & Verified',
     priority: '0.9',
-    changefreq: 'daily'
+    changefreq: 'daily',
+    defaultVibe: 'Serious & Marriage'
   },
   {
     path: '/voice-lounge',
@@ -239,6 +254,62 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     priority: '0.85',
     changefreq: 'daily',
     openModal: 'ALIKA'
+  },
+  {
+    path: '/kilimani-mums',
+    city: 'Nairobi',
+    label: 'Kilimani Mums',
+    h1: 'Kilimani Mums — Nairobi Queens & Companionship',
+    heroSubtitle: 'Connect with established, independent Kilimani, Kileleshwa, and Lavington queens looking for genuine fun, loyalty, and VIP vibes.',
+    title: 'Kilimani Mums Dating | Meet Nairobi Queens — Pendo',
+    description: 'Meet verified, independent Kilimani Mums and established Nairobi women in Kilimani, Kileleshwa & Lavington for loyal companionship and soft-life dates.',
+    keywords: 'Kilimani Mums, Nairobi mature women dating, Kilimani singles, Kileleshwa dating, Pendo Kilimani',
+    badge: 'Kilimani & Kileleshwa VIP',
+    priority: '0.90',
+    changefreq: 'daily',
+    defaultVibe: 'Kilimani Mums'
+  },
+  {
+    path: '/mama-wa-harrier',
+    city: 'Nairobi',
+    label: 'Mama wa Harrier',
+    h1: 'Mama wa Harrier — Kenyan Boss Ladies & Vibes',
+    heroSubtitle: 'Meet confident, self-made Kenyan boss ladies who love Naivasha road trips, fine dining in Westlands, and attentive young energy.',
+    title: 'Mama wa Harrier Dating | Kenyan Boss Ladies — Pendo',
+    description: 'Connect with verified Mama wa Harrier boss ladies across Nairobi, Mombasa & Nakuru for luxurious road trips, brunch dates, and genuine companionship.',
+    keywords: 'Mama wa Harrier Kenya, Kenyan boss ladies dating, Nairobi sugar mummy alternative, mature Kenyan singles, Pendo',
+    badge: 'Boss Ladies Circle',
+    priority: '0.90',
+    changefreq: 'daily',
+    defaultVibe: 'Mama wa Harrier'
+  },
+  {
+    path: '/ben10-dating-kenya',
+    city: 'Nairobi',
+    label: 'Ben 10 Kenya',
+    h1: 'Ben 10 Kenya — Charming Young Kings & Vibes',
+    heroSubtitle: 'Meet energetic, fit, and attentive young Kenyan gentlemen (21+) ready to spoil queens with great company, road trips, and good vibes.',
+    title: 'Ben 10 Kenya Dating | Meet Young Kings — Pendo',
+    description: 'Connect with verified Ben 10 young Kenyan gentlemen in Nairobi, Mombasa & Kisumu bringing fitness, style, and attentive companionship on Pendo.',
+    keywords: 'Ben 10 Kenya, Kenyan young kings dating, Nairobi Ben 10, Kilimani Mums match, Pendo Kenya',
+    badge: 'Young Kings Circle',
+    priority: '0.90',
+    changefreq: 'daily',
+    defaultVibe: 'Ben 10'
+  },
+  {
+    path: '/wababa-soft-life-kenya',
+    city: 'Nairobi',
+    label: 'Wababa & Soft Life',
+    h1: 'Wababa & Soft Life — VIP Kenyan Matchmaking',
+    heroSubtitle: 'Experience Runda, Karen & Westlands fine dining, Diani weekend flights, and M-Pesa Zawadi pampering with established Kenyan gentlemen.',
+    title: 'Wababa & Soft Life Kenya | VIP Dating — Pendo',
+    description: 'Meet established Kenyan Wababa gentlemen and Soft Life enthusiasts in Runda, Karen & Westlands for VIP dinners, Diani trips, and M-Pesa Zawadi.',
+    keywords: 'Wababa Kenya, Soft Life dating Nairobi, Karen Runda dating, VIP Kenyan matchmaking, M-Pesa Zawadi',
+    badge: 'VIP & Soft Life',
+    priority: '0.90',
+    changefreq: 'daily',
+    defaultVibe: 'Wababa'
   }
 ];
 
@@ -247,38 +318,71 @@ export const CANONICAL_URLS: string[] = [
   ...SEO_ROUTES.map(r => `${SITE_ORIGIN}${r.path}`)
 ];
 
+export type SitemapChangefreq = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
+
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+export function getSitemapPriority(route: SeoRouteConfig): string {
+  const parsed = Number.parseFloat(route.priority);
+  if (Number.isFinite(parsed)) {
+    return Math.min(1, Math.max(0, parsed)).toFixed(2);
+  }
+  return route.path.endsWith('-dating') ? '0.85' : '0.80';
+}
+
+export function getSitemapChangefreq(route: SeoRouteConfig): SitemapChangefreq {
+  const valid: SitemapChangefreq[] = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never'];
+  if (valid.includes(route.changefreq)) {
+    return route.changefreq;
+  }
+  return route.path.endsWith('-dating') ? 'daily' : 'weekly';
+}
+
 export function generateSitemapXml(lastmod: string = SITEMAP_LASTMOD): string {
+  const safeLastmod = /^\d{4}-\d{2}-\d{2}$/.test(lastmod)
+    ? lastmod
+    : new Date().toISOString().split('T')[0];
+
   const rootEntry = `  <url>
     <loc>${SITE_ORIGIN}/</loc>
-    <lastmod>${lastmod}</lastmod>
+    <lastmod>${safeLastmod}</lastmod>
     <changefreq>daily</changefreq>
-    <priority>1.0</priority>
+    <priority>1.00</priority>
     <xhtml:link rel="alternate" hreflang="en-KE" href="${SITE_ORIGIN}/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_ORIGIN}/" />
     <image:image>
       <image:loc>${SITE_ORIGIN}/pwa-512x512.png</image:loc>
-      <image:title>Pendo — Kenya's #1 Dating &amp; Matchmaking App</image:title>
-      <image:caption>Verified Kenyan singles across Nairobi, Mombasa, Kisumu, Nakuru, Eldoret &amp; Diaspora</image:caption>
+      <image:title>${escapeXml("Pendo — Kenya's #1 Dating & Matchmaking App")}</image:title>
+      <image:caption>${escapeXml('Verified Kenyan singles across Nairobi, Mombasa, Kisumu, Nakuru, Eldoret & Diaspora')}</image:caption>
     </image:image>
   </url>`;
 
-  const routeEntries = SEO_ROUTES.map(route => {
+  // Sort Kenyan city directory & community routes by priority descending so Googlebot discovers top hubs first
+  const sortedRoutes = [...SEO_ROUTES].sort(
+    (a, b) => Number.parseFloat(getSitemapPriority(b)) - Number.parseFloat(getSitemapPriority(a))
+  );
+
+  const routeEntries = sortedRoutes.map(route => {
     const url = `${SITE_ORIGIN}${route.path}`;
-    const safeTitle = route.h1
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    const safeCaption = route.description
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    const priority = getSitemapPriority(route);
+    const changefreq = getSitemapChangefreq(route);
+    const safeTitle = escapeXml(route.h1);
+    const safeCaption = escapeXml(route.description);
+
     return `  <url>
-    <loc>${url}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>${route.changefreq}</changefreq>
-    <priority>${route.priority}</priority>
-    <xhtml:link rel="alternate" hreflang="en-KE" href="${url}" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="${url}" />
+    <loc>${escapeXml(url)}</loc>
+    <lastmod>${safeLastmod}</lastmod>
+    <changefreq>${changefreq}</changefreq>
+    <priority>${priority}</priority>
+    <xhtml:link rel="alternate" hreflang="en-KE" href="${escapeXml(url)}" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(url)}" />
     <image:image>
       <image:loc>${SITE_ORIGIN}/pwa-512x512.png</image:loc>
       <image:title>${safeTitle}</image:title>
@@ -295,6 +399,110 @@ ${rootEntry}
 ${routeEntries}
 </urlset>
 `;
+}
+
+export interface SeoFaqItem {
+  question: string;
+  answer: string;
+}
+
+export const KENYAN_DATING_FAQS: SeoFaqItem[] = [
+  {
+    question: 'What is the best dating app in Kenya for serious relationships?',
+    answer:
+      'Pendo is Kenya’s leading verified dating and matchmaking app for intentional relationships and marriage, connecting ID- and selfie-verified singles across Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, and the Kenyan diaspora.'
+  },
+  {
+    question: 'Is Pendo free to join for singles in Kenya?',
+    answer:
+      'Yes. Joining Pendo, creating a verified profile, browsing singles across Kenyan cities, joining live Voice Lounges, and chatting with matches are free, with optional M-Pesa upgrades for Pendo Gold and VIP Profile Boosts.'
+  },
+  {
+    question: 'How does Pendo verify Kenyan singles to prevent catfishing?',
+    answer:
+      'Every Pendo profile receives a 0–100% Pendo Ngao Trust Score combining Google Authentication, live camera pose selfie checks, and community standing so you only meet real, verified Kenyan singles.'
+  },
+  {
+    question: 'Which Kenyan cities and diaspora hubs are supported on Pendo?',
+    answer:
+      'Pendo connects verified singles in Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, Thika, Diani, Naivasha, Nanyuki, Nyeri, Machakos, and Kenyan diaspora communities across the UK, USA, UAE, Canada, and Australia.'
+  },
+  {
+    question: 'Where are the safest first-date spots in Nairobi and Mombasa?',
+    answer:
+      'Pendo recommends vetted public Kenyan venues including Westlands rooftops, Kilimani coffee lounges, and Karura Forest trails in Nairobi, plus Nyali oceanfront lounges and Old Town cafes in Mombasa.'
+  },
+  {
+    question: 'Can I use Safaricom M-Pesa on Pendo for gifts or date reservations?',
+    answer:
+      'Yes. Pendo integrates Safaricom M-Pesa STK Push for M-Pesa Zawadi virtual gifts (Chai, Dawa, Nyama Choma), safe first-date table reservations, and instant Pendo Gold passes in KES.'
+  },
+  {
+    question: 'What is Matatu Fare Shield on Pendo?',
+    answer:
+      'Matatu Fare Shield is Pendo’s live date safety check-in feature that lets you share your meeting venue, date details, and timed check-in alerts with trusted emergency contacts for safe in-person dates in Kenya.'
+  },
+  {
+    question: 'How do Pendo Live Voice Lounges and Auntie Shosh AI work?',
+    answer:
+      'Live Voice Lounges let Kenyan singles break the ice through real-time voice speed dating before sharing numbers, while Auntie Shosh AI offers witty Sheng and Swahili dating advice and conversation starters.'
+  },
+  {
+    question: 'Does Pendo support Christian and Muslim dating in Kenya?',
+    answer:
+      'Yes. Pendo offers dedicated faith-centered matching for Christian singles seeking church-aligned courtship and respectful Halal/Nikah matchmaking for Kenyan Muslim singles in Mombasa, Nairobi, and nationwide.'
+  },
+  {
+    question: 'How do Kenyan diaspora singles connect with matches back home?',
+    answer:
+      'The Pendo Kenyan Diaspora hub connects Kenyans in London, Dallas, Dubai, Toronto, and Perth with verified matches at home using live Google Meet video dates, Voice Lounges, and M-Pesa Zawadi.'
+  },
+  {
+    question: 'How can I get a free profile boost on Pendo Kenya?',
+    answer:
+      'Use Alika Rafiki inside Pendo to invite friends via WhatsApp and unlock an instant +10% Pendo Ngao Trust Score bonus plus a free 30-minute VIP Profile Boost.'
+  },
+  {
+    question: 'Can I install Pendo as an app on Android or iPhone in Kenya?',
+    answer:
+      'Yes. Pendo is an installable Progressive Web App (PWA) optimized for low-data Kenyan mobile networks—tap Install Pendo on Android Chrome or Share > Add to Home Screen on iOS Safari.'
+  },
+  {
+    question: 'Does Pendo have Kilimani Mums, Mama wa Harrier, Ben 10, and Wababa Soft Life circles?',
+    answer:
+      'Yes. Pendo features Kenyan Vibe Circles including Kilimani Mums, Mama wa Harrier, Ben 10, Wababa, Soft Life, and Sherehe Crew so consenting verified adults (18+) can filter and match by their exact Kenyan dating lifestyle.'
+  }
+];
+
+export function getFaqsForRoute(route: SeoRouteConfig | null): SeoFaqItem[] {
+  if (!route) return KENYAN_DATING_FAQS;
+
+  const routeSpecific: SeoFaqItem[] = [
+    {
+      question: `How can I meet verified singles on ${route.label} (${route.city})?`,
+      answer: `${route.heroSubtitle} Sign in with Google to preview ${route.badge} profiles and filter by Pendo Ngao Trust Score.`
+    },
+    {
+      question: `Is ${route.label} safe for first dates in ${route.city}?`,
+      answer: `Yes. Pendo pairs ${route.city} members with curated public first-date venues, live Google Meet video pre-dates, and Matatu Fare Shield safety check-ins.`
+    }
+  ];
+
+  return [...routeSpecific, ...KENYAN_DATING_FAQS.slice(0, 8)];
+}
+
+export function buildFaqPageSchema(faqs: SeoFaqItem[]) {
+  return {
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(faq => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer
+      }
+    }))
+  };
 }
 
 export function findSeoRouteByPathOrHash(pathname: string, hash: string): SeoRouteConfig | null {

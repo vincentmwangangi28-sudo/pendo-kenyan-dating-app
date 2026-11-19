@@ -5,7 +5,7 @@ import { AuthNotification } from './components/AuthNotification';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { AdSenseBanner } from './components/AdSenseBanner';
 import { calculateTrustScore } from './src/lib/trustScore';
-import { SEO_ROUTES, SeoRouteConfig, findSeoRouteByPathOrHash } from './src/lib/seoRoutes';
+import { SEO_ROUTES, SeoRouteConfig, findSeoRouteByPathOrHash, getFaqsForRoute, buildFaqPageSchema, KENYAN_VIBE_CIRCLES } from './src/lib/seoRoutes';
 import { useOnlineStatus } from './hooks/usePWAInstall';
 import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Phone, Shield, CheckCircle2, ShieldCheck, Crown, Sparkles, Globe, Check, WifiOff, Share2 } from 'lucide-react';
 
@@ -68,6 +68,7 @@ const MOCK_MATCHES: MatchProfile[] = [
     isVerified: true,
     trustScore: 96,
     subscriptionTier: 'GOLD',
+    vibeCircle: 'Serious & Marriage',
     badges: ['Verified', 'Top Pick', 'Pendo Gold'],
     coordinates: { latitude: -1.2921, longitude: 36.8219 } // Nairobi
   },
@@ -206,8 +207,122 @@ const MOCK_MATCHES: MatchProfile[] = [
     isVerified: true,
     trustScore: 97,
     subscriptionTier: 'VIP',
+    vibeCircle: 'Serious & Marriage',
     badges: ['Verified', 'Top Pick', 'Pendo Gold'],
     coordinates: { latitude: -1.2667, longitude: 36.8042 }
+  },
+  {
+    id: '10',
+    name: 'Wangari',
+    age: 41,
+    location: 'Nairobi',
+    neighborhood: 'Kilimani',
+    zodiacSign: 'Libra',
+    bio: 'Interior designer & boutique owner in Kilimani. Love Sunday brunch at Artcaffé, spa weekends in Naivasha, and energetic, loyal company.',
+    interests: ['Brunch', 'Soft Life', 'Road Trips'],
+    languages: ['English', 'Swahili', 'Kikuyu'],
+    photoUrl: 'https://picsum.photos/seed/wangari_kilimani/400/600',
+    distance: 4,
+    isVerified: true,
+    trustScore: 95,
+    subscriptionTier: 'VIP',
+    vibeCircle: 'Kilimani Mums',
+    badges: ['Verified', 'Top Pick', 'Pendo Gold'],
+    coordinates: { latitude: -1.2896, longitude: 36.7872 }
+  },
+  {
+    id: '11',
+    name: 'Shiro',
+    age: 38,
+    location: 'Nairobi',
+    neighborhood: 'Kileleshwa',
+    zodiacSign: 'Leo',
+    bio: 'Logistics director driving my pearl-white Harrier across Kenya. Looking for a fun, respectful young king who loves spontaneous road trips & fine dining.',
+    interests: ['Fine Dining', 'Road Trips', 'Soft Life'],
+    languages: ['English', 'Swahili', 'Sheng'],
+    photoUrl: 'https://picsum.photos/seed/shiro_harrier/400/600',
+    distance: 6,
+    isVerified: true,
+    trustScore: 94,
+    subscriptionTier: 'GOLD',
+    vibeCircle: 'Mama wa Harrier',
+    badges: ['Verified', 'Pendo Gold'],
+    coordinates: { latitude: -1.2812, longitude: 36.7779 }
+  },
+  {
+    id: '12',
+    name: 'Brayo',
+    age: 23,
+    location: 'Nairobi',
+    neighborhood: 'Westlands',
+    zodiacSign: 'Aries',
+    bio: 'Certified fitness coach & Afro-house DJ in Westlands. High energy, great listener, and always ready to pamper my queen with brunch & good vibes.',
+    interests: ['Gym & Fitness', 'Afrobeats', 'Road Trips'],
+    languages: ['English', 'Sheng', 'Swahili'],
+    photoUrl: 'https://picsum.photos/seed/brayo_westlands/400/600',
+    distance: 7,
+    isVerified: true,
+    trustScore: 91,
+    subscriptionTier: 'GOLD',
+    vibeCircle: 'Ben 10',
+    badges: ['Verified', 'Top Pick'],
+    coordinates: { latitude: -1.2647, longitude: 36.8019 }
+  },
+  {
+    id: '13',
+    name: 'Hon. Omondi',
+    age: 46,
+    location: 'Nairobi',
+    neighborhood: 'Runda',
+    zodiacSign: 'Capricorn',
+    bio: 'Senior infrastructure consultant in Runda & Karen. Appreciate elegance, jazz nights, Diani flights, and spoiling someone special with M-Pesa Zawadi.',
+    interests: ['Jazz & Wine', 'Fine Dining', 'Soft Life'],
+    languages: ['English', 'Luo', 'Swahili'],
+    photoUrl: 'https://picsum.photos/seed/omondi_runda/400/600',
+    distance: 11,
+    isVerified: true,
+    trustScore: 96,
+    subscriptionTier: 'VIP',
+    vibeCircle: 'Wababa',
+    badges: ['Verified', 'Pendo Gold'],
+    coordinates: { latitude: -1.2175, longitude: 36.8170 }
+  },
+  {
+    id: '14',
+    name: 'Tasha',
+    age: 27,
+    location: 'Nairobi',
+    neighborhood: 'Lavington',
+    zodiacSign: 'Taurus',
+    bio: 'Luxury travel curator & aesthetic content creator. Passport ready—let’s do rooftop sundowners in Westlands or a weekend escape to Diani.',
+    interests: ['Soft Life', 'Traveling', 'Brunch'],
+    languages: ['English', 'Swahili'],
+    photoUrl: 'https://picsum.photos/seed/tasha_lavington/400/600',
+    distance: 5,
+    isVerified: true,
+    trustScore: 93,
+    subscriptionTier: 'GOLD',
+    vibeCircle: 'Soft Life',
+    badges: ['Verified', 'Pendo Gold'],
+    coordinates: { latitude: -1.2794, longitude: 36.7712 }
+  },
+  {
+    id: '15',
+    name: 'Kevoh',
+    age: 26,
+    location: 'Nairobi',
+    neighborhood: 'Ngong Road',
+    zodiacSign: 'Gemini',
+    bio: 'Blankets & Wine regular, events MC & nyama choma connoisseur. If you love sherehe, matatu culture, and weekend road trips, swipe right!',
+    interests: ['Afrobeats', 'Nyama Choma', 'Road Trips'],
+    languages: ['English', 'Sheng', 'Swahili'],
+    photoUrl: 'https://picsum.photos/seed/kevoh_sherehe/400/600',
+    distance: 6,
+    isVerified: true,
+    trustScore: 89,
+    vibeCircle: 'Sherehe Crew',
+    badges: ['Verified'],
+    coordinates: { latitude: -1.2990, longitude: 36.7830 }
   }
 ];
 
@@ -249,6 +364,50 @@ const MOCK_GROUPS: ChatSession[] = [
     unreadCount: 0,
     messages: [
       { id: '1', senderId: 'u5', senderName: 'DJ Mo', text: 'That new Burna Boy track is fire 🔥', timestamp: new Date(Date.now() - 86400000) }
+    ]
+  },
+  {
+    matchId: 'g_kilimani_mums',
+    isGroup: true,
+    matchName: 'Kilimani Mums & Brunch Club 🥂',
+    matchPhoto: 'https://picsum.photos/seed/kilimanibrunch/400/300',
+    lastMessage: 'Sunday mimosa brunch at Yaya Courtyard at 11am!',
+    unreadCount: 3,
+    messages: [
+      { id: 'km1', senderId: 'u10', senderName: 'Wangari', text: 'Ladies & gentlemen, Sunday mimosa brunch at Yaya Courtyard at 11am!', timestamp: new Date(Date.now() - 5400000) }
+    ]
+  },
+  {
+    matchId: 'g_mama_harrier',
+    isGroup: true,
+    matchName: 'Mama wa Harrier Queens 🚘',
+    matchPhoto: 'https://picsum.photos/seed/harrierclub/400/300',
+    lastMessage: 'Naivasha Enashipai road trip convoy leaves Waiyaki Way Saturday 9am.',
+    unreadCount: 2,
+    messages: [
+      { id: 'mh1', senderId: 'u11', senderName: 'Shiro', text: 'Naivasha Enashipai road trip convoy leaves Waiyaki Way Saturday 9am.', timestamp: new Date(Date.now() - 7200000) }
+    ]
+  },
+  {
+    matchId: 'g_ben10',
+    isGroup: true,
+    matchName: 'Ben 10 & Young Kings Lounge 💪',
+    matchPhoto: 'https://picsum.photos/seed/youngkings/400/300',
+    lastMessage: 'Drop your best Westlands brunch spots & gym routines!',
+    unreadCount: 4,
+    messages: [
+      { id: 'b1', senderId: 'u12', senderName: 'Brayo', text: 'Drop your best Westlands brunch spots & gym routines!', timestamp: new Date(Date.now() - 4800000) }
+    ]
+  },
+  {
+    matchId: 'g_wababa',
+    isGroup: true,
+    matchName: 'Wababa & Soft Life VIP 👑',
+    matchPhoto: 'https://picsum.photos/seed/softlifevip/400/300',
+    lastMessage: 'Friday jazz night at Tribe Hotel — who is in Karen/Runda?',
+    unreadCount: 1,
+    messages: [
+      { id: 'w1', senderId: 'u13', senderName: 'Hon. Omondi', text: 'Friday jazz night at Tribe Hotel — who is in Karen/Runda?', timestamp: new Date(Date.now() - 9600000) }
     ]
   }
 ];
@@ -983,8 +1142,9 @@ const App: React.FC = () => {
     match: MatchProfile | null;
   }>({ isOpen: false, isIncoming: false, match: null });
 
-  // Kenyan City Directory state on Landing
+  // Kenyan City Directory & Vibe Circle state on Landing
   const [selectedLandingCity, setSelectedLandingCity] = useState<string>('Nairobi');
+  const [selectedLandingVibe, setSelectedLandingVibe] = useState<string>('All Vibes');
   const [activeSeoRoute, setActiveSeoRoute] = useState<SeoRouteConfig | null>(null);
 
   // Alika Rafiki (Viral WhatsApp Referral Program) Modal State
@@ -1029,6 +1189,13 @@ const App: React.FC = () => {
     if (hreflangKeEl) hreflangKeEl.setAttribute('href', canonicalUrl);
     const hreflangDefEl = document.querySelector('link[rel="alternate"][hreflang="x-default"]');
     if (hreflangDefEl) hreflangDefEl.setAttribute('href', canonicalUrl);
+    const faqSchemaEl = document.getElementById('pendo-faq-schema');
+    if (faqSchemaEl) {
+      faqSchemaEl.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        ...buildFaqPageSchema(getFaqsForRoute(route))
+      });
+    }
   };
 
   const handleNavigateSeoRoute = (route: SeoRouteConfig, e?: React.MouseEvent) => {
@@ -1040,6 +1207,7 @@ const App: React.FC = () => {
     if (KENYAN_CITY_DIRECTORY[route.city]) {
       setSelectedLandingCity(route.city);
     }
+    setSelectedLandingVibe(route.defaultVibe || 'All Vibes');
     if (route.openModal === 'ALIKA') {
       setIsAlikaModalOpen(true);
     } else if (route.openModal === 'AUNTIE_SHOSH') {
@@ -1060,6 +1228,7 @@ const App: React.FC = () => {
         if (KENYAN_CITY_DIRECTORY[matchedRoute.city]) {
           setSelectedLandingCity(matchedRoute.city);
         }
+        setSelectedLandingVibe(matchedRoute.defaultVibe || 'All Vibes');
         if (matchedRoute.openModal === 'ALIKA') {
           setIsAlikaModalOpen(true);
         } else if (matchedRoute.openModal === 'AUNTIE_SHOSH') {
@@ -1196,6 +1365,7 @@ const App: React.FC = () => {
               age: data.age || 24,
               location: data.location || 'Nairobi',
               neighborhood: data.neighborhood,
+              vibeCircle: data.vibeCircle,
               bio: data.bio || 'Looking for meaningful connections in Kenya.',
               interests: data.interests || ['Music', 'Travel'],
               languages: data.languages || ['English', 'Swahili'],
@@ -1326,9 +1496,10 @@ const App: React.FC = () => {
 
   // --- Handlers ---
 
-  const handleStartApp = async (mode: 'google' | 'guest' = 'google', preferredCity?: string) => {
+  const handleStartApp = async (mode: 'google' | 'guest' = 'google', preferredCity?: string, preferredVibe?: string) => {
     setIsSigningInGoogle(true);
     googleAuthLogger.info('GOOGLE_AUTH', `User initiated login flow (${mode} mode)`);
+    const resolvedVibe = preferredVibe && preferredVibe !== 'All Vibes' ? preferredVibe : undefined;
     try {
       if (mode === 'google') {
         const user = await signInWithGoogle();
@@ -1338,6 +1509,7 @@ const App: React.FC = () => {
             ...prev,
             uid: user.uid,
             location: preferredCity || prev.location || 'Nairobi',
+            vibeCircle: resolvedVibe || prev.vibeCircle,
             name: user.displayName || prev.name,
             photoUrl: user.photoURL || prev.photoUrl,
           }));
@@ -1351,6 +1523,7 @@ const App: React.FC = () => {
           ...prev,
           uid: guestUser.uid,
           location: preferredCity || prev.location || 'Nairobi',
+          vibeCircle: resolvedVibe || prev.vibeCircle,
           name: guestUser.displayName || 'Kenyan Guest',
           photoUrl: guestUser.photoURL || prev.photoUrl,
         }));
@@ -1364,6 +1537,7 @@ const App: React.FC = () => {
         ...prev,
         uid: guestUser.uid,
         location: preferredCity || prev.location || 'Nairobi',
+        vibeCircle: resolvedVibe || prev.vibeCircle,
         name: guestUser.displayName || 'Kenyan Guest',
         photoUrl: guestUser.photoURL || prev.photoUrl,
       }));
@@ -1385,6 +1559,7 @@ const App: React.FC = () => {
         trustScore: computedScore,
         subscriptionTier: profile.subscriptionTier || 'FREE',
         ...((profile.neighborhood && profile.neighborhood.length > 0) && { neighborhood: profile.neighborhood }),
+        ...((profile.vibeCircle && profile.vibeCircle.length > 0) && { vibeCircle: profile.vibeCircle }),
         ...((profile.interests && profile.interests.length > 0) && { interests: profile.interests }),
         ...((profile.languages && profile.languages.length > 0) && { languages: profile.languages }),
         ...((profile.gender && profile.gender.length > 0) && { gender: profile.gender }),
@@ -1800,7 +1975,12 @@ const App: React.FC = () => {
 
   const activeTrustScore = userProfile.trustScore || calculateTrustScore(userProfile).total;
   const activeCityData = KENYAN_CITY_DIRECTORY[selectedLandingCity] || KENYAN_CITY_DIRECTORY.Nairobi;
-  const cityPreviewSingles = matches.filter(m => m.location.toLowerCase() === selectedLandingCity.toLowerCase());
+  const activeVibeFilter = selectedLandingVibe !== 'All Vibes' ? selectedLandingVibe : activeSeoRoute?.defaultVibe;
+  const vibeFilteredSingles = activeVibeFilter
+    ? matches.filter(m => (m.vibeCircle || '').toLowerCase() === activeVibeFilter.toLowerCase())
+    : [];
+  const cityOnlySingles = matches.filter(m => m.location.toLowerCase() === selectedLandingCity.toLowerCase());
+  const cityPreviewSingles = vibeFilteredSingles.length > 0 ? vibeFilteredSingles : cityOnlySingles;
 
   const renderContent = () => {
     switch (view) {
@@ -1834,9 +2014,9 @@ const App: React.FC = () => {
               {/* Login Actions */}
               <div className="space-y-2 w-full mb-6">
                 <GoogleAuthButton
-                  onClick={() => handleStartApp('google', selectedLandingCity)}
+                  onClick={() => handleStartApp('google', selectedLandingCity, activeVibeFilter)}
                   isLoading={isSigningInGoogle}
-                  text={`Join ${selectedLandingCity} Singles with Google`}
+                  text={activeVibeFilter ? `Join ${activeVibeFilter} with Google` : `Join ${selectedLandingCity} Singles with Google`}
                   className="w-full shadow-xl"
                 />
                 <p className="text-[11px] text-white font-semibold">
@@ -1855,23 +2035,24 @@ const App: React.FC = () => {
                     <h2 className="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
                       <MapPin size={13} /> Kenyan City Dating Hubs
                     </h2>
-                    <p className="text-[10px] text-slate-100 font-medium">Select your city to preview verified singles & safe date spots</p>
+                    <p className="text-[10px] text-slate-100 font-medium">Select your city or Vibe Circle to preview verified singles</p>
                   </div>
                 </div>
 
                 {/* City Tabs */}
-                <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 no-scrollbar">
+                <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 no-scrollbar">
                   {Object.keys(KENYAN_CITY_DIRECTORY).map(city => {
-                    const cityRoute = SEO_ROUTES.find(r => r.city.toLowerCase() === city.toLowerCase());
+                    const cityRoute = SEO_ROUTES.find(r => r.city.toLowerCase() === city.toLowerCase() && !r.defaultVibe);
                     return (
                       <button
                         key={city}
                         onClick={() => {
                           setSelectedLandingCity(city);
+                          setSelectedLandingVibe('All Vibes');
                           if (cityRoute) handleNavigateSeoRoute(cityRoute);
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                          selectedLandingCity === city
+                          selectedLandingCity === city && !activeVibeFilter
                             ? 'bg-rose-500 text-white shadow-md'
                             : 'bg-white/15 text-white hover:bg-white/25'
                         }`}
@@ -1882,11 +2063,41 @@ const App: React.FC = () => {
                   })}
                 </div>
 
+                {/* Kenyan Vibe Circles Quick Selector (Kilimani Mums, Mama wa Harrier, Ben 10, Wababa & Soft Life) */}
+                <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 no-scrollbar">
+                  {KENYAN_VIBE_CIRCLES.map(vibe => {
+                    const matchingRoute = SEO_ROUTES.find(r => r.defaultVibe === vibe);
+                    const isSelected = (activeVibeFilter || 'All Vibes') === vibe;
+                    return (
+                      <button
+                        key={vibe}
+                        onClick={() => {
+                          setSelectedLandingVibe(vibe);
+                          if (matchingRoute) {
+                            handleNavigateSeoRoute(matchingRoute);
+                          } else {
+                            setActiveSeoRoute(null);
+                            try { window.history.pushState({}, '', '/'); } catch {}
+                            applySeoRouteMetadata(null, selectedLandingCity);
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold whitespace-nowrap transition-all border ${
+                          isSelected
+                            ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-xs'
+                            : 'bg-black/35 text-amber-100 border-white/15 hover:bg-white/20'
+                        }`}
+                      >
+                        {vibe}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 {/* Selected City Card */}
                 <div className="bg-white/10 rounded-xl p-3 border border-white/15 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-black text-white">
-                      {activeSeoRoute ? activeSeoRoute.label : `${selectedLandingCity} Dating Hub`}
+                      {activeSeoRoute ? activeSeoRoute.label : activeVibeFilter ? `${activeVibeFilter} Circle` : `${selectedLandingCity} Dating Hub`}
                     </span>
                     <span className="text-[10px] font-extrabold text-emerald-200 bg-emerald-500/30 px-2 py-0.5 rounded-md border border-emerald-400/40">
                       {activeSeoRoute?.badge || activeCityData.activeCount}
@@ -1901,21 +2112,25 @@ const App: React.FC = () => {
                     Popular Areas: {activeCityData.neighborhoods.join(' · ')}
                   </p>
 
-                  {/* Active Singles Preview in this City */}
+                  {/* Active Singles Preview in this City or Vibe Circle */}
                   {cityPreviewSingles.length > 0 && (
                     <div className="pt-1">
-                      <p className="text-[10px] font-extrabold text-slate-200 uppercase mb-1.5">Verified Singles in {selectedLandingCity}</p>
+                      <p className="text-[10px] font-extrabold text-slate-200 uppercase mb-1.5">
+                        {activeVibeFilter ? `Verified ${activeVibeFilter} Singles` : `Verified Singles in ${selectedLandingCity}`}
+                      </p>
                       <div className="flex items-center gap-2 overflow-x-auto pb-1">
                         {cityPreviewSingles.slice(0, 4).map(single => (
                           <button
                             key={single.id}
-                            onClick={() => handleStartApp('google', selectedLandingCity)}
+                            onClick={() => handleStartApp('google', single.location || selectedLandingCity, single.vibeCircle || activeVibeFilter)}
                             className="flex items-center gap-2 bg-white/15 hover:bg-white/25 px-2.5 py-1.5 rounded-xl border border-white/15 shrink-0 text-left transition-all"
                           >
                             <img src={single.photoUrl} alt={single.name} width="28" height="28" loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover" />
                             <div>
                               <p className="text-[11px] font-bold text-white leading-none">{single.name}, {single.age}</p>
-                              <p className="text-[9px] text-emerald-300 font-medium">{single.neighborhood || single.location} · {single.trustScore || 90}% Trust</p>
+                              <p className="text-[9px] text-emerald-300 font-medium">
+                                {single.vibeCircle ? `${single.vibeCircle} · ` : ''}{single.neighborhood || single.location} · {single.trustScore || 90}% Trust
+                              </p>
                             </div>
                           </button>
                         ))}
@@ -1961,35 +2176,21 @@ const App: React.FC = () => {
                 </nav>
               </section>
 
-              {/* Kenyan & Diaspora Dating FAQ (Matches FAQPage JSON-LD for Google Rich Results) */}
+              {/* Kenyan & Diaspora Dating FAQ (Matches FAQPage JSON-LD for Google Featured Snippets) */}
               <section aria-label="Frequently Asked Questions" className="bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 border border-white/20 text-left mt-4 space-y-2.5">
                 <h2 className="text-xs font-black uppercase tracking-wider text-amber-300">
-                  Pendo Kenya Dating FAQ
+                  {activeSeoRoute ? `${activeSeoRoute.city} & Pendo Kenya Dating FAQ` : 'Pendo Kenya Dating FAQ'}
                 </h2>
-                <details className="bg-black/30 rounded-xl p-2.5 border border-white/10">
-                  <summary className="text-[11px] font-bold text-white cursor-pointer">
-                    How does Pendo verify Kenyan singles to prevent catfishing?
-                  </summary>
-                  <p className="text-[10px] text-slate-200 mt-1.5 leading-relaxed">
-                    Every member receives a 0–100% Pendo Ngao Trust Score backed by Google Authentication, live camera pose verification, and safe community standing.
-                  </p>
-                </details>
-                <details className="bg-black/30 rounded-xl p-2.5 border border-white/10">
-                  <summary className="text-[11px] font-bold text-white cursor-pointer">
-                    Which Kenyan cities and diaspora communities are on Pendo?
-                  </summary>
-                  <p className="text-[10px] text-slate-200 mt-1.5 leading-relaxed">
-                    Meet verified singles in Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, Thika, Diani, Naivasha, Nanyuki, Nyeri, Machakos, and Kenyans across the UK, USA, UAE, and Canada.
-                  </p>
-                </details>
-                <details className="bg-black/30 rounded-xl p-2.5 border border-white/10">
-                  <summary className="text-[11px] font-bold text-white cursor-pointer">
-                    What is Matatu Fare Shield and M-Pesa Zawadi?
-                  </summary>
-                  <p className="text-[10px] text-slate-200 mt-1.5 leading-relaxed">
-                    Matatu Fare Shield shares live date check-ins with your trusted contacts, while M-Pesa Zawadi enables safe table reservations and Kenyan gifts via Safaricom M-Pesa STK Push.
-                  </p>
-                </details>
+                {getFaqsForRoute(activeSeoRoute).map((faq, idx) => (
+                  <details key={idx} open={idx === 0} className="bg-black/30 rounded-xl p-2.5 border border-white/10">
+                    <summary className="text-[11px] font-bold text-white cursor-pointer">
+                      {faq.question}
+                    </summary>
+                    <p className="text-[10px] text-slate-200 mt-1.5 leading-relaxed">
+                      {faq.answer}
+                    </p>
+                  </details>
+                ))}
               </section>
 
               {/* Google AdSense Responsive Display Slot */}
@@ -2092,6 +2293,8 @@ const App: React.FC = () => {
               userProfile={userProfile}
               matches={matches}
               hangoutSpots={MOCK_VENUES}
+              initialCity={activeSeoRoute && !activeSeoRoute.defaultVibe ? activeSeoRoute.city : (selectedLandingCity !== 'Nairobi' && !activeVibeFilter ? selectedLandingCity : 'All Kenya')}
+              initialVibe={activeVibeFilter || 'All Vibes'}
               onLike={handleLike} 
               onPass={handlePass} 
               onBoost={() => handleBoost(30 * 60 * 1000)}
