@@ -49,11 +49,17 @@ async function callGeminiApi<T>(action: string, args: any[] = []): Promise<T> {
     });
 
     if (!response.ok) {
-      const errText = await response.text();
+      const errText = await response.text().catch(() => "");
       throw new Error(`Failed to call Gemini action ${action}: ${response.status} ${errText}`);
     }
 
-    const data = await response.json();
+    const contentType = response.headers.get("content-type") || "";
+    const rawText = await response.text();
+    if (!rawText || !rawText.trim() || !contentType.includes("application/json")) {
+      throw new Error(`Gemini proxy returned empty or non-JSON response (${response.status})`);
+    }
+
+    const data = JSON.parse(rawText);
     return data.result as T;
   } catch (error) {
     console.warn(`Gemini API client proxy warning for action ${action} (using fallback if available):`, error);

@@ -1,3 +1,5 @@
+import { safeStorage } from './storage';
+
 export type LogLevel = 'INFO' | 'SUCCESS' | 'WARN' | 'ERROR' | 'DEBUG';
 export type LogCategory = 'GOOGLE_AUTH' | 'GOOGLE_OAUTH' | 'GOOGLE_MEET' | 'FIRESTORE' | 'SECURITY' | 'SESSION';
 
@@ -24,31 +26,23 @@ class GoogleAuthLogger {
     this.info('SESSION', 'Pendo Google Services Logging initialized', {
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown',
       timestamp: new Date().toISOString(),
-      environment: 'Web / PWA / Vercel',
+      environment: 'Web / PWA / Node SSR',
     });
   }
 
   private loadFromStorage() {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const data = localStorage.getItem(STORAGE_KEY);
-        if (data) {
-          this.logs = JSON.parse(data);
-        }
+      const data = safeStorage.getItem(STORAGE_KEY);
+      if (data) {
+        this.logs = JSON.parse(data);
       }
-    } catch (err) {
-      console.warn('[GoogleAuthLogger] Could not load logs from storage:', err);
-    }
+    } catch {}
   }
 
   private saveToStorage() {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.logs.slice(-MAX_LOGS)));
-      }
-    } catch (err) {
-      console.warn('[GoogleAuthLogger] Could not save logs to storage:', err);
-    }
+      safeStorage.setItem(STORAGE_KEY, JSON.stringify(this.logs.slice(-MAX_LOGS)));
+    } catch {}
   }
 
   private notify() {

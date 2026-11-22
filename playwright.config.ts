@@ -1,4 +1,10 @@
+import fs from 'fs';
 import { defineConfig, devices } from '@playwright/test';
+
+const fallbackShellPath = '/ms-playwright/chrome-headless-shell-linux64/chrome-headless-shell';
+const launchOptions = fs.existsSync(fallbackShellPath)
+  ? { executablePath: fallbackShellPath }
+  : undefined;
 
 export default defineConfig({
   testDir: './e2e',
@@ -10,6 +16,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000',
     trace: 'on-first-retry',
+    launchOptions,
   },
   projects: [
     {

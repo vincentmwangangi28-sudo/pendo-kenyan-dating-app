@@ -473,6 +473,7 @@ export const VibeCirclesHub: React.FC<VibeCirclesHubProps> = ({
                     <button
                       key={opt.id}
                       type="button"
+                      data-testid="vibe-quiz-option"
                       onClick={() => handleAnswerQuiz(VIBE_COMPATIBILITY_QUIZ[quizStep].id, opt.id)}
                       className="w-full min-h-[48px] p-3.5 rounded-xl border border-slate-200 hover:border-rose-500 hover:bg-rose-50/40 text-left text-xs font-bold text-slate-800 flex items-center justify-between gap-2 transition-colors cursor-pointer"
                     >

@@ -1338,9 +1338,17 @@ const App: React.FC = () => {
              setView(AppView.PROFILE_SETUP);
           }
         } catch (e: any) {
-          const errMsg = e?.message || String(e);
-          if (errMsg.toLowerCase().includes('offline') || errMsg.toLowerCase().includes('could not reach') || errMsg.toLowerCase().includes('unreachable') || errMsg.toLowerCase().includes('failed to get document')) {
-            console.warn("Firestore appears to be offline or unreachable. Loading with cached profile gracefully.", e);
+          const errCode = String(e?.code || '').toLowerCase();
+          const errMsg = (e?.message || String(e)).toLowerCase();
+          if (
+            errCode === 'unavailable' ||
+            errMsg.includes('offline') ||
+            errMsg.includes('could not reach') ||
+            errMsg.includes('unreachable') ||
+            errMsg.includes('failed to get document') ||
+            errMsg.includes('network') ||
+            errMsg.includes('blocked')
+          ) {
             setIsOffline(true);
             setUserProfile(prev => ({
               ...prev,

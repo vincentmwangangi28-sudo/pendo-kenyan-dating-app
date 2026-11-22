@@ -12,7 +12,7 @@ test.describe('Pendo Kenya Dating E2E', () => {
     await expect(dataSaverBtn).toHaveAttribute('aria-pressed', 'true');
 
     // Select Kilimani Mums vibe circle
-    await page.getByRole('button', { name: 'Kilimani Mums' }).click();
+    await page.getByRole('button', { name: 'Kilimani Mums', exact: true }).click();
     await expect(page).toHaveURL(/\/kilimani-mums/);
     await expect(page.locator('h1')).toContainText('Kilimani Mums');
 
@@ -46,14 +46,14 @@ test.describe('Pendo Kenya Dating E2E', () => {
     await expect(page.getByRole('heading', { name: 'Kenyan Vibe Circles' })).toBeVisible();
     await page.getByRole('button', { name: 'Vibe Quiz' }).click();
     for (let i = 0; i < 4; i++) {
-      await page.locator('article, div').getByRole('button').first().click();
+      await page.getByTestId('vibe-quiz-option').first().click();
     }
     await expect(page.getByText(/Your Kenyan Vibe Circle Match/i)).toBeVisible();
 
     // Switch to Meetups tab & attempt RSVP (should cleanly show server trust gate for low-trust guest)
     await page.getByRole('button', { name: /Meetups/i }).click();
     await page.getByRole('button', { name: 'RSVP to Meetup' }).first().click();
-    await expect(page.getByText(/Trust Score|requires verified members/i)).toBeVisible();
+    await expect(page.getByText(/Trust Score|requires? verified members/i)).toBeVisible();
 
     // Navigate back to Discover and validate M-Pesa phone check
     await nav.getByRole('button', { name: 'Discover' }).click();
@@ -62,5 +62,31 @@ test.describe('Pendo Kenya Dating E2E', () => {
     await phoneInput.fill('12345');
     await page.getByRole('button', { name: /Send M-Pesa STK Prompt/i }).click();
     await expect(page.getByText(/Enter a valid Safaricom\/Kenyan number/i)).toBeVisible();
+  });
+
+  test('degrades silently with zero WebSocket errors or error banners when /api/health returns 404', async ({ page }) => {
+    const wsRequests: string[] = [];
+    const notifRequests: string[] = [];
+    const pageErrors: string[] = [];
+
+    page.on('pageerror', (err) => pageErrors.push(err.message));
+    page.on('websocket', (ws) => wsRequests.push(ws.url()));
+    await page.route('**/api/health', (route) =>
+      route.fulfill({ status: 404, contentType: 'text/plain', body: 'Not Found' })
+    );
+    await page.route('**/api/notifications/**', (route) => {
+      notifRequests.push(route.request().url());
+      return route.fulfill({ status: 404, contentType: 'text/plain', body: 'Not Found' });
+    });
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Preview as Guest' }).click();
+    await page.waitForTimeout(800);
+
+    // Pre-flight /api/health guard must prevent WebSocket and /api/notifications 404 spam completely
+    expect(wsRequests).toEqual([]);
+    expect(notifRequests).toEqual([]);
+    expect(pageErrors).toEqual([]);
+    await expect(page.getByText(/Network Connection Error|Google Authentication Error/i)).toHaveCount(0);
   });
 });

@@ -105,6 +105,7 @@ async function startServer() {
 
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
     if (req.secure || req.headers["x-forwarded-proto"] === "https") {
       res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
     }
@@ -140,12 +141,13 @@ async function startServer() {
     });
   });
 
-  // Render Automated Deploy Hook Endpoint
-  app.post("/api/render/deploy", async (req, res) => {
+  // Render Automated Deploy Hook Endpoint (Authenticated, env-configured)
+  app.post("/api/render/deploy", requireAuth, async (req: AuthRequest, res) => {
     try {
-      const hookUrl =
-        process.env.RENDER_DEPLOY_HOOK_URL ||
-        "https://api.render.com/deploy/srv-dbq6rflg1s2s739lb230?key=7d_2_fgvGII";
+      const hookUrl = process.env.RENDER_DEPLOY_HOOK_URL;
+      if (!hookUrl) {
+        return res.status(503).json({ error: "RENDER_DEPLOY_HOOK_URL is not configured on the server." });
+      }
       const response = await fetch(hookUrl, { method: "POST" });
       const data = await response.json().catch(() => ({}));
       return res.status(response.status).json({

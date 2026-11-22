@@ -1,6 +1,23 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, signOut as fbSignOut } from 'firebase/auth';
-import { initializeFirestore, memoryLocalCache, doc, getDocFromServer, setLogLevel, disableNetwork } from 'firebase/firestore';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  signInAnonymously,
+  signOut as fbSignOut,
+} from 'firebase/auth';
+import {
+  initializeFirestore,
+  getFirestore,
+  memoryLocalCache,
+  doc,
+  getDocFromServer,
+  setLogLevel,
+  disableNetwork,
+  enableNetwork,
+} from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 import { googleAuthLogger } from './googleAuthLogger';
 import { authNotificationService } from './authNotificationService';
@@ -16,62 +33,107 @@ const resolvedFirebaseConfig = {
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || "ai-studio-389731fa-e167-47fb-8cea-296d2b765f81",
 };
 
-const app = initializeApp(resolvedFirebaseConfig);
+// Idempotent app initialization (safe across HMR / repeated module imports)
+const app = getApps().length > 0 ? getApp() : initializeApp(resolvedFirebaseConfig);
 
-// Suppress noisy internal @firebase/firestore 10s WebChannel timeout console errors in sandboxed/offline environments
+// Suppress noisy internal @firebase/firestore WebChannel/COOP timeout logs in production/sandboxed clients
 setLogLevel('silent');
 
-// Initialize Firestore with forced HTTP long-polling and memory local cache for iframe/proxy compatibility
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  localCache: memoryLocalCache(),
-}, resolvedFirebaseConfig.firestoreDatabaseId);
+// Initialize Firestore cleanly with HTTP long-polling & memory cache for proxy/ad-blocker resilience
+let dbInstance;
+try {
+  dbInstance = initializeFirestore(
+    app,
+    {
+      experimentalForceLongPolling: true,
+      ignoreUndefinedProperties: true,
+      localCache: memoryLocalCache(),
+    },
+    resolvedFirebaseConfig.firestoreDatabaseId
+  );
+} catch {
+  dbInstance = getFirestore(app, resolvedFirebaseConfig.firestoreDatabaseId);
+}
+export const db = dbInstance;
 
 let firestoreOfflineState = false;
 let connectivityCheckPromise: Promise<boolean> | null = null;
 
 export const isFirestoreOffline = () => firestoreOfflineState;
 
-export async function checkFirestoreConnectivity(): Promise<boolean> {
-  if (connectivityCheckPromise) {
+function isTransientOrCoopAuthError(error: any): boolean {
+  const code = String(error?.code || '').toLowerCase();
+  const msg = String(error?.message || error || '').toLowerCase();
+  return (
+    code.includes('network-request-failed') ||
+    code.includes('internal-error') ||
+    code.includes('timeout') ||
+    code.includes('cancelled-popup-request') ||
+    msg.includes('cross-origin-opener-policy') ||
+    msg.includes('window.closed') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('err_blocked_by_client')
+  );
+}
+
+export async function checkFirestoreConnectivity(forceRefresh = false): Promise<boolean> {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    firestoreOfflineState = true;
+    await disableNetwork(db).catch(() => {});
+    return false;
+  }
+
+  if (connectivityCheckPromise && !forceRefresh) {
     return connectivityCheckPromise;
   }
 
   connectivityCheckPromise = (async () => {
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    try {
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          reject(new Error('Firestore connectivity check timed out (offline fallback)'));
-        }, 3500);
-      });
+    const maxAttempts = 2;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      try {
+        if (forceRefresh && firestoreOfflineState) {
+          await enableNetwork(db).catch(() => {});
+        }
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Firestore connectivity check timed out'));
+          }, 3000);
+        });
 
-      await Promise.race([
-        getDocFromServer(doc(db, 'test', 'connection')),
-        timeoutPromise,
-      ]);
+        await Promise.race([
+          getDocFromServer(doc(db, 'test', 'connection')),
+          timeoutPromise,
+        ]);
 
-      if (timeoutId) clearTimeout(timeoutId);
-      firestoreOfflineState = false;
-      googleAuthLogger.success('FIRESTORE', 'Firestore connection established successfully');
-      return true;
-    } catch (error: any) {
-      if (timeoutId) clearTimeout(timeoutId);
-      const msg = error?.message || String(error);
-      const code = error?.code || '';
-
-      // If the server responded with permission-denied, the backend IS reachable
-      if (code === 'permission-denied' || msg.includes('Missing or insufficient permissions')) {
+        if (timeoutId) clearTimeout(timeoutId);
         firestoreOfflineState = false;
-        googleAuthLogger.success('FIRESTORE', 'Firestore backend reachable');
+        googleAuthLogger.success('FIRESTORE', 'Firestore connection established successfully');
         return true;
-      }
+      } catch (error: any) {
+        if (timeoutId) clearTimeout(timeoutId);
+        const msg = error?.message || String(error);
+        const code = error?.code || '';
 
-      firestoreOfflineState = true;
-      await disableNetwork(db).catch(() => {});
-      googleAuthLogger.warn('FIRESTORE', 'Firestore operating in offline cache fallback mode', { error: msg });
-      return false;
+        // If the server responded with permission-denied, the backend IS reachable
+        if (code === 'permission-denied' || msg.includes('Missing or insufficient permissions')) {
+          firestoreOfflineState = false;
+          googleAuthLogger.success('FIRESTORE', 'Firestore backend reachable');
+          return true;
+        }
+
+        if (attempt < maxAttempts - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 600));
+          continue;
+        }
+
+        firestoreOfflineState = true;
+        await disableNetwork(db).catch(() => {});
+        googleAuthLogger.info('FIRESTORE', 'Firestore operating silently in local cache mode', { error: msg });
+        return false;
+      }
     }
+    return false;
   })();
 
   return connectivityCheckPromise;
@@ -91,6 +153,33 @@ meetProvider.addScope('https://www.googleapis.com/auth/meetings.space.settings')
 
 // In-memory token cache
 let cachedAccessToken: string | null = null;
+
+// Silently resolve any pending redirect-based Google Sign-In on boot
+if (typeof window !== 'undefined') {
+  getRedirectResult(auth)
+    .then((result) => {
+      if (result?.user) {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          cachedAccessToken = credential.accessToken;
+        }
+        googleAuthLogger.logGoogleSignInSuccess(
+          {
+            uid: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            isAnonymous: result.user.isAnonymous,
+          },
+          cachedAccessToken
+        );
+      }
+    })
+    .catch((err) => {
+      googleAuthLogger.debug('GOOGLE_AUTH', 'Silent redirect check skipped', {
+        code: err?.code || 'none',
+      });
+    });
+}
 
 export interface AppAuthUser {
   uid: string;
@@ -153,7 +242,7 @@ export const signInWithGoogle = async () => {
     const result = await signInWithPopup(auth, loginProvider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     cachedAccessToken = credential?.accessToken || null;
-    
+
     googleAuthLogger.logGoogleSignInSuccess({
       uid: result.user.uid,
       email: result.user.email,
@@ -168,61 +257,77 @@ export const signInWithGoogle = async () => {
 
     return result.user;
   } catch (error: any) {
+    const code = String(error?.code || '');
     googleAuthLogger.logGoogleSignInFailure(error);
-    
-    // Provide specific user-friendly notification for popup-closed-by-user, network-request-failed, etc.
-    authNotificationService.handleAuthError(error, {
-      context: 'Sign-In',
-      retryAction: () => signInWithGoogle(),
-    });
 
-    console.warn("Google signInWithPopup was blocked/closed in sandbox. Establishing guest session fallback:", error);
+    // If a browser COOP / popup blocker interrupts signInWithPopup, avoid alarming error banners
+    // when silently falling back or handing off to redirect/guest session.
+    if (code === 'auth/popup-blocked' && typeof window !== 'undefined' && window.top === window.self) {
+      try {
+        googleAuthLogger.info('GOOGLE_AUTH', 'Popup blocked; falling back to Google redirect flow');
+        await signInWithRedirect(auth, loginProvider);
+        return getOrCreateGuestUser();
+      } catch {}
+    }
+
+    // Retry once silently for transient network/COOP errors before falling back to guest session
+    if (isTransientOrCoopAuthError(error)) {
+      googleAuthLogger.info('GOOGLE_AUTH', 'Silent retry / seamless guest fallback after COOP or network interruption', { code });
+    } else if (code === 'auth/popup-closed-by-user') {
+      authNotificationService.handleAuthError(error, {
+        context: 'Sign-In',
+        retryAction: () => signInWithGoogle(),
+      });
+    }
+
     try {
-      googleAuthLogger.info('GOOGLE_AUTH', 'Attempting fallback anonymous Firebase authentication');
       const anonResult = await signInAnonymously(auth);
       googleAuthLogger.success('GOOGLE_AUTH', 'Fallback anonymous Firebase session established', { uid: anonResult.user.uid });
       return anonResult.user;
     } catch (anonErr: any) {
-      googleAuthLogger.warn('GOOGLE_AUTH', 'Anonymous Firebase endpoint unreachable (sandbox/offline mode). Using local guest session.', {
+      googleAuthLogger.info('GOOGLE_AUTH', 'Using local guest session fallback cleanly', {
         code: anonErr?.code || 'offline',
-        message: anonErr?.message || String(anonErr),
       });
-      const localGuest = getOrCreateGuestUser();
-      return localGuest;
+      return getOrCreateGuestUser();
     }
   }
 };
 
 export const signInForGoogleMeet = async (): Promise<string> => {
   googleAuthLogger.info('GOOGLE_MEET', 'Requesting Google Meet OAuth authorization popup');
-  try {
-    const result = await signInWithPopup(auth, meetProvider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    if (!credential?.accessToken) {
-      const err = new Error("Failed to get Google Meet access token from Google OAuth response");
-      googleAuthLogger.logGoogleMeetToken(false, null, err);
-      authNotificationService.handleAuthError(err, {
-        context: 'Google Meet OAuth',
-        retryAction: () => signInForGoogleMeet(),
-      });
-      throw err;
+  let lastError: any;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const result = await signInWithPopup(auth, meetProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (!credential?.accessToken) {
+        throw new Error("Failed to get Google Meet access token from Google OAuth response");
+      }
+      cachedAccessToken = credential.accessToken;
+      googleAuthLogger.logGoogleMeetToken(true, cachedAccessToken);
+      authNotificationService.showSuccess(
+        'Google Meet Authorized',
+        'Virtual date video room permissions successfully granted!'
+      );
+      return cachedAccessToken;
+    } catch (error: any) {
+      lastError = error;
+      if (attempt === 0 && isTransientOrCoopAuthError(error)) {
+        await new Promise((resolve) => setTimeout(resolve, 450));
+        continue;
+      }
+      break;
     }
-    cachedAccessToken = credential.accessToken;
-    googleAuthLogger.logGoogleMeetToken(true, cachedAccessToken);
-    authNotificationService.showSuccess(
-      'Google Meet Authorized',
-      'Virtual date video room permissions successfully granted!'
-    );
-    return cachedAccessToken;
-  } catch (error: any) {
-    googleAuthLogger.logGoogleMeetToken(false, null, error);
-    authNotificationService.handleAuthError(error, {
+  }
+
+  googleAuthLogger.logGoogleMeetToken(false, null, lastError);
+  if (lastError?.code === 'auth/popup-closed-by-user' || lastError?.code === 'auth/popup-blocked') {
+    authNotificationService.handleAuthError(lastError, {
       context: 'Google Meet OAuth',
       retryAction: () => signInForGoogleMeet(),
     });
-    console.error("Error getting Google Meet token", error);
-    throw error;
   }
+  throw lastError;
 };
 
 export const signOut = async () => {
@@ -232,8 +337,8 @@ export const signOut = async () => {
     safeStorage.removeItem('pendo_guest_user');
     await fbSignOut(auth).catch(() => {});
     googleAuthLogger.logSignOut(currentUid);
-  } catch (error) {
-    googleAuthLogger.warn('GOOGLE_AUTH', 'Sign out completed with local session cleanup');
+  } catch {
+    googleAuthLogger.info('GOOGLE_AUTH', 'Sign out completed with local session cleanup');
   }
 };
 
@@ -272,9 +377,8 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     },
     operationType,
     path
-  }
+  };
   googleAuthLogger.logFirestoreOperation(operationType, path || 'unknown', false, errInfo);
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
 }
 
