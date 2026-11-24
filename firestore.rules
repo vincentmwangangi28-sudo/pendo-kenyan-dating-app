@@ -11,6 +11,11 @@ service cloud.firestore {
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isSignedIn() { return request.auth != null; }
+    function isVincentAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email == 'vincentmwangangi28@gmail.com' &&
+        request.auth.token.email_verified == true;
+    }
 
     function isValidUserProfile(data) {
       return data.name is string && data.name.size() >= 1 && data.name.size() <= 128 &&
@@ -68,11 +73,22 @@ service cloud.firestore {
              data.id == itemId &&
              data.userId == userId &&
              data.userId == request.auth.uid &&
-             data.type in ['MATCH', 'ZAWADI', 'MEETUP', 'CIRCLE', 'MPESA'] &&
+             data.type in ['MATCH', 'ZAWADI', 'MEETUP', 'CIRCLE'] &&
              data.title is string && data.title.size() <= 160 &&
              data.body is string && data.body.size() <= 500 &&
              data.read is bool &&
              data.createdAt is number;
+    }
+
+    function isValidAdminSettings(data) {
+      return data.keys().hasAll(['ownerEmail', 'updatedAt', 'completedSteps']) &&
+             data.keys().hasOnly(['ownerEmail', 'updatedAt', 'completedSteps', 'androidSha256', 'appleTeamId', 'notes']) &&
+             data.ownerEmail == 'vincentmwangangi28@gmail.com' &&
+             data.updatedAt is number &&
+             data.completedSteps is map && data.completedSteps.size() <= 50 &&
+             (!('androidSha256' in data) || (data.androidSha256 is string && data.androidSha256.size() <= 128)) &&
+             (!('appleTeamId' in data) || (data.appleTeamId is string && data.appleTeamId.size() <= 32)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000));
     }
 
     match /test/connection {
@@ -132,19 +148,6 @@ service cloud.firestore {
         incoming().createdAt is number;
     }
 
-    match /transactions/{txId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(txId) &&
-        incoming().userId == request.auth.uid &&
-        incoming().phone is string && incoming().phone.size() <= 32 &&
-        incoming().amountKes is number && incoming().amountKes > 0 &&
-        incoming().purpose in ['BOOST', 'GOLD', 'GOLD_SUBSCRIPTION', 'GIFT', 'VIRTUAL_GIFT', 'VENUE_RESERVATION', 'FARE_SHIELD'] &&
-        incoming().itemName is string && incoming().itemName.size() <= 128 &&
-        incoming().receiptNumber is string && incoming().receiptNumber.size() <= 64 &&
-        incoming().status in ['PENDING', 'COMPLETED', 'FAILED'] &&
-        incoming().createdAt is number;
-    }
-
     match /safetyCheckins/{checkinId} {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create, update: if isSignedIn() && isValidId(checkinId) &&
@@ -173,6 +176,13 @@ service cloud.firestore {
       allow update: if isSignedIn() && isValidId(userId) && isValidId(itemId) && userId == request.auth.uid && isValidNotificationItem(incoming(), itemId, userId) &&
         incoming().diff(existing()).affectedKeys().hasOnly(['read']);
       allow delete: if isSignedIn() && isValidId(userId) && isValidId(itemId) && userId == request.auth.uid;
+    }
+
+    match /adminSettings/{docId} {
+      allow get: if isVincentAdmin() && isValidId(docId);
+      allow list: if isVincentAdmin() && resource.data.ownerEmail == 'vincentmwangangi28@gmail.com';
+      allow create, update: if isVincentAdmin() && isValidId(docId) && isValidAdminSettings(incoming());
+      allow delete: if isVincentAdmin() && isValidId(docId);
     }
   }
 }

@@ -15,13 +15,12 @@ export interface UserProfile {
   boostExpiresAt?: number; // Timestamp for when profile boost expires
   isVerified?: boolean; // Profile verification status
   trustScore?: number; // Explainable 0-100 trust score
-  subscriptionTier?: 'FREE' | 'GOLD' | 'VIP';
+  subscriptionTier?: 'FREE';
   vibeCircle?: string;
   recommendedVibeCircle?: string;
   vibeQuizCompleted?: boolean;
   ageVerified?: boolean;
   dataSaverEnabled?: boolean;
-  mpesaPhone?: string;
   giftsSent?: number;
   giftsReceived?: number;
   coordinates?: {
@@ -47,9 +46,9 @@ export interface MatchProfile {
   distance: number; // in km
   isVerified?: boolean; // Profile verification status
   trustScore?: number; // 0-100 trust score
-  subscriptionTier?: 'FREE' | 'GOLD' | 'VIP';
+  subscriptionTier?: 'FREE';
   vibeCircle?: string;
-  badges?: ('Verified' | 'Top Pick' | 'Newbie' | 'Compatible' | 'Pendo Gold')[];
+  badges?: ('Verified' | 'Top Pick' | 'Newbie' | 'Compatible')[];
   coordinates?: {
     latitude: number;
     longitude: number;
@@ -60,31 +59,9 @@ export interface VirtualGift {
   id: string;
   name: string;
   swahiliTag: string;
-  priceKes: number;
   desc: string;
   icon: string;
   color: string;
-}
-
-export interface MpesaTransaction {
-  id: string;
-  userId: string;
-  phone: string;
-  amountKes: number;
-  purpose: 'BOOST' | 'GOLD_SUBSCRIPTION' | 'VIRTUAL_GIFT' | 'FARE_SHIELD' | 'VENUE_RESERVATION';
-  itemName: string;
-  recipientId?: string;
-  recipientName?: string;
-  receiptNumber: string;
-  status: 'COMPLETED' | 'PENDING' | 'FAILED';
-  createdAt: number;
-  reservationDetails?: {
-    venueName: string;
-    venueLocation: string;
-    dateSlot: string;
-    guestCount: number;
-    reservationCode: string;
-  };
 }
 
 export interface SafetyCheckin {
@@ -97,7 +74,6 @@ export interface SafetyCheckin {
   city: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
-  fareShieldKes?: number;
   status: 'ACTIVE' | 'SAFE_COMPLETED' | 'ALERT_TRIGGERED';
   createdAt: number;
   checkInBy: number;
@@ -160,7 +136,7 @@ export interface VibeMeetupEvent {
   city: string;
   venueName: string;
   dateLabel: string;
-  coverKes: number;
+  coverKes: 0;
   minAge: number;
   minTrustScore: number;
   maxCapacity: number;
@@ -173,7 +149,7 @@ export interface VibeMeetupEvent {
 export interface AppNotification {
   id: string;
   userId: string;
-  type: 'MATCH' | 'ZAWADI' | 'MEETUP' | 'CIRCLE' | 'MPESA';
+  type: 'MATCH' | 'ZAWADI' | 'MEETUP' | 'CIRCLE';
   title: string;
   body: string;
   read: boolean;
@@ -193,4 +169,5 @@ export enum AppView {
   GROUP_CREATION = 'GROUP_CREATION',
   VOICE_COACH = 'VOICE_COACH',
   MEET = 'MEET',
+  ADMIN = 'ADMIN',
 }

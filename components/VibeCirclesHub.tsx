@@ -137,7 +137,7 @@ export const VibeCirclesHub: React.FC<VibeCirclesHubProps> = ({
           type: 'ok',
           msg:
             data.action === 'JOINED'
-              ? 'RSVP confirmed! Activate Matatu Fare Shield before heading out.'
+              ? 'RSVP confirmed! Activate Date Safety Check-In before heading out.'
               : 'RSVP cancelled.',
         });
       }
@@ -271,8 +271,7 @@ export const VibeCirclesHub: React.FC<VibeCirclesHubProps> = ({
 
                   <div className="text-[11px] text-slate-500 font-medium">
                     Entry Gate: <span className="font-mono tabular-nums">{circle.minAge}+ yrs</span> · Trust{' '}
-                    <span className="font-mono tabular-nums">{circle.minTrustScore}%+</span>
-                    {circle.recommendedTier !== 'FREE' ? ` · ${circle.recommendedTier} Priority` : ''}
+                    <span className="font-mono tabular-nums">{circle.minTrustScore}%+</span> · Free Access
                   </div>
 
                   <div className="flex items-center gap-2 pt-1">
@@ -341,7 +340,7 @@ export const VibeCirclesHub: React.FC<VibeCirclesHubProps> = ({
                         <h2 className="text-base font-extrabold text-slate-900 mt-0.5">{event.title}</h2>
                       </div>
                       <span className="text-xs font-mono font-bold tabular-nums text-emerald-700 shrink-0">
-                        {event.coverKes === 0 ? 'Free Entry' : `KES ${event.coverKes.toLocaleString()}`}
+                        Free Entry
                       </span>
                     </div>
 
@@ -403,10 +402,10 @@ export const VibeCirclesHub: React.FC<VibeCirclesHubProps> = ({
                         type="button"
                         onClick={() => onOpenSafetyCheckin(event.venueName)}
                         className="min-h-[44px] px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                        title="Activate Matatu Fare Shield for this venue"
+                        title="Activate Date Safety Check-In for this venue"
                       >
                         <Shield size={15} className="text-emerald-600" />
-                        <span>Fare Shield</span>
+                        <span>Safety Check-In</span>
                       </button>
                     </div>
                   </article>

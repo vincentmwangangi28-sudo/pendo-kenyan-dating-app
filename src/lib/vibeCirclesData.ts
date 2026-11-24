@@ -6,7 +6,7 @@ export interface VibeCircleRule {
   description: string;
   minAge: number;
   minTrustScore: number;
-  recommendedTier: 'FREE' | 'GOLD' | 'VIP';
+  recommendedTier: 'FREE';
   groupChatId: string;
   routePath: string;
 }
@@ -44,17 +44,17 @@ export const VIBE_CIRCLE_RULES: Record<string, VibeCircleRule> = {
   },
   'Wababa': {
     name: 'Wababa',
-    tagline: 'Runda & Karen gentlemen · Soft Life & M-Pesa Zawadi',
-    description: 'Established Nairobi & Mombasa executives offering fine dining, Diani weekend flights, and transparent M-Pesa Zawadi pampering.',
+    tagline: 'Runda & Karen gentlemen · Soft Life & Free Zawadi',
+    description: 'Established Nairobi & Mombasa executives offering fine dining, Diani weekend flights, and complimentary Virtual Zawadi pampering.',
     minAge: 21,
     minTrustScore: 75,
-    recommendedTier: 'GOLD',
+    recommendedTier: 'FREE',
     groupChatId: 'g_wababa',
     routePath: '/wababa-soft-life-kenya'
   },
   'Soft Life': {
     name: 'Soft Life',
-    tagline: 'VIP aesthetic, coastal getaways & zero-stress dates',
+    tagline: 'Curated aesthetic, coastal getaways & zero-stress dates',
     description: 'Curated luxury dinners, spa sundowners, and aesthetic lifestyle dates across Westlands, Karen, and Diani Beach.',
     minAge: 18,
     minTrustScore: 60,
@@ -111,7 +111,7 @@ export const VIBE_COMPATIBILITY_QUIZ: VibeQuizQuestion[] = [
       },
       {
         id: 'diani',
-        label: 'Diani sundowners, fine dining, or VIP yacht lounge',
+        label: 'Diani sundowners, fine dining, or coastal lounge',
         circleScores: { 'Wababa': 3, 'Soft Life': 2 }
       },
       {
@@ -137,7 +137,7 @@ export const VIBE_COMPATIBILITY_QUIZ: VibeQuizQuestion[] = [
       },
       {
         id: 'provider',
-        label: 'Established gentleman ready for M-Pesa Zawadi & getaways',
+        label: 'Established gentleman ready for Virtual Zawadi & getaways',
         circleScores: { 'Wababa': 3, 'Serious & Marriage': 1 }
       },
       {
@@ -184,7 +184,7 @@ export const VIBE_COMPATIBILITY_QUIZ: VibeQuizQuestion[] = [
       },
       {
         id: 'generosity',
-        label: 'Soft life aesthetics, M-Pesa Zawadi & pampering',
+        label: 'Soft life aesthetics, Virtual Zawadi & pampering',
         circleScores: { 'Soft Life': 3, 'Wababa': 2 }
       },
       {
@@ -237,7 +237,7 @@ export function scoreVibeCompatibilityQuiz(answers: Record<string, string>): {
     'Kilimani Mums': 'Classy, loyal, and drama-free — Kilimani brunches and refined companionship suit your rhythm.',
     'Mama wa Harrier': 'Bold boss energy — spontaneous Naivasha drives and confident company are your sweet spot.',
     'Ben 10': 'Sharp style and high energy — queens in Westlands and Nyali will love your attentive vibe.',
-    'Wababa': 'Executive generosity — VIP dinners, Diani getaways, and M-Pesa Zawadi match your lifestyle.',
+    'Wababa': 'Executive generosity — rooftop dinners, Diani getaways, and free Virtual Zawadi match your lifestyle.',
     'Soft Life': 'Aesthetic, calm, and curated — fine dining, rooftop sundowners, and zero stress.',
     'Sherehe Crew': 'Pure weekend plot — live DJs, Westlands tables, and unforgettable Nairobi nights.',
     'Serious & Marriage': 'Intentional and grounded — Ngao-verified courtship built for lasting commitment.'
@@ -264,7 +264,7 @@ export const INITIAL_VIBE_MEETUPS: VibeMeetupEvent[] = [
     minTrustScore: 70,
     maxCapacity: 30,
     rsvpCount: 19,
-    description: 'Verified Kilimani & Kileleshwa members table with live acoustic soul and M-Pesa split tab.',
+    description: 'Verified Kilimani & Kileleshwa members table with live acoustic soul and free community RSVP.',
     safeHostName: 'Wangari M. (Verified Host)'
   },
   {
@@ -274,7 +274,7 @@ export const INITIAL_VIBE_MEETUPS: VibeMeetupEvent[] = [
     city: 'Naivasha',
     venueName: 'Enashipai Resort Lounge, Moi South Lake',
     dateLabel: 'Sat · 11:30 AM EAT',
-    coverKes: 500,
+    coverKes: 0,
     minAge: 21,
     minTrustScore: 70,
     maxCapacity: 24,
@@ -289,7 +289,7 @@ export const INITIAL_VIBE_MEETUPS: VibeMeetupEvent[] = [
     city: 'Nairobi',
     venueName: 'Hero Bar, Trademark Hotel',
     dateLabel: 'Fri · 7:30 PM EAT',
-    coverKes: 500,
+    coverKes: 0,
     minAge: 21,
     minTrustScore: 70,
     maxCapacity: 40,
@@ -304,13 +304,13 @@ export const INITIAL_VIBE_MEETUPS: VibeMeetupEvent[] = [
     city: 'Diani',
     venueName: 'Ali Barbour’s & Forty Thieves, Diani',
     dateLabel: 'Sat · 5:00 PM EAT',
-    coverKes: 1500,
+    coverKes: 0,
     minAge: 21,
     minTrustScore: 75,
     maxCapacity: 20,
     rsvpCount: 12,
-    description: 'Executive coastal evening featuring oceanfront cocktails, M-Pesa Zawadi gifting, and VIP table hospitality.',
-    safeHostName: 'Hon. Omondi (VIP Host)'
+    description: 'Executive coastal evening featuring oceanfront cocktails, free Virtual Zawadi gifting, and curated table hospitality.',
+    safeHostName: 'Hon. Omondi (Circle Host)'
   },
   {
     id: 'evt_sherehe_alchemist',
@@ -324,7 +324,7 @@ export const INITIAL_VIBE_MEETUPS: VibeMeetupEvent[] = [
     minTrustScore: 40,
     maxCapacity: 60,
     rsvpCount: 44,
-    description: 'Link up at the reserved Pendo group booth before midnight sets—Matatu Fare Shield enabled.',
+    description: 'Link up at the reserved Pendo group booth before midnight sets—Ngao Date Safety Shield enabled.',
     safeHostName: 'Kevoh D. (Sherehe Host)'
   },
   {
@@ -334,7 +334,7 @@ export const INITIAL_VIBE_MEETUPS: VibeMeetupEvent[] = [
     city: 'Nairobi',
     venueName: 'Talisman Garden, Karen',
     dateLabel: 'Sun · 4:00 PM EAT',
-    coverKes: 500,
+    coverKes: 0,
     minAge: 21,
     minTrustScore: 70,
     maxCapacity: 25,

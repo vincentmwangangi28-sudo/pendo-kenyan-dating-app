@@ -4,14 +4,11 @@ import http from "http";
 import path from "path";
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer as createViteServer } from "vite";
-import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
+import { requireAuth, requireVincentAdmin, AuthRequest } from "./src/middleware/auth.ts";
 import { getOrCreateUser } from "./src/db/users.ts";
 import * as geminiServer from "./services/geminiServerService.ts";
-import { CANONICAL_URLS, generateSitemapXml } from "./src/lib/seoRoutes.ts";
+import { CANONICAL_URLS, SEO_ROUTES, generateSitemapXml, generateSitemapIndexXml } from "./src/lib/seoRoutes.ts";
 import {
-  recordMpesaCheckout,
-  getMpesaCheckout,
-  finalizeMpesaCheckout,
   listVibeMeetups,
   toggleVibeMeetupRsvp,
   addUserNotification,
@@ -19,12 +16,6 @@ import {
   markUserNotificationsRead,
   savePushSubscription,
 } from "./src/db/ledger.ts";
-import {
-  normalizeKenyanMsisdn,
-  generateSandboxReceiptCode,
-  initiateDarajaStkPush,
-  parseDarajaCallbackPayload,
-} from "./src/lib/mpesaDaraja.ts";
 import { AppNotification, AppView } from "./types.ts";
 
 async function startServer() {
@@ -98,9 +89,15 @@ async function startServer() {
       req.path === "/cguyxqk3krxuvjeesrp67h8cmz7cvvmn.txt" ||
       req.path === "/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt" ||
       req.path === "/robots.txt" ||
-      req.path === "/sitemap.xml";
+      req.path === "/sitemap.xml" ||
+      req.path === "/sitemap_index.xml" ||
+      req.path.startsWith("/.well-known/");
     if (host === "pendo.website" && !isVerificationPath) {
       return res.redirect(301, `https://www.pendo.website${req.originalUrl}`);
+    }
+
+    if (req.path === "/admin" || req.path.startsWith("/api/")) {
+      res.setHeader("X-Robots-Tag", "noindex, nofollow");
     }
 
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -141,8 +138,8 @@ async function startServer() {
     });
   });
 
-  // Render Automated Deploy Hook Endpoint (Authenticated, env-configured)
-  app.post("/api/render/deploy", requireAuth, async (req: AuthRequest, res) => {
+  // Render Automated Deploy Hook Endpoint (Authenticated Admin Only)
+  app.post("/api/render/deploy", requireVincentAdmin, async (req: AuthRequest, res) => {
     try {
       const hookUrl = process.env.RENDER_DEPLOY_HOOK_URL;
       if (!hookUrl) {
@@ -159,175 +156,6 @@ async function startServer() {
     } catch (err: any) {
       return res.status(500).json({ error: err.message || "Failed to trigger Render deploy hook" });
     }
-  });
-
-  // M-Pesa Daraja 2.0 Express STK Push + Ledger Endpoint
-  app.post("/api/mpesa/stk-push", async (req, res) => {
-    try {
-      const { phone, amountKes, purpose, itemName, recipientName, userId } = req.body || {};
-      const msisdn = normalizeKenyanMsisdn(phone);
-      if (!msisdn) {
-        return res.status(400).json({ error: "Invalid Kenyan Safaricom/Airtel phone format." });
-      }
-
-      const resolvedAmount = Math.max(1, Number(amountKes) || 150);
-      const resolvedPurpose = String(purpose || "GOLD_SUBSCRIPTION");
-      const resolvedItemName = String(itemName || "Pendo Gold");
-      const resolvedUserId = String(userId || "guest_user");
-
-      const stk = await initiateDarajaStkPush({
-        msisdn,
-        amountKes: resolvedAmount,
-        purpose: resolvedPurpose,
-        itemName: resolvedItemName,
-      });
-
-      const pendingRecord = await recordMpesaCheckout({
-        checkoutRequestId: stk.checkoutRequestId,
-        merchantRequestId: stk.merchantRequestId,
-        userId: resolvedUserId,
-        phone: `+${msisdn}`,
-        amountKes: resolvedAmount,
-        purpose: resolvedPurpose,
-        itemName: resolvedItemName,
-        recipientName: recipientName || null,
-        receiptNumber: stk.receiptPreview || null,
-        status: "PENDING",
-        resultDesc: stk.customerMessage,
-        mode: stk.mode,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-
-      return res.json({
-        success: true,
-        mode: stk.mode,
-        merchantRequestId: stk.merchantRequestId,
-        checkoutRequestId: stk.checkoutRequestId,
-        responseCode: stk.responseCode,
-        customerMessage: stk.customerMessage,
-        receiptNumber: pendingRecord.receiptNumber,
-        status: pendingRecord.status,
-        amountKes: resolvedAmount,
-        purpose: resolvedPurpose,
-        itemName: resolvedItemName,
-        recipientName: recipientName || null,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (err: any) {
-      return res.status(500).json({ error: err.message || "M-Pesa STK Push gateway error" });
-    }
-  });
-
-  // Safaricom Daraja 2.0 Webhook Callback Verification Endpoint
-  app.post("/api/mpesa/callback", async (req, res) => {
-    try {
-      const parsed = parseDarajaCallbackPayload(req.body);
-      if (!parsed.checkoutRequestId) {
-        return res.status(400).json({ error: "Missing CheckoutRequestID in Daraja callback." });
-      }
-
-      const nextStatus = parsed.resultCode === 0 ? "COMPLETED" : "FAILED";
-      const receipt =
-        nextStatus === "COMPLETED"
-          ? parsed.receiptNumber || generateSandboxReceiptCode("QKL")
-          : null;
-
-      const updated = await finalizeMpesaCheckout(
-        parsed.checkoutRequestId,
-        nextStatus,
-        receipt,
-        parsed.resultDesc
-      );
-
-      if (!updated) {
-        return res.status(404).json({ error: "Checkout transaction not found in ledger." });
-      }
-
-      if (updated.status === "COMPLETED") {
-        const notif: AppNotification = {
-          id: `mpesa_${updated.checkoutRequestId}`,
-          userId: updated.userId,
-          type: "MPESA",
-          title: `M-Pesa Receipt #${updated.receiptNumber} Confirmed`,
-          body: `KES ${updated.amountKes.toLocaleString()} for ${updated.itemName} verified via Daraja.`,
-          read: false,
-          targetView: AppView.DISCOVERY,
-          createdAt: Date.now(),
-        };
-        addUserNotification(notif);
-        broadcastUserEvent(updated.userId, {
-          type: "MPESA_CONFIRMED",
-          transaction: updated,
-          notification: notif,
-        });
-      }
-
-      return res.json({
-        ResultCode: 0,
-        ResultDesc: "Accepted",
-        transaction: updated,
-      });
-    } catch (err: any) {
-      return res.status(500).json({ error: err.message || "Failed to process Daraja callback" });
-    }
-  });
-
-  // Sandbox Checkout Reconciliation Endpoint (when live Daraja keys are unset)
-  app.post("/api/mpesa/sandbox-confirm", async (req, res) => {
-    try {
-      const { checkoutRequestId } = req.body || {};
-      if (!checkoutRequestId) {
-        return res.status(400).json({ error: "checkoutRequestId is required." });
-      }
-      const existing = await getMpesaCheckout(String(checkoutRequestId));
-      if (!existing) {
-        return res.status(404).json({ error: "Checkout transaction not found." });
-      }
-      if (existing.mode !== "SANDBOX") {
-        return res.status(403).json({ error: "Sandbox confirmation disabled when Live Daraja is active." });
-      }
-
-      const receipt = existing.receiptNumber || generateSandboxReceiptCode("SGK");
-      const updated = await finalizeMpesaCheckout(
-        existing.checkoutRequestId,
-        "COMPLETED",
-        receipt,
-        "The service request is processed successfully (Sandbox Verified)."
-      );
-
-      if (updated) {
-        const notif: AppNotification = {
-          id: `mpesa_${updated.checkoutRequestId}`,
-          userId: updated.userId,
-          type: "MPESA",
-          title: `M-Pesa Receipt #${updated.receiptNumber} Confirmed`,
-          body: `KES ${updated.amountKes.toLocaleString()} for ${updated.itemName} confirmed.`,
-          read: false,
-          targetView: AppView.DISCOVERY,
-          createdAt: Date.now(),
-        };
-        addUserNotification(notif);
-        broadcastUserEvent(updated.userId, {
-          type: "MPESA_CONFIRMED",
-          transaction: updated,
-          notification: notif,
-        });
-      }
-
-      return res.json({ success: true, transaction: updated });
-    } catch (err: any) {
-      return res.status(500).json({ error: err.message || "Sandbox confirmation error" });
-    }
-  });
-
-  // M-Pesa Transaction Status Endpoint
-  app.get("/api/mpesa/status/:checkoutRequestId", async (req, res) => {
-    const tx = await getMpesaCheckout(req.params.checkoutRequestId);
-    if (!tx) {
-      return res.status(404).json({ error: "Transaction not found" });
-    }
-    return res.json({ success: true, transaction: tx });
   });
 
   // Kenyan Vibe Circles Meetups & Server-Gated RSVP Endpoints
@@ -436,7 +264,7 @@ async function startServer() {
         success: true,
         checkinId: checkin.id || `chk_${Date.now()}`,
         status: "ACTIVE",
-        message: "Live Date Safety Check-In & Matatu Fare Shield registered with Pendo Ngao.",
+        message: "Live Date Safety Check-In registered with Pendo Ngao.",
         timestamp: new Date().toISOString(),
       });
     } catch (err: any) {
@@ -501,8 +329,41 @@ async function startServer() {
   app.get("/robots.txt", (req, res) => {
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.send(
-      "User-agent: Googlebot\nAllow: /\nDisallow: /api/\n\nUser-agent: Googlebot-Image\nAllow: /\n\nUser-agent: Google-InspectionTool\nAllow: /\n\nUser-agent: Bingbot\nAllow: /\nDisallow: /api/\n\nUser-agent: AhrefsBot\nAllow: /\n\nUser-agent: AhrefsSiteAudit\nAllow: /\n\nUser-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://www.pendo.website/sitemap.xml\nAgentmap: https://www.pendo.website/ai-catalog.json\n"
+      "User-agent: Googlebot\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nUser-agent: Googlebot-Image\nAllow: /\n\nUser-agent: Google-InspectionTool\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nUser-agent: Bingbot\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nUser-agent: AhrefsBot\nAllow: /\nDisallow: /admin\n\nUser-agent: AhrefsSiteAudit\nAllow: /\nDisallow: /admin\n\nUser-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nSitemap: https://www.pendo.website/sitemap.xml\nSitemap: https://www.pendo.website/sitemap_index.xml\n"
     );
+  });
+
+  // App Store Deep Link Verification Files
+  app.get("/.well-known/assetlinks.json", (req, res) => {
+    const filePath = path.join(process.cwd(), "public", ".well-known", "assetlinks.json");
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    if (fs.existsSync(filePath)) {
+      return res.sendFile(filePath, { dotfiles: "allow" });
+    }
+    return res.json([
+      {
+        relation: ["delegate_permission/common.handle_all_urls"],
+        target: {
+          namespace: "android_app",
+          package_name: "com.pendo.kenyandating",
+          sha256_cert_fingerprints: ["REPLACE_WITH_YOUR_ANDROID_SIGNING_SHA256_FINGERPRINT"],
+        },
+      },
+    ]);
+  });
+
+  app.get("/.well-known/apple-app-site-association", (req, res) => {
+    const filePath = path.join(process.cwd(), "public", ".well-known", "apple-app-site-association");
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    if (fs.existsSync(filePath)) {
+      return res.sendFile(filePath, { dotfiles: "allow" });
+    }
+    return res.json({
+      applinks: {
+        apps: [],
+        details: [{ appID: "TEAMID.com.pendo.kenyandating", paths: ["/", "/*"] }],
+      },
+    });
   });
 
   // Agentic Browsing & AI Discovery Endpoints
@@ -522,6 +383,74 @@ async function startServer() {
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(generateSitemapXml());
+  });
+
+  app.get("/sitemap_index.xml", (req, res) => {
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(generateSitemapIndexXml());
+  });
+
+  // Strict Vincent-Only Admin SEO Audit & IndexNow Endpoints
+  app.get("/api/admin/seo-audit", requireVincentAdmin, (req: AuthRequest, res) => {
+    const publicDir = path.join(process.cwd(), "public");
+    const sitemapXml = generateSitemapXml();
+    const robotsPath = path.join(publicDir, "robots.txt");
+    const robotsTxt = fs.existsSync(robotsPath) ? fs.readFileSync(robotsPath, "utf-8") : "";
+    const googleVerifExists = fs.existsSync(path.join(publicDir, "google00332d67777e965d.html"));
+    const bingVerifExists = fs.existsSync(path.join(publicDir, "BingSiteAuth.xml"));
+    const assetLinksExists = fs.existsSync(path.join(publicDir, ".well-known", "assetlinks.json"));
+    const appleAssocExists = fs.existsSync(path.join(publicDir, ".well-known", "apple-app-site-association"));
+    const pwa192Exists = fs.existsSync(path.join(publicDir, "pwa-192x192.png"));
+    const pwa512Exists = fs.existsSync(path.join(publicDir, "pwa-512x512.png"));
+    const pwaMaskableExists = fs.existsSync(path.join(publicDir, "pwa-maskable-512x512.png"));
+    const publicSitemapSynced =
+      fs.existsSync(path.join(publicDir, "sitemap.xml")) &&
+      fs.readFileSync(path.join(publicDir, "sitemap.xml"), "utf-8") === sitemapXml;
+
+    return res.json({
+      adminEmail: req.user?.email,
+      checkedAt: new Date().toISOString(),
+      canonicalCount: CANONICAL_URLS.length,
+      checks: [
+        { id: "sitemap_xml", label: "Google Sitemap XML (25 URLs)", ok: publicSitemapSynced, url: "https://www.pendo.website/sitemap.xml" },
+        { id: "sitemap_index", label: "Google Sitemap Index XML", ok: fs.existsSync(path.join(publicDir, "sitemap_index.xml")), url: "https://www.pendo.website/sitemap_index.xml" },
+        { id: "robots_txt", label: "Clean robots.txt (No Invalid Directives, Blocks /admin)", ok: !robotsTxt.includes("Agentmap:") && robotsTxt.includes("Disallow: /admin"), url: "https://www.pendo.website/robots.txt" },
+        { id: "google_verif", label: "Google Search Console HTML Verification", ok: googleVerifExists, url: "https://www.pendo.website/google00332d67777e965d.html" },
+        { id: "bing_verif", label: "Bing Webmaster Verification XML", ok: bingVerifExists, url: "https://www.pendo.website/BingSiteAuth.xml" },
+        { id: "assetlinks", label: "Android TWA Digital Asset Links", ok: assetLinksExists, url: "https://www.pendo.website/.well-known/assetlinks.json" },
+        { id: "apple_assoc", label: "Apple Universal Links Association", ok: appleAssocExists, url: "https://www.pendo.website/.well-known/apple-app-site-association" },
+        { id: "pwa_icons", label: "PWA Store Icons (192, 512, Maskable)", ok: pwa192Exists && pwa512Exists && pwaMaskableExists, url: "https://www.pendo.website/pwa-512x512.png" },
+      ],
+    });
+  });
+
+  app.post("/api/admin/indexnow", requireVincentAdmin, async (req: AuthRequest, res) => {
+    try {
+      const canonicalHost = "www.pendo.website";
+      const key = "8zvbpmffgtwz251x44qqw5h5ugnvyyva";
+      const payload = {
+        host: canonicalHost,
+        key,
+        keyLocation: `https://${canonicalHost}/${key}.txt`,
+        urlList: CANONICAL_URLS,
+      };
+      const response = await fetch("https://api.indexnow.org/indexnow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+      return res.json({
+        success: response.ok,
+        status: response.status,
+        submittedCount: CANONICAL_URLS.length,
+        message: response.ok
+          ? `Submitted all ${CANONICAL_URLS.length} URLs to IndexNow (Bing, Yandex, Ahrefs)`
+          : `IndexNow responded with HTTP ${response.status}`,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err?.message || "Failed to notify IndexNow" });
+    }
   });
 
   app.post("/api/gemini/call", async (req, res) => {
@@ -548,6 +477,10 @@ async function startServer() {
       console.error("Error syncing user:", error);
       res.status(500).json({ error: "Failed to sync user" });
     }
+  });
+
+  app.use('/api', (_req, res) => {
+    return res.status(404).json({ error: 'API endpoint not found' });
   });
 
   // Vite middleware for development, Express static with immutable caching for Render production
@@ -580,14 +513,22 @@ async function startServer() {
         },
       })
     );
+    const knownSpaPaths = new Set(['/', '/admin', ...SEO_ROUTES.map((r) => r.path.toLowerCase())]);
     app.get('*all', (req, res) => {
       res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      const normalizedPath = req.path.toLowerCase().replace(/\/+$/, '') || '/';
+      if (normalizedPath === '/admin') {
+        res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+      }
       const cleanSlug = req.path.replace(/^\/+|\/+$/g, '');
       const routeHtml = cleanSlug ? path.join(distPath, cleanSlug, 'index.html') : '';
       if (routeHtml && routeHtml.startsWith(distPath) && fs.existsSync(routeHtml)) {
         return res.sendFile(routeHtml);
       }
-      res.sendFile(path.join(distPath, 'index.html'));
+      if (!knownSpaPaths.has(normalizedPath)) {
+        return res.status(404).sendFile(path.join(distPath, 'index.html'));
+      }
+      return res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 

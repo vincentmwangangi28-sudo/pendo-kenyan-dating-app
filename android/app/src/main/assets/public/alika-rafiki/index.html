@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      (function() {
+        var OrigWebSocket = window.WebSocket;
+        if (OrigWebSocket) {
+          var PatchedWebSocket = function(url, protocols) {
+            var protoStr = Array.isArray(protocols) ? protocols.join(',') : String(protocols || '');
+            if (protoStr.indexOf('vite-hmr') !== -1 || protoStr.indexOf('vite-ping') !== -1) {
+              var dummy = new EventTarget();
+              dummy.url = url;
+              dummy.readyState = 1;
+              dummy.protocol = protoStr;
+              dummy.extensions = '';
+              dummy.bufferedAmount = 0;
+              dummy.binaryType = 'blob';
+              dummy.send = function() {};
+              dummy.close = function() { dummy.readyState = 3; };
+              setTimeout(function() {
+                if (typeof dummy.onopen === 'function') dummy.onopen(new Event('open'));
+                dummy.dispatchEvent(new Event('open'));
+              }, 10);
+              return dummy;
+            }
+            return protocols !== undefined ? new OrigWebSocket(url, protocols) : new OrigWebSocket(url);
+          };
+          PatchedWebSocket.prototype = OrigWebSocket.prototype;
+          PatchedWebSocket.CONNECTING = OrigWebSocket.CONNECTING;
+          PatchedWebSocket.OPEN = OrigWebSocket.OPEN;
+          PatchedWebSocket.CLOSING = OrigWebSocket.CLOSING;
+          PatchedWebSocket.CLOSED = OrigWebSocket.CLOSED;
+          window.WebSocket = PatchedWebSocket;
+        }
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alika Rafiki | Invite Friends &amp; Free Boost — Pendo</title>
+    <meta name="description" content="Share Pendo with your friends on WhatsApp to earn +10% Ngao Trust Score and unlock a free 30-minute Profile Boost in Kenya." />
+    <meta name="keywords" content="Alika Rafiki Pendo, Kenyan dating referral, free Pendo boost, WhatsApp dating invite Kenya" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="theme-color" content="#e11d48" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Pendo" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
+    <link rel="canonical" href="https://www.pendo.website/alika-rafiki" />
+    <link rel="alternate" hreflang="en-KE" href="https://www.pendo.website/alika-rafiki" />
+    <link rel="alternate" hreflang="x-default" href="https://www.pendo.website/alika-rafiki" />
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="https://www.pendo.website/sitemap.xml" />
+    <meta name="google-site-verification" content="google00332d67777e965d" />
+    <meta name="msvalidate.01" content="1A704EBF4AD6B5D3CFBA2F15F6D5689E" />
+    <meta name="indexnow-key" content="cguyxqk3krxuvjeesrp67h8cmz7cvvmn" />
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_KE" />
+    <meta property="og:url" content="https://www.pendo.website/alika-rafiki" />
+    <meta property="og:title" content="Alika Rafiki | Invite Friends &amp; Free Boost — Pendo" />
+    <meta property="og:description" content="Share Pendo with your friends on WhatsApp to earn +10% Ngao Trust Score and unlock a free 30-minute Profile Boost in Kenya." />
+    <meta property="og:image" content="https://www.pendo.website/pwa-512x512.png" />
+    <meta property="og:image:alt" content="Pendo — Kenya's #1 Verified Dating & Matchmaking App" />
+    <meta property="og:site_name" content="Pendo Kenya" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://www.pendo.website/alika-rafiki" />
+    <meta name="twitter:title" content="Alika Rafiki | Invite Friends &amp; Free Boost — Pendo" />
+    <meta name="twitter:description" content="Share Pendo with your friends on WhatsApp to earn +10% Ngao Trust Score and unlock a free 30-minute Profile Boost in Kenya." />
+    <meta name="twitter:image" content="https://www.pendo.website/pwa-512x512.png" />
+
+    <!-- Schema.org JSON-LD for Google Rich Results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": "Pendo Dating Kenya",
+          "url": "https://www.pendo.website/alika-rafiki",
+          "applicationCategory": "SocialNetworkingApplication",
+          "operatingSystem": "All",
+          "inLanguage": ["en-KE", "sw-KE"],
+          "areaServed": {
+            "@type": "Country",
+            "name": "Kenya"
+          },
+          "description": "Find authentic Kenyan singles for real relationships 100% free. Connect with verified matches through voice lounges, Virtual Zawadi, and safe video dates on Pendo.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "KES"
+          }
+        },
+        {
+          "@type": "Organization",
+          "name": "Pendo Kenya",
+          "url": "https://www.pendo.website/",
+          "logo": "https://www.pendo.website/pwa-512x512.png",
+          "areaServed": ["KE", "GB", "US", "AE", "CA", "AU"]
+        }
+      ]
+    }
+    </script>
+    <script id="pendo-faq-schema" type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How can I meet verified singles on Invite & Free Boost (Nairobi)?","acceptedAnswer":{"@type":"Answer","text":"Invite trusted Kenyan friends on WhatsApp to unlock +10% Pendo Ngao Trust Score and a free 30-minute Profile Boost. Sign in with Google to preview Free 30-Min Boost profiles and filter by Pendo Ngao Trust Score."}},{"@type":"Question","name":"Is Invite & Free Boost safe for first dates in Nairobi?","acceptedAnswer":{"@type":"Answer","text":"Yes. Pendo pairs Nairobi members with curated public first-date venues, live Google Meet video pre-dates, and Pendo Ngao Live Date Safety check-ins."}},{"@type":"Question","name":"What is the best dating app in Kenya for serious relationships?","acceptedAnswer":{"@type":"Answer","text":"Pendo is Kenya’s leading verified dating and matchmaking app for intentional relationships and marriage, connecting ID- and selfie-verified singles across Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, and the Kenyan diaspora."}},{"@type":"Question","name":"Is Pendo 100% free to use for singles in Kenya?","acceptedAnswer":{"@type":"Answer","text":"Yes! Pendo is 100% free with no subscriptions or paywalls. Creating a verified profile, unlimited swipes, Profile Boosts, Virtual Zawadi gifts, Vibe Circles, live Voice Lounges, and chatting with matches are completely free."}},{"@type":"Question","name":"How does Pendo verify Kenyan singles to prevent catfishing?","acceptedAnswer":{"@type":"Answer","text":"Every Pendo profile receives a 0–100% Pendo Ngao Trust Score combining Google Authentication, live camera pose selfie checks, voice intro, and profile authenticity so you only meet real, verified Kenyan singles."}},{"@type":"Question","name":"Which Kenyan cities and diaspora hubs are supported on Pendo?","acceptedAnswer":{"@type":"Answer","text":"Pendo connects verified singles in Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, Thika, Diani, Naivasha, Nanyuki, Nyeri, Machakos, and Kenyan diaspora communities across the UK, USA, UAE, Canada, and Australia."}},{"@type":"Question","name":"Where are the safest first-date spots in Nairobi and Mombasa?","acceptedAnswer":{"@type":"Answer","text":"Pendo recommends vetted public Kenyan venues including Westlands rooftops, Kilimani coffee lounges, and Karura Forest trails in Nairobi, plus Nyali oceanfront lounges and Old Town cafes in Mombasa."}},{"@type":"Question","name":"Are Virtual Zawadi gifts and table invites free on Pendo?","acceptedAnswer":{"@type":"Answer","text":"Yes. Sending Virtual Zawadi gifts (Chai, Dawa, Nyama Choma), sharing date table invites at Kenyan hangout spots, RSVP’ing to Vibe Meetups, and activating Profile Boosts are 100% free with zero fees."}},{"@type":"Question","name":"What is Live Date Safety Check-In on Pendo?","acceptedAnswer":{"@type":"Answer","text":"Pendo Ngao Live Date Safety Check-In lets you share your meeting venue, date details, and timed check-in alerts with trusted emergency contacts for safe in-person dates in Kenya."}},{"@type":"Question","name":"How do Pendo Live Voice Lounges and Auntie Shosh AI work?","acceptedAnswer":{"@type":"Answer","text":"Live Voice Lounges let Kenyan singles break the ice through real-time voice speed dating before sharing numbers, while Auntie Shosh AI offers witty Sheng and Swahili dating advice and conversation starters."}}]}</script>
+    <!-- Resource Preconnect & DNS Hints for Mobile Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+    <link rel="dns-prefetch" href="https://analytics.ahrefs.com" />
+    <link rel="dns-prefetch" href="https://picsum.photos" />
+
+    <!-- Non-Blocking Google Fonts (Swap & Fallback) -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    </noscript>
+
+    <!-- Ahrefs Analytics (Deferred for Zero TBT on Mobile) -->
+    <script>
+      window.addEventListener('load', function() {
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(function() {
+            var s = document.createElement('script');
+            s.src = "https://analytics.ahrefs.com/analytics.js";
+            s.dataset.key = "e3R4siP2DYpD0XoWG15Rew";
+            s.async = true;
+            document.head.appendChild(s);
+          });
+        } else {
+          setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = "https://analytics.ahrefs.com/analytics.js";
+            s.dataset.key = "e3R4siP2DYpD0XoWG15Rew";
+            s.async = true;
+            document.head.appendChild(s);
+          }, 2000);
+        }
+      });
+    </script>
+    <style>
+      body {
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background-color: #f8fafc;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+      /* Hide scrollbar for clean UI in chat/deck */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+    <script>
+      window.global = window;
+      window.process = {
+        env: {
+          NODE_ENV: 'development',
+          API_KEY: '',
+          GEMINI_API_KEY: ''
+        },
+        versions: {},
+        platform: 'browser'
+      };
+
+      // Suppress transient WebSocket errors in cloud/iframe environment per platform guidelines
+      window.addEventListener('error', function(e) {
+        if (e && e.message && (e.message.includes('WebSocket') || e.message.includes('closed without opened'))) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        if (e && e.reason && (String(e.reason).includes('WebSocket') || String(e.reason).includes('closed without opened'))) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
+    </script>
+    <script type="module" crossorigin src="/assets/index-BXKccALh.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-icons-DHOgfPWe.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-react-CbMFG7l6.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-firebase-elfRJ0jG.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-D_8Tsv-O.css">
+  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script>  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Pendo Kenya","item":"https://www.pendo.website/"},{"@type":"ListItem","position":2,"name":"Invite & Free Boost","item":"https://www.pendo.website/alika-rafiki"}]}</script>
+  </head>
+  <body>
+    <div id="root">
+      <main id="main-content" style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; text-align: center; background: linear-gradient(135deg, #e11d48 0%, #be123c 50%, #020617 100%); color: #ffffff;">
+        <div style="max-width: 24rem; width: 100%; display: flex; flex-direction: column; align-items: center;">
+          <div style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.75rem; border-radius: 9999px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.3); font-size: 11px; font-weight: 800; color: #fde047; margin-bottom: 1rem;">
+            <span>Kenya's #1 Verified Dating & Matchmaking Community</span>
+          </div>
+          <div style="width: 4rem; height: 4rem; border-radius: 1rem; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);">
+            🔥
+          </div>
+          <h1 style="font-size: 1.875rem; font-weight: 900; color: #ffffff; margin-bottom: 0.5rem; letter-spacing: -0.025em; line-height: 1.25;">Alika Rafiki — Free Pendo Boost &amp; Trust Score</h1>
+          <p style="color: #ffffff; font-size: 0.75rem; font-weight: 500; line-height: 1.5; margin-bottom: 1.25rem;">Invite trusted Kenyan friends on WhatsApp to unlock +10% Pendo Ngao Trust Score and a free 30-minute Profile Boost.</p>
+          <div style="width: 1.5rem; height: 1.5rem; border: 3px solid #fde047; border-top-color: transparent; border-radius: 9999px; animation: spin 1s linear infinite;"></div>
+          <nav aria-label="Kenyan &amp; Diaspora Dating Routes" style="margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 32rem;"><a href="/nairobi-dating" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Nairobi Singles</a><a href="/mombasa-dating" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Mombasa Singles</a><a href="/kisumu-dating" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Kisumu Singles</a><a href="/nakuru-dating" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Nakuru Singles</a><a href="/eldoret-dating" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Eldoret Singles</a><a href="/thika-dating" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Thika &amp; Kiambu</a><a href="/diani-dating" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Diani &amp; South Coast</a><a href="/naivasha-dating" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Naivasha Singles</a><a href="/nanyuki-dating" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Nanyuki &amp; Mt Kenya</a><a href="/nyeri-dating" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Nyeri Singles</a><a href="/machakos-dating" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Machakos &amp; Syokimau</a><a href="/kenyan-diaspora" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Kenyan Diaspora</a><a href="/serious-relationships-kenya" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Marriage &amp; Serious</a><a href="/christian-dating-kenya" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Christian Singles KE</a><a href="/muslim-dating-kenya" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Muslim Singles KE</a><a href="/voice-lounge" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Live Voice Baraza</a><a href="/alika-rafiki" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Invite &amp; Free Boost</a><a href="/kilimani-mums" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Kilimani Mums</a><a href="/mama-wa-harrier" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Mama wa Harrier</a><a href="/ben10-dating-kenya" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Ben 10 Kenya</a><a href="/wababa-soft-life-kenya" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Wababa &amp; Soft Life</a><a href="/campus-dating-kenya" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Campus Singles KE</a><a href="/diaspora-uk-usa-kenyans" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">UK &amp; USA Kenyans</a><a href="/vibe-circles" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Vibe Circles &amp; Events</a></nav>
+          <section aria-label="Frequently Asked Questions" style="margin-top: 1rem; text-align: left; max-width: 24rem; width: 100%; font-size: 11px; color: #e2e8f0;"><details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">How can I meet verified singles on Invite &amp; Free Boost (Nairobi)?</summary><p style="margin-top: 0.25rem;">Invite trusted Kenyan friends on WhatsApp to unlock +10% Pendo Ngao Trust Score and a free 30-minute Profile Boost. Sign in with Google to preview Free 30-Min Boost profiles and filter by Pendo Ngao Trust Score.</p></details><details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">Is Invite &amp; Free Boost safe for first dates in Nairobi?</summary><p style="margin-top: 0.25rem;">Yes. Pendo pairs Nairobi members with curated public first-date venues, live Google Meet video pre-dates, and Pendo Ngao Live Date Safety check-ins.</p></details><details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">What is the best dating app in Kenya for serious relationships?</summary><p style="margin-top: 0.25rem;">Pendo is Kenya’s leading verified dating and matchmaking app for intentional relationships and marriage, connecting ID- and selfie-verified singles across Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, and the Kenyan diaspora.</p></details><details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">Is Pendo 100% free to use for singles in Kenya?</summary><p style="margin-top: 0.25rem;">Yes! Pendo is 100% free with no subscriptions or paywalls. Creating a verified profile, unlimited swipes, Profile Boosts, Virtual Zawadi gifts, Vibe Circles, live Voice Lounges, and chatting with matches are completely free.</p></details><details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">How does Pendo verify Kenyan singles to prevent catfishing?</summary><p style="margin-top: 0.25rem;">Every Pendo profile receives a 0–100% Pendo Ngao Trust Score combining Google Authentication, live camera pose selfie checks, voice intro, and profile authenticity so you only meet real, verified Kenyan singles.</p></details><details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">Which Kenyan cities and diaspora hubs are supported on Pendo?</summary><p style="margin-top: 0.25rem;">Pendo connects verified singles in Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, Thika, Diani, Naivasha, Nanyuki, Nyeri, Machakos, and Kenyan diaspora communities across the UK, USA, UAE, Canada, and Australia.</p></details><details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">Where are the safest first-date spots in Nairobi and Mombasa?</summary><p style="margin-top: 0.25rem;">Pendo recommends vetted public Kenyan venues including Westlands rooftops, Kilimani coffee lounges, and Karura Forest trails in Nairobi, plus Nyali oceanfront lounges and Old Town cafes in Mombasa.</p></details><details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">Are Virtual Zawadi gifts and table invites free on Pendo?</summary><p style="margin-top: 0.25rem;">Yes. Sending Virtual Zawadi gifts (Chai, Dawa, Nyama Choma), sharing date table invites at Kenyan hangout spots, RSVP’ing to Vibe Meetups, and activating Profile Boosts are 100% free with zero fees.</p></details><details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">What is Live Date Safety Check-In on Pendo?</summary><p style="margin-top: 0.25rem;">Pendo Ngao Live Date Safety Check-In lets you share your meeting venue, date details, and timed check-in alerts with trusted emergency contacts for safe in-person dates in Kenya.</p></details><details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">How do Pendo Live Voice Lounges and Auntie Shosh AI work?</summary><p style="margin-top: 0.25rem;">Live Voice Lounges let Kenyan singles break the ice through real-time voice speed dating before sharing numbers, while Auntie Shosh AI offers witty Sheng and Swahili dating advice and conversation starters.</p></details></section>
+        </div>
+      </main>
+    </div>
+    <noscript>
+      <div style="padding: 2rem; text-align: center; font-family: sans-serif; background-color: #ffffff;">
+        <h1>Alika Rafiki — Free Pendo Boost &amp; Trust Score</h1>
+        <p>Invite trusted Kenyan friends on WhatsApp to unlock +10% Pendo Ngao Trust Score and a free 30-minute Profile Boost.</p>
+      </div>
+    </noscript>
+  </body>
+</html>

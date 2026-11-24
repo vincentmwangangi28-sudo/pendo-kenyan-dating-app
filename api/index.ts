@@ -1,12 +1,9 @@
 import express from "express";
-import { requireAuth, AuthRequest } from "../src/middleware/auth.ts";
+import { requireAuth, requireVincentAdmin, AuthRequest } from "../src/middleware/auth.ts";
 import { getOrCreateUser } from "../src/db/users.ts";
 import * as geminiServer from "../services/geminiServerService.ts";
-import { CANONICAL_URLS, generateSitemapXml } from "../src/lib/seoRoutes.ts";
+import { CANONICAL_URLS, generateSitemapXml, generateSitemapIndexXml } from "../src/lib/seoRoutes.ts";
 import {
-  recordMpesaCheckout,
-  getMpesaCheckout,
-  finalizeMpesaCheckout,
   listVibeMeetups,
   toggleVibeMeetupRsvp,
   addUserNotification,
@@ -14,12 +11,6 @@ import {
   markUserNotificationsRead,
   savePushSubscription,
 } from "../src/db/ledger.ts";
-import {
-  normalizeKenyanMsisdn,
-  generateSandboxReceiptCode,
-  initiateDarajaStkPush,
-  parseDarajaCallbackPayload,
-} from "../src/lib/mpesaDaraja.ts";
 import { AppNotification, AppView } from "../types.ts";
 
 const app = express();
@@ -54,7 +45,7 @@ app.get(["/llms.txt", "/api/llms.txt"], (req, res) => {
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
   res.send(`# Pendo — Kenya's #1 Dating & Matchmaking Platform
 
-> Pendo is the leading Kenyan dating and matchmaking web application designed for verified singles in Nairobi, Mombasa, Kisumu, Nakuru, and Eldoret. Featuring M-Pesa Zawadi gifts, Live Date Safety Shield (Matatu Fare Shield), Sheng AI Wingman, and real-time Voice Lounges.
+> Pendo is Kenya's 100% free dating and matchmaking web application designed for verified singles in Nairobi, Mombasa, Kisumu, Nakuru, and Eldoret. Featuring free Virtual Zawadi gifts, Live Date Safety Check-In (Pendo Ngao), Sheng AI Wingman, and real-time Voice Lounges.
 
 ## Canonical Web Resources
 - [Home & City Dating Directory](https://www.pendo.website/): Discover verified singles across Kenyan urban hubs with zero catfishing.
@@ -78,12 +69,12 @@ app.get(["/llms.txt", "/api/llms.txt"], (req, res) => {
 - [Kilimani Mums](https://www.pendo.website/kilimani-mums): Verified, established Nairobi queens in Kilimani, Kileleshwa & Lavington.
 - [Mama wa Harrier](https://www.pendo.website/mama-wa-harrier): Confident Kenyan boss ladies for road trips, fine dining & companionship.
 - [Ben 10 Kenya](https://www.pendo.website/ben10-dating-kenya): Verified young Kenyan gentlemen (21+) bringing fitness, energy & attentive company.
-- [Wababa & Soft Life](https://www.pendo.website/wababa-soft-life-kenya): VIP matchmaking, fine dining & Diani getaways in Runda, Karen & Westlands.
+- [Wababa & Soft Life](https://www.pendo.website/wababa-soft-life-kenya): Established gents, fine dining & Diani getaways in Runda, Karen & Westlands — 100% free access.
 
 ## Trust & Safety Architecture
-- Pendo Ngao Trust Score: Explainable 0–100 identity verification score based on Google Auth, live camera selfie pose checks, and community standing.
-- Matatu Fare Shield & Safe Date Check-in: Real-time emergency check-in sharing trusted contact emergency numbers and fare guarantees.
-- Local M-Pesa STK Push: Transparent KES transactions for date reservations, virtual gifts (Chai, Dawa, Nyama Choma), and Pendo Gold.
+- Pendo Ngao Trust Score: Explainable 0–100 identity verification score based on Google Auth, live camera selfie pose checks, voice intro, and profile authenticity.
+- Safe Date Check-in: Real-time emergency check-in sharing trusted contact emergency numbers and venue details.
+- 100% Free Forever: Unlimited swipes, profile boosts, Vibe Circles, meetups, date planning, and Virtual Zawadi gifts (Chai, Dawa, Nyama Choma) at zero cost.
 `);
 });
 
@@ -105,10 +96,10 @@ app.get(["/ai-catalog.json", "/api/ai-catalog.json"], (req, res) => {
         url: "https://www.pendo.website/#city-nairobi"
       },
       {
-        identifier: "urn:air:pendo.website:mpesa-checkout",
-        displayName: "M-Pesa STK Push Integration",
+        identifier: "urn:air:pendo.website:vibe-meetups",
+        displayName: "Free Kenyan Vibe Circle Meetups",
         type: "api",
-        url: "https://www.pendo.website/api/mpesa/stk-push"
+        url: "https://www.pendo.website/api/vibes/meetups"
       },
       {
         identifier: "urn:air:pendo.website:safety-shield",
@@ -139,7 +130,7 @@ app.get(["/8zvbpmffgtwz251x44qqw5h5ugnvyyva.txt", "/api/8zvbpmffgtwz251x44qqw5h5
 app.get(["/robots.txt", "/api/robots.txt"], (req, res) => {
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
   res.send(
-    "User-agent: Googlebot\nAllow: /\nDisallow: /api/\n\nUser-agent: Googlebot-Image\nAllow: /\n\nUser-agent: Google-InspectionTool\nAllow: /\n\nUser-agent: Bingbot\nAllow: /\nDisallow: /api/\n\nUser-agent: AhrefsBot\nAllow: /\n\nUser-agent: AhrefsSiteAudit\nAllow: /\n\nUser-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://www.pendo.website/sitemap.xml\nAgentmap: https://www.pendo.website/ai-catalog.json\n"
+    "User-agent: Googlebot\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nUser-agent: Googlebot-Image\nAllow: /\n\nUser-agent: Google-InspectionTool\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nUser-agent: Bingbot\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nUser-agent: AhrefsBot\nAllow: /\nDisallow: /admin\n\nUser-agent: AhrefsSiteAudit\nAllow: /\nDisallow: /admin\n\nUser-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nSitemap: https://www.pendo.website/sitemap.xml\nSitemap: https://www.pendo.website/sitemap_index.xml\n"
   );
 });
 
@@ -147,6 +138,81 @@ app.get(["/sitemap.xml", "/api/sitemap.xml"], (req, res) => {
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=3600");
   res.send(generateSitemapXml());
+});
+
+app.get(["/sitemap_index.xml", "/api/sitemap_index.xml"], (req, res) => {
+  res.setHeader("Content-Type", "application/xml; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.send(generateSitemapIndexXml());
+});
+
+app.get("/.well-known/assetlinks.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.json([
+    {
+      relation: ["delegate_permission/common.handle_all_urls"],
+      target: {
+        namespace: "android_app",
+        package_name: "com.pendo.kenyandating",
+        sha256_cert_fingerprints: ["REPLACE_WITH_YOUR_ANDROID_SIGNING_SHA256_FINGERPRINT"],
+      },
+    },
+  ]);
+});
+
+app.get("/.well-known/apple-app-site-association", (req, res) => {
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.json({
+    applinks: {
+      apps: [],
+      details: [{ appID: "TEAMID.com.pendo.kenyandating", paths: ["/", "/*"] }],
+    },
+  });
+});
+
+app.get("/api/admin/seo-audit", requireVincentAdmin, (req: AuthRequest, res) => {
+  return res.json({
+    adminEmail: req.user?.email,
+    checkedAt: new Date().toISOString(),
+    canonicalCount: CANONICAL_URLS.length,
+    checks: [
+      { id: "sitemap_xml", label: "Google Sitemap XML (25 URLs)", ok: true, url: "https://www.pendo.website/sitemap.xml" },
+      { id: "sitemap_index", label: "Google Sitemap Index XML", ok: true, url: "https://www.pendo.website/sitemap_index.xml" },
+      { id: "robots_txt", label: "Clean robots.txt (Blocks /admin & /api/)", ok: true, url: "https://www.pendo.website/robots.txt" },
+      { id: "google_verif", label: "Google Search Console HTML Verification", ok: true, url: "https://www.pendo.website/google00332d67777e965d.html" },
+      { id: "bing_verif", label: "Bing Webmaster Verification XML", ok: true, url: "https://www.pendo.website/BingSiteAuth.xml" },
+      { id: "assetlinks", label: "Android TWA Digital Asset Links", ok: true, url: "https://www.pendo.website/.well-known/assetlinks.json" },
+      { id: "apple_assoc", label: "Apple Universal Links Association", ok: true, url: "https://www.pendo.website/.well-known/apple-app-site-association" },
+      { id: "pwa_icons", label: "PWA Store Icons (192, 512, Maskable)", ok: true, url: "https://www.pendo.website/pwa-512x512.png" },
+    ],
+  });
+});
+
+app.post("/api/admin/indexnow", requireVincentAdmin, async (req: AuthRequest, res) => {
+  try {
+    const key = "8zvbpmffgtwz251x44qqw5h5ugnvyyva";
+    const payload = {
+      host: "www.pendo.website",
+      key,
+      keyLocation: `https://www.pendo.website/${key}.txt`,
+      urlList: CANONICAL_URLS,
+    };
+    const response = await fetch("https://api.indexnow.org/indexnow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify(payload),
+    });
+    return res.json({
+      success: response.ok,
+      status: response.status,
+      submittedCount: CANONICAL_URLS.length,
+      message: response.ok
+        ? `Submitted all ${CANONICAL_URLS.length} URLs to IndexNow (Bing, Yandex, Ahrefs)`
+        : `IndexNow responded with HTTP ${response.status}`,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message || "Failed to notify IndexNow" });
+  }
 });
 
 // Health Check
@@ -184,115 +250,6 @@ app.post("/api/users/sync", requireAuth, async (req: AuthRequest, res) => {
     console.error("Error syncing user:", error);
     res.status(500).json({ error: "Failed to sync user" });
   }
-});
-
-// M-Pesa STK Push Express Endpoint (Safaricom Daraja 2.0 + Ledger)
-app.post("/api/mpesa/stk-push", async (req, res) => {
-  try {
-    const { phone, amountKes, purpose, itemName, recipientName, userId } = req.body || {};
-    const msisdn = normalizeKenyanMsisdn(phone);
-
-    if (!msisdn) {
-      return res.status(400).json({ error: "Invalid Kenyan phone number format. Provide 07... or 254..." });
-    }
-
-    const resolvedAmount = Math.max(1, Number(amountKes) || 150);
-    const resolvedPurpose = String(purpose || "GOLD_SUBSCRIPTION");
-    const resolvedItemName = String(itemName || "Pendo Gold");
-
-    const stk = await initiateDarajaStkPush({
-      msisdn,
-      amountKes: resolvedAmount,
-      purpose: resolvedPurpose,
-      itemName: resolvedItemName,
-    });
-
-    const pendingRecord = await recordMpesaCheckout({
-      checkoutRequestId: stk.checkoutRequestId,
-      merchantRequestId: stk.merchantRequestId,
-      userId: String(userId || "guest_user"),
-      phone: `+${msisdn}`,
-      amountKes: resolvedAmount,
-      purpose: resolvedPurpose,
-      itemName: resolvedItemName,
-      recipientName: recipientName || null,
-      receiptNumber: stk.receiptPreview || null,
-      status: "PENDING",
-      resultDesc: stk.customerMessage,
-      mode: stk.mode,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-
-    return res.json({
-      success: true,
-      mode: stk.mode,
-      merchantRequestId: stk.merchantRequestId,
-      checkoutRequestId: stk.checkoutRequestId,
-      responseCode: stk.responseCode,
-      customerMessage: stk.customerMessage,
-      receiptNumber: pendingRecord.receiptNumber,
-      status: pendingRecord.status,
-      amountKes: resolvedAmount,
-      purpose: resolvedPurpose,
-      itemName: resolvedItemName,
-      recipientName: recipientName || null,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message || "M-Pesa STK Push gateway error" });
-  }
-});
-
-app.post("/api/mpesa/callback", async (req, res) => {
-  try {
-    const parsed = parseDarajaCallbackPayload(req.body);
-    if (!parsed.checkoutRequestId) {
-      return res.status(400).json({ error: "Missing CheckoutRequestID." });
-    }
-    const nextStatus = parsed.resultCode === 0 ? "COMPLETED" : "FAILED";
-    const receipt =
-      nextStatus === "COMPLETED"
-        ? parsed.receiptNumber || generateSandboxReceiptCode("QKL")
-        : null;
-    const updated = await finalizeMpesaCheckout(
-      parsed.checkoutRequestId,
-      nextStatus,
-      receipt,
-      parsed.resultDesc
-    );
-    if (!updated) {
-      return res.status(404).json({ error: "Checkout transaction not found." });
-    }
-    return res.json({ ResultCode: 0, ResultDesc: "Accepted", transaction: updated });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message || "Callback processing failed" });
-  }
-});
-
-app.post("/api/mpesa/sandbox-confirm", async (req, res) => {
-  try {
-    const { checkoutRequestId } = req.body || {};
-    if (!checkoutRequestId) return res.status(400).json({ error: "checkoutRequestId is required." });
-    const existing = await getMpesaCheckout(String(checkoutRequestId));
-    if (!existing) return res.status(404).json({ error: "Transaction not found." });
-    if (existing.mode !== "SANDBOX") return res.status(403).json({ error: "Forbidden in Live mode." });
-    const updated = await finalizeMpesaCheckout(
-      existing.checkoutRequestId,
-      "COMPLETED",
-      existing.receiptNumber || generateSandboxReceiptCode("SGK"),
-      "Sandbox Verified"
-    );
-    return res.json({ success: true, transaction: updated });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message || "Sandbox confirm failed" });
-  }
-});
-
-app.get("/api/mpesa/status/:checkoutRequestId", async (req, res) => {
-  const tx = await getMpesaCheckout(req.params.checkoutRequestId);
-  if (!tx) return res.status(404).json({ error: "Transaction not found" });
-  return res.json({ success: true, transaction: tx });
 });
 
 app.get("/api/vibes/meetups", async (req, res) => {
@@ -365,7 +322,7 @@ app.post("/api/safety/checkin", async (req, res) => {
       success: true,
       checkinId: checkin.id || `chk_${Date.now()}`,
       status: "ACTIVE",
-      message: "Live Date Safety Check-In & Matatu Fare Shield registered with Pendo Ngao.",
+      message: "Live Date Safety Check-In registered with Pendo Ngao.",
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {

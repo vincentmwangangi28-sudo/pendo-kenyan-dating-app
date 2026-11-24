@@ -1,0 +1,53 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Pendo Dating Kenya",
+    "identifier": "did:web:pendo.website",
+    "documentationUrl": "https://www.pendo.website/llms.txt",
+    "logoUrl": "https://www.pendo.website/pwa-512x512.png"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:pendo.website:nairobi-dating",
+      "displayName": "Nairobi Verified Singles Directory",
+      "type": "web",
+      "url": "https://www.pendo.website/nairobi-dating"
+    },
+    {
+      "identifier": "urn:air:pendo.website:vibe-circles",
+      "displayName": "Kenyan Vibe Circles & Meetup Events",
+      "type": "web",
+      "url": "https://www.pendo.website/vibe-circles"
+    },
+    {
+      "identifier": "urn:air:pendo.website:campus-dating-kenya",
+      "displayName": "Kenyan Campus Singles Hub",
+      "type": "web",
+      "url": "https://www.pendo.website/campus-dating-kenya"
+    },
+    {
+      "identifier": "urn:air:pendo.website:kenyan-diaspora",
+      "displayName": "Kenyan Diaspora Singles Hub",
+      "type": "web",
+      "url": "https://www.pendo.website/kenyan-diaspora"
+    },
+    {
+      "identifier": "urn:air:pendo.website:safety-shield",
+      "displayName": "Pendo Ngao Date Safety Check-In",
+      "type": "api",
+      "url": "https://www.pendo.website/api/safety/checkin"
+    },
+    {
+      "identifier": "urn:air:pendo.website:vibe-meetups",
+      "displayName": "Kenyan Vibe Circle Meetups API",
+      "type": "api",
+      "url": "https://www.pendo.website/api/vibes/meetups"
+    },
+    {
+      "identifier": "urn:air:pendo.website:indexnow",
+      "displayName": "IndexNow Search Engine Indexing",
+      "type": "api",
+      "url": "https://www.pendo.website/api/indexnow/submit"
+    }
+  ]
+}

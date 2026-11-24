@@ -1,6 +1,6 @@
-# Pendo — Kenya's #1 Dating & Matchmaking Platform
+# Pendo — Kenya's #1 Free Dating & Matchmaking Platform
 
-> Pendo is the leading Kenyan dating and matchmaking web application designed for verified singles in Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, Thika, Diani, Naivasha, Nanyuki, Nyeri, Machakos, and the Kenyan Diaspora. Featuring M-Pesa Zawadi gifts, Live Date Safety Shield (Matatu Fare Shield), Sheng AI Wingman, and real-time Voice Lounges.
+> Pendo is Kenya's 100% free dating and matchmaking web application designed for verified singles in Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, Thika, Diani, Naivasha, Nanyuki, Nyeri, Machakos, and the Kenyan Diaspora. Featuring free Virtual Zawadi gifts, Live Date Safety Check-In (Pendo Ngao), Sheng AI Wingman, and real-time Voice Lounges.
 
 ## Canonical Web Resources & City Hubs
 - [Home & Kenyan Singles Directory](https://www.pendo.website/): Discover verified singles across Kenyan urban hubs with zero catfishing.
@@ -24,12 +24,12 @@
 - [Kilimani Mums](https://www.pendo.website/kilimani-mums): Verified, established Nairobi queens in Kilimani, Kileleshwa & Lavington.
 - [Mama wa Harrier](https://www.pendo.website/mama-wa-harrier): Confident Kenyan boss ladies for road trips, fine dining & companionship.
 - [Ben 10 Kenya](https://www.pendo.website/ben10-dating-kenya): Verified young Kenyan gentlemen (21+) bringing fitness, energy & attentive company.
-- [Wababa & Soft Life](https://www.pendo.website/wababa-soft-life-kenya): VIP matchmaking, fine dining & Diani getaways in Runda, Karen & Westlands.
+- [Wababa & Soft Life](https://www.pendo.website/wababa-soft-life-kenya): Established gents, fine dining & Diani getaways in Runda, Karen & Westlands — 100% free access.
 - [Kenyan Campus Dating](https://www.pendo.website/campus-dating-kenya): Verified Kenyan university singles at UoN, KU, JKUAT, Strathmore & Moi.
 - [Kenyans in UK & USA](https://www.pendo.website/diaspora-uk-usa-kenyans): Diaspora matchmaking in London, Dallas, Atlanta, Toronto & UAE.
-- [Kenyan Vibe Circles & Meetups](https://www.pendo.website/vibe-circles): Take the Vibe Compatibility Quiz and RSVP to safe Kenyan meetup events.
+- [Kenyan Vibe Circles & Meetups](https://www.pendo.website/vibe-circles): Take the Vibe Compatibility Quiz and RSVP free to safe Kenyan meetup events.
 
 ## Trust & Safety Architecture
-- Pendo Ngao Trust Score: Explainable 0–100 identity verification score based on Google Auth, live camera selfie pose checks, and community standing.
-- Matatu Fare Shield & Safe Date Check-in: Real-time emergency check-in sharing trusted contact emergency numbers and fare guarantees.
-- Local M-Pesa Daraja 2.0 STK Push: Transparent KES transactions and callback reconciliation for date reservations, virtual gifts (Chai, Dawa, Nyama Choma), and Pendo Gold.
+- Pendo Ngao Trust Score: Explainable 0–100 identity verification score based on Google Auth, live camera selfie pose checks, voice intro, and bio authenticity.
+- Live Date Safety Check-in: Real-time emergency check-in sharing trusted contact emergency numbers and venue details.
+- 100% Free Forever: Unlimited matching, Profile Boosts, free Virtual Zawadi gifts (Chai, Dawa, Nyama Choma), Hangout Spot table invites, and Vibe Circle Meetups at zero cost.

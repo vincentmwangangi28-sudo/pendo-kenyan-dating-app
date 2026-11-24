@@ -143,7 +143,7 @@ export function useRealtimeNotifications(userId: string) {
         ws.onmessage = (evt) => {
           try {
             const payload = JSON.parse(evt.data);
-            if ((payload.type === 'NOTIFICATION' || payload.type === 'MPESA_CONFIRMED') && payload.notification) {
+            if (payload.type === 'NOTIFICATION' && payload.notification) {
               mergeNotification(payload.notification, true);
             } else if (payload.type === 'MEETUP_UPDATED' && payload.event) {
               setLastMeetupUpdate(payload.event);

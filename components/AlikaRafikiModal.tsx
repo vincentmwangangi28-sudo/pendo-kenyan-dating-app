@@ -29,7 +29,7 @@ export const AlikaRafikiModal: React.FC<AlikaRafikiModalProps> = ({
       id: 'general',
       title: 'WhatsApp Status & Group Invite 🇰🇪',
       desc: 'Perfect for sharing to WhatsApp status or your trusted friend groups.',
-      message: `Oya! 🔥 Cheki Pendo Dating Kenya — verified Kenyan singles pekee with Matatu Fare Shield & Voice Lounges! Join through my link: ${CANONICAL_URL}`,
+      message: `Oya! 🔥 Cheki Pendo Dating Kenya — 100% free verified Kenyan singles pekee with Live Date Safety Check-In & Voice Lounges! Join through my link: ${CANONICAL_URL}`,
       tag: 'Most Popular'
     },
     {
@@ -41,7 +41,7 @@ export const AlikaRafikiModal: React.FC<AlikaRafikiModalProps> = ({
     },
     {
       id: 'safety',
-      title: 'Safe Date & Matatu Shield Invite 🛡️',
+      title: 'Safe Date & Ngao Shield Invite 🛡️',
       desc: 'Invite with emphasis on Pendo Ngao safety features.',
       message: `Dating in Kenya just got safe! Pendo has live date safety check-ins and verified selfie profiles. Check it out: ${CANONICAL_URL}`,
       tag: 'Safety First'

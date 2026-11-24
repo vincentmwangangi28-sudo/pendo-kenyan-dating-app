@@ -588,22 +588,21 @@ interface ChatRoomProps {
   onDeleteMessage: (matchId: string, msgId: string) => void;
   onBlockUser?: (matchId: string) => void;
   typingUsers?: string[];
-  onOpenMpesaGift?: (recipientId: string, recipientName: string) => void;
   onOpenSafetyCheckin?: (matchName: string) => void;
   onStartVoiceCall?: (matchProfile: MatchProfile | null) => void;
 }
 
 export const KENYAN_GIFTS = [
-  { id: 'chai', name: 'Chai ya Tangawizi ☕', price: '100 KES', desc: 'Warm spiced ginger milk tea to break the ice with Kenyan hospitality.', color: 'from-amber-600 to-orange-700', icon: '☕' },
-  { id: 'mahamri', name: 'Mombasa Mahamri & Kahawa 🥐', price: '200 KES', desc: 'Cardamom-spiced coastal mahamri paired with rich Kahawa Tungu.', color: 'from-yellow-600 to-amber-700', icon: '🥐' },
-  { id: 'dawa', name: 'Westlands Dawa Cocktail 🍸', price: '250 KES', desc: 'Kenya\'s signature honey-lime-vodka sundowner for Friday night vibes.', color: 'from-emerald-600 to-teal-700', icon: '🍸' },
-  { id: 'tusker', name: 'Cold Tusker 🍻', price: '150 KES', desc: 'Buy them a legendary cold round of Kenya\'s finest brew.', color: 'from-amber-400 to-yellow-600', icon: '🍻' },
-  { id: 'rose', name: 'Naivasha Fresh Rose 🌹', price: '350 KES', desc: 'A premium, fresh crimson rose bouquet from the hills of Naivasha.', color: 'from-rose-500 to-pink-700', icon: '🌹' },
-  { id: 'choma', name: 'Kamakis Nyama Choma 🥩', price: '650 KES', desc: 'A succulent, hot platter of charcoal-roasted goat meat & kachumbari.', color: 'from-orange-500 to-red-700', icon: '🥩' },
-  { id: 'safari', name: 'Maasai Mara Safari Pass 🦁', price: '2,500 KES', desc: 'A golden weekend safari voucher for an unforgettable savannah getaway.', color: 'from-purple-600 to-indigo-800', icon: '🦁' },
+  { id: 'chai', name: 'Chai ya Tangawizi ☕', price: 'Free', desc: 'Warm spiced ginger milk tea to break the ice with Kenyan hospitality.', color: 'from-amber-600 to-orange-700', icon: '☕' },
+  { id: 'mahamri', name: 'Mombasa Mahamri & Kahawa 🥐', price: 'Free', desc: 'Cardamom-spiced coastal mahamri paired with rich Kahawa Tungu.', color: 'from-yellow-600 to-amber-700', icon: '🥐' },
+  { id: 'dawa', name: 'Westlands Dawa Cocktail 🍸', price: 'Free', desc: 'Kenya\'s signature honey-lime-vodka sundowner for Friday night vibes.', color: 'from-emerald-600 to-teal-700', icon: '🍸' },
+  { id: 'tusker', name: 'Cold Tusker 🍻', price: 'Free', desc: 'Send them a legendary cold round of Kenya\'s finest brew.', color: 'from-amber-400 to-yellow-600', icon: '🍻' },
+  { id: 'rose', name: 'Naivasha Fresh Rose 🌹', price: 'Free', desc: 'A fresh crimson rose bouquet from the hills of Naivasha.', color: 'from-rose-500 to-pink-700', icon: '🌹' },
+  { id: 'choma', name: 'Kamakis Nyama Choma 🥩', price: 'Free', desc: 'A succulent, hot platter of charcoal-roasted goat meat & kachumbari.', color: 'from-orange-500 to-red-700', icon: '🥩' },
+  { id: 'safari', name: 'Maasai Mara Safari Pass 🦁', price: 'Free', desc: 'A golden weekend safari invite for an unforgettable savannah getaway.', color: 'from-purple-600 to-indigo-800', icon: '🦁' },
 ];
 
-export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchProfile, onBack, onSendMessage, onDeleteMessage, onBlockUser, typingUsers, onOpenMpesaGift, onOpenSafetyCheckin, onStartVoiceCall }) => {
+export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchProfile, onBack, onSendMessage, onDeleteMessage, onBlockUser, typingUsers, onOpenSafetyCheckin, onStartVoiceCall }) => {
   const [inputText, setInputText] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
@@ -845,22 +844,9 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
               <div className="bg-rose-100 p-2.5 rounded-full text-rose-600"><Gift size={22} /></div>
               <div>
                 <h3 className="text-lg font-bold text-slate-900 leading-none">Zawadi Courtship Kit</h3>
-                <p className="text-xs text-slate-500 mt-1">Send a charming Kenyan gift or pay via M-Pesa Express</p>
+                <p className="text-xs text-slate-500 mt-1">Send a charming Kenyan virtual gift — 100% free</p>
               </div>
             </div>
-
-            {onOpenMpesaGift && (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowGiftModal(false);
-                  onOpenMpesaGift(matchProfile.id, matchProfile.name);
-                }}
-                className="w-full mb-3 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
-              >
-                <span>📲 Send Verified M-Pesa Express Zawadi</span>
-              </button>
-            )}
             
             <div className="flex-1 overflow-y-auto space-y-3 pr-1 py-1 no-scrollbar">
               {KENYAN_GIFTS.map(gift => (
@@ -936,7 +922,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                 <button
                   onClick={() => onOpenSafetyCheckin(session.matchName)}
                   className="p-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-full transition-colors"
-                  title="Live Date Safety Check-In & Fare Shield"
+                  title="Live Date Safety Check-In"
                 >
                   <ShieldCheck size={19} />
                 </button>
@@ -1040,7 +1026,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ session, userProfile, matchP
                                 <div className="text-left">
                                   <span className="text-[9px] font-black tracking-widest uppercase text-white/75 bg-black/20 px-1.5 py-0.5 rounded-md inline-block mb-1">Courtship Zawadi</span>
                                   <h4 className="font-extrabold text-sm leading-tight text-white mb-0.5">{gift.name}</h4>
-                                  <span className="text-[10px] text-white/90 font-medium">Value: {gift.price}</span>
+                                  <span className="text-[10px] text-white/90 font-medium">Free Virtual Zawadi</span>
                                 </div>
                               </div>
                               <p className="text-xs text-white/90 mt-3 border-t border-white/20 pt-2 italic text-left leading-normal">

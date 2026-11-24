@@ -30,10 +30,10 @@ const UGALI_OPTIONS = [
   { id: 'bad', label: 'Porridge Disaster 🥣', desc: 'Calling a fast courier because the dough refused to cooperate.', cowsBonus: -2 },
 ];
 
-const MPESA_OPTIONS = [
-  { id: 'fast', label: 'Lightning Thumb ⚡', desc: 'Transfers before they even finish saying "Send cash to this code".', cowsBonus: 4 },
-  { id: 'careful', label: 'The Triple Checker 🧐', desc: 'Verifies the name twice, reads it out loud, then checks again.', cowsBonus: 3 },
-  { id: 'delayed', label: 'The No-Balance King/Queen 💸', desc: '"Hey, please hold on, let me wait for my Chama dividend to clear."', cowsBonus: 0 },
+const DATE_STYLE_OPTIONS = [
+  { id: 'fast', label: 'Spontaneous Planner ⚡', desc: 'Organizes coffee or nyama choma dates with clear timing and zero flaking.' },
+  { id: 'careful', label: 'The Triple Checker 🧐', desc: 'Vets the venue twice, shares safety check-in, and confirms directions.' },
+  { id: 'delayed', label: 'The Chama-Schedule Dater 💸', desc: '"Hey, please hold on, let me wrap up my Chama meeting before we link."' },
 ];
 
 const LIFESTYLE_OPTIONS = [
@@ -52,7 +52,7 @@ const NAIROBI_RED_FLAGS = [
   { id: 'subaru', label: 'Drives a Subaru/noisy car 🚗', desc: 'Speeding on Ngong Road past midnight' },
   { id: 'no_pics', label: 'No face pictures/avatar only 👤', desc: '"I work in government, highly confidential"' },
   { id: 'late_text', label: 'Only texts after 11 PM 🌙', desc: '"Uko up?" or "Are you awake, my dear?"' },
-  { id: 'send_code', label: 'Pays via "Send Cash to this Code" 💸', desc: 'M-Pesa name has to remain fully anonymous' },
+  { id: 'send_code', label: 'Always insists on cash-only secrecy 💸', desc: 'Refuses to share basic details before meeting up' },
   { id: 'cousins', label: 'Has too many "cousins" in town 👥', desc: 'Every person they hug is apparently family' },
   { id: 'lounge_tue', label: 'Wants Kilimani Lounge on a Tuesday 🥂', desc: '"Vibes are immaculate, let us go for sherehe"' },
   { id: 'do_not_disturb', label: 'Phone is permanently on DND 🤫', desc: 'Screen is always turned face-down' },
@@ -75,7 +75,7 @@ export const AuntieShosh: React.FC<AuntieShoshProps> = ({ userProfile, onClose, 
 
   // Dowry Estimator State
   const [ugali, setUgali] = useState('');
-  const [mpesa, setMpesa] = useState('');
+  const [dateStyle, setDateStyle] = useState('');
   const [lifestyle, setLifestyle] = useState('');
   const [tea, setTea] = useState('');
   const [estimatedResult, setEstimatedResult] = useState<{
@@ -191,12 +191,12 @@ export const AuntieShosh: React.FC<AuntieShoshProps> = ({ userProfile, onClose, 
   };
 
   const handleCalculateDowry = () => {
-    if (!ugali || !mpesa || !lifestyle || !tea) return;
+    if (!ugali || !dateStyle || !lifestyle || !tea) return;
     setCalculatingDowry(true);
 
     setTimeout(() => {
       const uVal = UGALI_OPTIONS.find(o => o.id === ugali)?.cowsBonus ?? 0;
-      const mVal = MPESA_OPTIONS.find(o => o.id === mpesa)?.cowsBonus ?? 0;
+      const mVal = (DATE_STYLE_OPTIONS.find(o => o.id === dateStyle)?.id === 'fast' ? 4 : DATE_STYLE_OPTIONS.find(o => o.id === dateStyle)?.id === 'careful' ? 3 : 0);
       const lVal = LIFESTYLE_OPTIONS.find(o => o.id === lifestyle)?.cowsBonus ?? 0;
       const tVal = TEA_OPTIONS.find(o => o.id === tea)?.cowsBonus ?? 0;
 
@@ -444,24 +444,24 @@ export const AuntieShosh: React.FC<AuntieShoshProps> = ({ userProfile, onClose, 
                   {/* Question 2 */}
                   <div className="space-y-2">
                     <label className="text-[11px] uppercase tracking-wider font-extrabold text-amber-950 flex items-center gap-1">
-                      💸 2. What is your M-Pesa transaction style?
+                      📅 2. What is your Nairobi date planning style?
                     </label>
                     <div className="grid grid-cols-1 gap-1.5">
-                      {MPESA_OPTIONS.map(opt => (
+                      {DATE_STYLE_OPTIONS.map(opt => (
                         <button
                           key={opt.id}
-                          onClick={() => setMpesa(opt.id)}
+                          onClick={() => setDateStyle(opt.id)}
                           className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
-                            mpesa === opt.id 
+                            dateStyle === opt.id 
                               ? 'bg-amber-700 text-white border-amber-800 font-bold shadow-xs' 
                               : 'bg-white text-slate-700 border-amber-200 hover:border-amber-300 font-semibold'
                           }`}
                         >
                           <div className="flex justify-between items-center mb-0.5">
                             <span>{opt.label}</span>
-                            {mpesa === opt.id && <Check size={12} />}
+                            {dateStyle === opt.id && <Check size={12} />}
                           </div>
-                          <p className={`text-[10px] ${mpesa === opt.id ? 'text-amber-100' : 'text-slate-500'}`}>{opt.desc}</p>
+                          <p className={`text-[10px] ${dateStyle === opt.id ? 'text-amber-100' : 'text-slate-500'}`}>{opt.desc}</p>
                         </button>
                       ))}
                     </div>
@@ -523,7 +523,7 @@ export const AuntieShosh: React.FC<AuntieShoshProps> = ({ userProfile, onClose, 
                   <div className="pt-2">
                     <button
                       onClick={handleCalculateDowry}
-                      disabled={calculatingDowry || !ugali || !mpesa || !lifestyle || !tea}
+                      disabled={calculatingDowry || !ugali || !dateStyle || !lifestyle || !tea}
                       className="w-full py-4 bg-amber-700 hover:bg-amber-800 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl font-black shadow-lg shadow-amber-900/20 text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       {calculatingDowry ? (

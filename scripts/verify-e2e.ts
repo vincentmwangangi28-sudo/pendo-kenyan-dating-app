@@ -6,8 +6,8 @@ import { spawn } from 'node:child_process';
 import { WebSocket } from 'ws';
 import { calculateTrustScore } from '../src/lib/trustScore.ts';
 import { scoreVibeCompatibilityQuiz } from '../src/lib/vibeCirclesData.ts';
-import { normalizeKenyanMsisdn, parseDarajaCallbackPayload } from '../src/lib/mpesaDaraja.ts';
-import { CANONICAL_URLS, SEO_ROUTES, generateSitemapXml } from '../src/lib/seoRoutes.ts';
+import { CANONICAL_URLS, SEO_ROUTES, generateSitemapXml, generateSitemapIndexXml } from '../src/lib/seoRoutes.ts';
+import { isVincentAdminUser } from '../src/lib/adminAuth.ts';
 
 const WORKDIR = process.cwd();
 const TEST_PORT = 3199;
@@ -81,8 +81,7 @@ async function runUnitAndStaticChecks() {
     lookingFor: 'Male',
     photoUrl: 'https://picsum.photos/seed/wangari/400/600',
     voiceUrl: 'https://example.com/voice.webm',
-    mpesaPhone: '+254712345678',
-    subscriptionTier: 'GOLD',
+    subscriptionTier: 'FREE',
     isVerified: true,
   });
   assert.equal(fullTrust.total, 100);
@@ -97,34 +96,21 @@ async function runUnitAndStaticChecks() {
   assert.equal(quizRes.recommendedCircle, 'Mama wa Harrier');
   assert.ok(quizRes.compatibilityPercent >= 76 && quizRes.compatibilityPercent <= 98);
 
-  // Kenyan MSISDN normalization & Daraja callback parser
-  assert.equal(normalizeKenyanMsisdn('0712 345 678'), '254712345678');
-  assert.equal(normalizeKenyanMsisdn('+254110123456'), '254110123456');
-  assert.equal(normalizeKenyanMsisdn('12345'), null);
-
-  const parsedCb = parseDarajaCallbackPayload({
-    Body: {
-      stkCallback: {
-        CheckoutRequestID: 'ws_CO_test123',
-        ResultCode: 0,
-        ResultDesc: 'The service request is processed successfully.',
-        CallbackMetadata: {
-          Item: [
-            { Name: 'Amount', Value: 950 },
-            { Name: 'MpesaReceiptNumber', Value: 'QKL9TEST99' },
-          ],
-        },
-      },
-    },
-  });
-  assert.equal(parsedCb.checkoutRequestId, 'ws_CO_test123');
-  assert.equal(parsedCb.receiptNumber, 'QKL9TEST99');
+  // Strict Vincent-only Admin identity guard
+  assert.equal(isVincentAdminUser(null), false);
+  assert.equal(isVincentAdminUser({ uid: '1', email: 'guest@pendo.app', isAnonymous: true }), false);
+  assert.equal(isVincentAdminUser({ uid: '2', email: 'otheruser@gmail.com', isAnonymous: false, emailVerified: true }), false);
+  assert.equal(isVincentAdminUser({ uid: '3', email: 'vincentmwangangi28@gmail.com', isAnonymous: false, emailVerified: false }), false);
+  assert.equal(isVincentAdminUser({ uid: '4', email: 'vincentmwangangi28@gmail.com', isAnonymous: false, emailVerified: true }), true);
 
   // Sitemap parity & new Campus / Diaspora / Vibe Circles routes
   assert.equal(CANONICAL_URLS.length, 25, 'Expected 25 canonical URLs (root + 24 subroutes)');
   const sitemapXml = generateSitemapXml();
+  const sitemapIndexXml = generateSitemapIndexXml();
   const publicSitemap = fs.readFileSync(path.join(WORKDIR, 'public', 'sitemap.xml'), 'utf8');
+  const publicSitemapIndex = fs.readFileSync(path.join(WORKDIR, 'public', 'sitemap_index.xml'), 'utf8');
   assert.equal(publicSitemap, sitemapXml, 'public/sitemap.xml must match generateSitemapXml()');
+  assert.equal(publicSitemapIndex, sitemapIndexXml, 'public/sitemap_index.xml must match generateSitemapIndexXml()');
 
   for (const requiredPath of ['/campus-dating-kenya', '/diaspora-uk-usa-kenyans', '/vibe-circles']) {
     assert.ok(SEO_ROUTES.some((r) => r.path === requiredPath), `Missing SEO route ${requiredPath}`);
@@ -134,12 +120,16 @@ async function runUnitAndStaticChecks() {
   // Dist artifact checks
   assert.ok(fs.existsSync(path.join(WORKDIR, 'dist', 'server.cjs')), 'dist/server.cjs missing (run npm run build first)');
   assert.ok(fs.existsSync(path.join(WORKDIR, 'dist', 'index.html')), 'dist/index.html missing');
+  assert.ok(fs.existsSync(path.join(WORKDIR, 'dist', 'sitemap.xml')), 'dist/sitemap.xml missing');
+  assert.ok(fs.existsSync(path.join(WORKDIR, 'dist', 'sitemap_index.xml')), 'dist/sitemap_index.xml missing');
   for (const route of SEO_ROUTES) {
     const slug = route.path.replace(/^\/+/, '');
     const htmlPath = path.join(WORKDIR, 'dist', slug, 'index.html');
     assert.ok(fs.existsSync(htmlPath), `Missing pre-rendered HTML for ${route.path}`);
   }
-  console.log('   ✓ Unit, Daraja, Quiz, and 25-URL Sitemap/SSR build checks passed.');
+  const nairobiHtml = fs.readFileSync(path.join(WORKDIR, 'dist', 'nairobi-dating', 'index.html'), 'utf8');
+  assert.ok(nairobiHtml.includes('<noscript>') && nairobiHtml.includes('Find authentic Kenyan singles'), 'Prerender must preserve noscript fallback text');
+  console.log('   ✓ Unit, Admin Guard, Free Trust Rubric, Quiz, and 25-URL Sitemap/SSR build checks passed.');
 }
 
 async function runLiveServerE2E() {
@@ -173,6 +163,42 @@ async function runLiveServerE2E() {
 
     const robotsApex = await httpGetRaw(`${BASE_URL}/robots.txt`, { Host: 'pendo.website' });
     assert.equal(robotsApex.status, 200);
+    assert.equal(robotsApex.body.includes('Agentmap:'), false, 'robots.txt must not include invalid Agentmap directive');
+    assert.ok(robotsApex.body.includes('Disallow: /admin'), 'robots.txt must disallow /admin');
+    assert.ok(robotsApex.body.includes('sitemap_index.xml'), 'robots.txt must declare sitemap_index.xml');
+
+    // Live XML Sitemap, Sitemap Index & .well-known App Store verification endpoints
+    const liveSitemap = await fetch(`${BASE_URL}/sitemap.xml`);
+    assert.equal(liveSitemap.status, 200);
+    assert.ok((liveSitemap.headers.get('content-type') || '').includes('application/xml'));
+    const liveSitemapText = await liveSitemap.text();
+    assert.ok(liveSitemapText.includes('<urlset'));
+
+    const liveSitemapIndex = await fetch(`${BASE_URL}/sitemap_index.xml`);
+    assert.equal(liveSitemapIndex.status, 200);
+    assert.ok((liveSitemapIndex.headers.get('content-type') || '').includes('application/xml'));
+    const liveSitemapIndexText = await liveSitemapIndex.text();
+    assert.ok(liveSitemapIndexText.includes('<sitemapindex'));
+
+    const assetLinksRes = await fetch(`${BASE_URL}/.well-known/assetlinks.json`);
+    assert.equal(assetLinksRes.status, 200);
+    const assetLinksJson = (await assetLinksRes.json()) as any[];
+    assert.equal(assetLinksJson[0]?.target?.package_name, 'com.pendo.kenyandating');
+
+    const appleAssocRes = await fetch(`${BASE_URL}/.well-known/apple-app-site-association`);
+    assert.equal(appleAssocRes.status, 200);
+    const appleAssocJson = (await appleAssocRes.json()) as any;
+    assert.ok(JSON.stringify(appleAssocJson).includes('com.pendo.kenyandating'));
+
+    // Soft-404 protection & strict server-side Admin API guard
+    const missingPageRes = await fetch(`${BASE_URL}/this-route-does-not-exist-404`);
+    assert.equal(missingPageRes.status, 404, 'Unknown paths must return real HTTP 404 instead of Soft-404 200');
+
+    const unauthAdminAudit = await fetch(`${BASE_URL}/api/admin/seo-audit`);
+    assert.equal(unauthAdminAudit.status, 401, '/api/admin/seo-audit must reject unauthenticated callers');
+
+    const unauthAdminIndexNow = await fetch(`${BASE_URL}/api/admin/indexnow`, { method: 'POST' });
+    assert.equal(unauthAdminIndexNow.status, 401, '/api/admin/indexnow must reject unauthenticated callers');
 
     // Pre-rendered SSR HTML checks
     for (const slug of ['/kilimani-mums', '/campus-dating-kenya', '/diaspora-uk-usa-kenyans', '/vibe-circles']) {
@@ -201,67 +227,26 @@ async function runLiveServerE2E() {
     assert.equal(wsEvents[0]?.type, 'CONNECTED');
     assert.equal(wsEvents[0]?.userId, 'e2e_user_1');
 
-    // M-Pesa Daraja 2.0 validation + STK Push + Sandbox Confirm + Callback Idempotency
-    const badPhoneRes = await fetch(`${BASE_URL}/api/mpesa/stk-push`, {
+    // Verify legacy M-Pesa endpoints are removed (404) & app is 100% free
+    const mpesaStkRes = await fetch(`${BASE_URL}/api/mpesa/stk-push`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: '999', amountKes: 150, userId: 'e2e_user_1' }),
+      body: JSON.stringify({ userId: 'e2e_user_1' }),
     });
-    assert.equal(badPhoneRes.status, 400);
+    assert.equal(mpesaStkRes.status, 404, 'Removed /api/mpesa/stk-push must return 404');
 
-    const stkRes = await fetch(`${BASE_URL}/api/mpesa/stk-push`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: 'e2e_user_1',
-        phone: '0712345678',
-        amountKes: 950,
-        purpose: 'GOLD_SUBSCRIPTION',
-        itemName: 'Pendo Gold Monthly Membership',
-      }),
-    });
-    assert.equal(stkRes.status, 200);
-    const stkJson = (await stkRes.json()) as any;
-    assert.equal(stkJson.mode, 'SANDBOX');
-    assert.equal(stkJson.status, 'PENDING');
-    assert.ok(stkJson.checkoutRequestId);
+    const mpesaStatusRes = await fetch(`${BASE_URL}/api/mpesa/status/test`);
+    assert.equal(mpesaStatusRes.status, 404, 'Removed /api/mpesa/status must return 404');
 
-    const confirmRes = await fetch(`${BASE_URL}/api/mpesa/sandbox-confirm`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ checkoutRequestId: stkJson.checkoutRequestId }),
-    });
-    assert.equal(confirmRes.status, 200);
-    const confirmJson = (await confirmRes.json()) as any;
-    assert.equal(confirmJson.transaction.status, 'COMPLETED');
-    const originalReceipt = confirmJson.transaction.receiptNumber;
-    assert.ok(originalReceipt);
-
-    // Callback idempotency check
-    const cbRes = await fetch(`${BASE_URL}/api/mpesa/callback`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        Body: {
-          stkCallback: {
-            CheckoutRequestID: stkJson.checkoutRequestId,
-            ResultCode: 0,
-            ResultDesc: 'Success',
-            CallbackMetadata: { Item: [{ Name: 'MpesaReceiptNumber', Value: 'OVERWRITE_ATTEMPT' }] },
-          },
-        },
-      }),
-    });
-    assert.equal(cbRes.status, 200);
-    const statusRes = await fetch(`${BASE_URL}/api/mpesa/status/${stkJson.checkoutRequestId}`);
-    const statusJson = (await statusRes.json()) as any;
-    assert.equal(statusJson.transaction.receiptNumber, originalReceipt, 'Completed receipt must be idempotent');
-
-    // Vibe Meetup Age/Trust Gating & RSVP Toggle
+    // Vibe Meetup Age/Trust Gating, Free Entry & RSVP Toggle
     const meetupsRes = await fetch(`${BASE_URL}/api/vibes/meetups?userId=e2e_user_1`);
     assert.equal(meetupsRes.status, 200);
     const meetupsJson = (await meetupsRes.json()) as any;
     assert.equal(meetupsJson.meetups.length, 6);
+    assert.ok(
+      meetupsJson.meetups.every((m: any) => m.coverKes === 0),
+      'All Vibe Circle meetups must be 100% free (coverKes === 0)'
+    );
 
     const underageRsvp = await fetch(`${BASE_URL}/api/vibes/rsvp`, {
       method: 'POST',
@@ -323,17 +308,13 @@ async function runLiveServerE2E() {
     // Notifications REST + WS delivery check
     await new Promise((r) => setTimeout(r, 150));
     assert.ok(
-      wsEvents.some((e) => e.type === 'MPESA_CONFIRMED'),
-      'Expected MPESA_CONFIRMED broadcast over /ws/events'
-    );
-    assert.ok(
       wsEvents.some((e) => e.type === 'NOTIFICATION' && e.notification?.type === 'MEETUP'),
       'Expected MEETUP notification broadcast over /ws/events'
     );
 
     const notifRes = await fetch(`${BASE_URL}/api/notifications/e2e_user_1`);
     const notifJson = (await notifRes.json()) as any;
-    assert.ok(notifJson.notifications.length >= 2);
+    assert.ok(notifJson.notifications.length >= 1);
 
     const readRes = await fetch(`${BASE_URL}/api/notifications/read`, {
       method: 'POST',
@@ -351,9 +332,9 @@ async function runLiveServerE2E() {
     assert.equal(subRes.status, 200);
 
     ws.close();
-    console.log('   ✓ Production SSR, WebSocket /ws/events, Daraja Ledger, Meetup Gating, and Notification E2E passed!');
+    console.log('   ✓ Production SSR, WebSocket /ws/events, Free Meetups, and Notification E2E passed!');
   } finally {
-    serverProc.kill('SIGTERM');
+    serverProc.kill('SIGKILL');
     if (stderr.trim()) {
       console.error('[Server stderr]', stderr.trim());
     }
@@ -363,4 +344,5 @@ async function runLiveServerE2E() {
 (async () => {
   await runUnitAndStaticChecks();
   await runLiveServerE2E();
+  process.exit(0);
 })();

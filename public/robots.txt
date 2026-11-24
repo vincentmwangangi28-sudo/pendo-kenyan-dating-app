@@ -1,26 +1,33 @@
 User-agent: Googlebot
 Allow: /
 Disallow: /api/
+Disallow: /admin
 
 User-agent: Googlebot-Image
 Allow: /
 
 User-agent: Google-InspectionTool
 Allow: /
+Disallow: /api/
+Disallow: /admin
 
 User-agent: Bingbot
 Allow: /
 Disallow: /api/
+Disallow: /admin
 
 User-agent: AhrefsBot
 Allow: /
+Disallow: /admin
 
 User-agent: AhrefsSiteAudit
 Allow: /
+Disallow: /admin
 
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /admin
 
 Sitemap: https://www.pendo.website/sitemap.xml
-Agentmap: https://www.pendo.website/ai-catalog.json
+Sitemap: https://www.pendo.website/sitemap_index.xml

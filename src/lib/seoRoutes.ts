@@ -27,7 +27,7 @@ export const KENYAN_VIBE_CIRCLES = [
 ] as const;
 
 export const SITE_ORIGIN = 'https://www.pendo.website';
-export const SITEMAP_LASTMOD = '2026-11-19';
+export const SITEMAP_LASTMOD = '2026-11-23';
 
 export const SEO_ROUTES: SeoRouteConfig[] = [
   {
@@ -35,9 +35,9 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     city: 'Nairobi',
     label: 'Nairobi Singles',
     h1: 'Nairobi Dating — Meet 6,840+ Verified Singles',
-    heroSubtitle: 'Connect with verified singles in Westlands, Kilimani, Lavington, and Karen with M-Pesa Zawadi, Voice Lounges & Live Date Safety Shield.',
+    heroSubtitle: 'Connect 100% free with verified singles in Westlands, Kilimani, Lavington, and Karen with Virtual Zawadi, Voice Lounges & Live Date Safety Check-In.',
     title: 'Nairobi Dating App | Verified Nairobi Singles — Pendo',
-    description: 'Meet 6,840+ verified Nairobi singles in Westlands, Kilimani, and Karen. Enjoy safe coffee dates, voice lounges, and M-Pesa Zawadi on Pendo.',
+    description: 'Meet 6,840+ verified Nairobi singles in Westlands, Kilimani, and Karen 100% free. Enjoy safe coffee dates, voice lounges, and Virtual Zawadi on Pendo.',
     keywords: 'Nairobi dating app, Nairobi singles, Westlands dating, Kilimani singles, Pendo Nairobi',
     badge: '6,840+ Active in Nairobi',
     priority: '0.95',
@@ -100,7 +100,7 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     city: 'Thika',
     label: 'Thika & Kiambu',
     h1: 'Thika & Kiambu Dating — 980+ Verified Singles',
-    heroSubtitle: 'Meet verified singles across Thika, Ruiru, Juja, and Kiambu Road with safe waterfall & mall first-date spots and M-Pesa Zawadi.',
+    heroSubtitle: 'Meet verified singles across Thika, Ruiru, Juja, and Kiambu Road 100% free with safe waterfall & mall first-date spots and Virtual Zawadi.',
     title: 'Thika & Kiambu Road Dating | Verified Singles — Pendo',
     description: 'Connect with 980+ verified singles across Thika, Ruiru, Juja, and Kiambu Road. Discover safe date spots and authentic relationships on Pendo.',
     keywords: 'Thika dating, Kiambu Road singles, Ruiru dating, Juja singles, Pendo Thika',
@@ -178,9 +178,9 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     city: 'Diaspora',
     label: 'Kenyan Diaspora',
     h1: 'Kenyan Diaspora Dating — 3,450+ Global Singles',
-    heroSubtitle: 'Bridge the distance between London, Dallas, Dubai, Toronto, and Nairobi with verified Google Meet dates and M-Pesa Zawadi.',
+    heroSubtitle: 'Bridge the distance between London, Dallas, Dubai, Toronto, and Nairobi 100% free with verified Google Meet dates and Virtual Zawadi.',
     title: 'Kenyan Diaspora Dating | UK, USA, UAE & Kenya — Pendo',
-    description: 'Meet 3,450+ verified Kenyan diaspora singles in London, Dallas, Dubai, Toronto, and Nairobi. Enjoy video dates and M-Pesa Zawadi on Pendo.',
+    description: 'Meet 3,450+ verified Kenyan diaspora singles in London, Dallas, Dubai, Toronto, and Nairobi 100% free. Enjoy video dates and Virtual Zawadi on Pendo.',
     keywords: 'Kenyan diaspora dating, Kenyans in UK dating, Kenyans in USA dating, Kenyans in Dubai singles, Pendo Diaspora',
     badge: '3,450+ Diaspora Singles',
     priority: '0.95',
@@ -247,9 +247,9 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     city: 'Nairobi',
     label: 'Invite & Free Boost',
     h1: 'Alika Rafiki — Free Pendo Boost & Trust Score',
-    heroSubtitle: 'Invite trusted Kenyan friends on WhatsApp to unlock +10% Pendo Ngao Trust Score and a free 30-minute VIP Profile Boost.',
+    heroSubtitle: 'Invite trusted Kenyan friends on WhatsApp to unlock +10% Pendo Ngao Trust Score and a free 30-minute Profile Boost.',
     title: 'Alika Rafiki | Invite Friends & Free Boost — Pendo',
-    description: 'Share Pendo with your friends on WhatsApp to earn +10% Ngao Trust Score and unlock a free 30-minute VIP Profile Boost in Kenya.',
+    description: 'Share Pendo with your friends on WhatsApp to earn +10% Ngao Trust Score and unlock a free 30-minute Profile Boost in Kenya.',
     keywords: 'Alika Rafiki Pendo, Kenyan dating referral, free Pendo boost, WhatsApp dating invite Kenya',
     badge: 'Free 30-Min Boost',
     priority: '0.85',
@@ -261,11 +261,11 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     city: 'Nairobi',
     label: 'Kilimani Mums',
     h1: 'Kilimani Mums — Nairobi Queens & Companionship',
-    heroSubtitle: 'Connect with established, independent Kilimani, Kileleshwa, and Lavington queens looking for genuine fun, loyalty, and VIP vibes.',
+    heroSubtitle: 'Connect with established, independent Kilimani, Kileleshwa, and Lavington queens 100% free for genuine fun, loyalty, and great vibes.',
     title: 'Kilimani Mums Dating | Meet Nairobi Queens — Pendo',
-    description: 'Meet verified, independent Kilimani Mums and established Nairobi women in Kilimani, Kileleshwa & Lavington for loyal companionship and soft-life dates.',
+    description: 'Meet verified, independent Kilimani Mums and established Nairobi women in Kilimani, Kileleshwa & Lavington 100% free for loyal companionship and soft-life dates.',
     keywords: 'Kilimani Mums, Nairobi mature women dating, Kilimani singles, Kileleshwa dating, Pendo Kilimani',
-    badge: 'Kilimani & Kileleshwa VIP',
+    badge: 'Kilimani & Kileleshwa Circle',
     priority: '0.90',
     changefreq: 'daily',
     defaultVibe: 'Kilimani Mums'
@@ -302,12 +302,12 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     path: '/wababa-soft-life-kenya',
     city: 'Nairobi',
     label: 'Wababa & Soft Life',
-    h1: 'Wababa & Soft Life — VIP Kenyan Matchmaking',
-    heroSubtitle: 'Experience Runda, Karen & Westlands fine dining, Diani weekend flights, and M-Pesa Zawadi pampering with established Kenyan gentlemen.',
-    title: 'Wababa & Soft Life Kenya | VIP Dating — Pendo',
-    description: 'Meet established Kenyan Wababa gentlemen and Soft Life enthusiasts in Runda, Karen & Westlands for VIP dinners, Diani trips, and M-Pesa Zawadi.',
-    keywords: 'Wababa Kenya, Soft Life dating Nairobi, Karen Runda dating, VIP Kenyan matchmaking, M-Pesa Zawadi',
-    badge: 'VIP & Soft Life',
+    h1: 'Wababa & Soft Life — Free Kenyan Matchmaking',
+    heroSubtitle: 'Experience Runda, Karen & Westlands fine dining, Diani weekend flights, and Virtual Zawadi pampering with established Kenyan gentlemen — 100% free.',
+    title: 'Wababa & Soft Life Kenya | Free Matchmaking — Pendo',
+    description: 'Meet established Kenyan Wababa gentlemen and Soft Life enthusiasts in Runda, Karen & Westlands 100% free for fine dinners, Diani trips, and Virtual Zawadi.',
+    keywords: 'Wababa Kenya, Soft Life dating Nairobi, Karen Runda dating, free Kenyan matchmaking, Virtual Zawadi',
+    badge: 'Soft Life Circle',
     priority: '0.90',
     changefreq: 'daily',
     defaultVibe: 'Wababa'
@@ -444,6 +444,21 @@ ${routeEntries}
 `;
 }
 
+export function generateSitemapIndexXml(lastmod: string = SITEMAP_LASTMOD): string {
+  const safeLastmod = /^\d{4}-\d{2}-\d{2}$/.test(lastmod)
+    ? lastmod
+    : new Date().toISOString().split('T')[0];
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>${SITE_ORIGIN}/sitemap.xml</loc>
+    <lastmod>${safeLastmod}</lastmod>
+  </sitemap>
+</sitemapindex>
+`;
+}
+
 export interface SeoFaqItem {
   question: string;
   answer: string;
@@ -456,14 +471,14 @@ export const KENYAN_DATING_FAQS: SeoFaqItem[] = [
       'Pendo is Kenya’s leading verified dating and matchmaking app for intentional relationships and marriage, connecting ID- and selfie-verified singles across Nairobi, Mombasa, Kisumu, Nakuru, Eldoret, and the Kenyan diaspora.'
   },
   {
-    question: 'Is Pendo free to join for singles in Kenya?',
+    question: 'Is Pendo 100% free to use for singles in Kenya?',
     answer:
-      'Yes. Joining Pendo, creating a verified profile, browsing singles across Kenyan cities, joining live Voice Lounges, and chatting with matches are free, with optional M-Pesa upgrades for Pendo Gold and VIP Profile Boosts.'
+      'Yes! Pendo is 100% free with no subscriptions or paywalls. Creating a verified profile, unlimited swipes, Profile Boosts, Virtual Zawadi gifts, Vibe Circles, live Voice Lounges, and chatting with matches are completely free.'
   },
   {
     question: 'How does Pendo verify Kenyan singles to prevent catfishing?',
     answer:
-      'Every Pendo profile receives a 0–100% Pendo Ngao Trust Score combining Google Authentication, live camera pose selfie checks, and community standing so you only meet real, verified Kenyan singles.'
+      'Every Pendo profile receives a 0–100% Pendo Ngao Trust Score combining Google Authentication, live camera pose selfie checks, voice intro, and profile authenticity so you only meet real, verified Kenyan singles.'
   },
   {
     question: 'Which Kenyan cities and diaspora hubs are supported on Pendo?',
@@ -476,14 +491,14 @@ export const KENYAN_DATING_FAQS: SeoFaqItem[] = [
       'Pendo recommends vetted public Kenyan venues including Westlands rooftops, Kilimani coffee lounges, and Karura Forest trails in Nairobi, plus Nyali oceanfront lounges and Old Town cafes in Mombasa.'
   },
   {
-    question: 'Can I use Safaricom M-Pesa on Pendo for gifts or date reservations?',
+    question: 'Are Virtual Zawadi gifts and table invites free on Pendo?',
     answer:
-      'Yes. Pendo integrates Safaricom M-Pesa STK Push for M-Pesa Zawadi virtual gifts (Chai, Dawa, Nyama Choma), safe first-date table reservations, and instant Pendo Gold passes in KES.'
+      'Yes. Sending Virtual Zawadi gifts (Chai, Dawa, Nyama Choma), sharing date table invites at Kenyan hangout spots, RSVP’ing to Vibe Meetups, and activating Profile Boosts are 100% free with zero fees.'
   },
   {
-    question: 'What is Matatu Fare Shield on Pendo?',
+    question: 'What is Live Date Safety Check-In on Pendo?',
     answer:
-      'Matatu Fare Shield is Pendo’s live date safety check-in feature that lets you share your meeting venue, date details, and timed check-in alerts with trusted emergency contacts for safe in-person dates in Kenya.'
+      'Pendo Ngao Live Date Safety Check-In lets you share your meeting venue, date details, and timed check-in alerts with trusted emergency contacts for safe in-person dates in Kenya.'
   },
   {
     question: 'How do Pendo Live Voice Lounges and Auntie Shosh AI work?',
@@ -498,12 +513,12 @@ export const KENYAN_DATING_FAQS: SeoFaqItem[] = [
   {
     question: 'How do Kenyan diaspora singles connect with matches back home?',
     answer:
-      'The Pendo Kenyan Diaspora hub connects Kenyans in London, Dallas, Dubai, Toronto, and Perth with verified matches at home using live Google Meet video dates, Voice Lounges, and M-Pesa Zawadi.'
+      'The Pendo Kenyan Diaspora hub connects Kenyans in London, Dallas, Dubai, Toronto, and Perth with verified matches at home using live Google Meet video dates, Voice Lounges, and free Virtual Zawadi.'
   },
   {
     question: 'How can I get a free profile boost on Pendo Kenya?',
     answer:
-      'Use Alika Rafiki inside Pendo to invite friends via WhatsApp and unlock an instant +10% Pendo Ngao Trust Score bonus plus a free 30-minute VIP Profile Boost.'
+      'All Profile Boosts on Pendo are 100% free! Tap Boost in Discover anytime or share Alika Rafiki on WhatsApp to earn +10% Pendo Ngao Trust Score.'
   },
   {
     question: 'Can I install Pendo as an app on Android or iPhone in Kenya?',
@@ -527,7 +542,7 @@ export function getFaqsForRoute(route: SeoRouteConfig | null): SeoFaqItem[] {
     },
     {
       question: `Is ${route.label} safe for first dates in ${route.city}?`,
-      answer: `Yes. Pendo pairs ${route.city} members with curated public first-date venues, live Google Meet video pre-dates, and Matatu Fare Shield safety check-ins.`
+      answer: `Yes. Pendo pairs ${route.city} members with curated public first-date venues, live Google Meet video pre-dates, and Pendo Ngao Live Date Safety check-ins.`
     }
   ];
 

@@ -424,10 +424,53 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ initialProfile, onSa
             <label className="block text-sm font-medium text-slate-700 mb-1">Age</label>
             <input 
               type="number" 
+              min={18}
+              max={80}
               value={profile.age || ''}
-              onChange={(e) => setProfile({...profile, age: parseInt(e.target.value)})}
+              onChange={(e) => setProfile({...profile, age: parseInt(e.target.value) || 18})}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none"
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">I Identify As</label>
+              <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Your Gender">
+                {['Female', 'Male', 'Non-binary'].map((option) => {
+                  const label = option === 'Female' ? 'Woman' : option === 'Male' ? 'Man' : 'Non-binary';
+                  const isActive = (profile.gender || '').toLowerCase() === option.toLowerCase();
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setProfile({ ...profile, gender: option })}
+                      className={`min-h-[44px] px-2 rounded-xl text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap ${
+                        isActive
+                          ? 'bg-rose-600 text-white border-rose-600'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Interested In</label>
+              <select
+                aria-label="Interested In"
+                value={profile.lookingFor || 'Everyone'}
+                onChange={(e) => setProfile({ ...profile, lookingFor: e.target.value })}
+                className="w-full min-h-[44px] px-3 py-2.5 rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none bg-white text-sm font-medium text-slate-800"
+              >
+                <option value="Everyone">Everyone</option>
+                <option value="Women">Women</option>
+                <option value="Men">Men</option>
+                <option value="Non-binary">Non-binary</option>
+              </select>
+            </div>
           </div>
 
           <div>

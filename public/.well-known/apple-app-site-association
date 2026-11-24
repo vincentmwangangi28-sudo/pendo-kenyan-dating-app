@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.pendo.kenyandating",
+        "paths": ["/", "/nairobi-dating", "/mombasa-dating", "/kisumu-dating", "/nakuru-dating", "/eldoret-dating", "/kenyan-diaspora", "/vibe-circles", "/*"]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAMID.com.pendo.kenyandating"]
+  }
+}

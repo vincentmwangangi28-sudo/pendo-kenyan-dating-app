@@ -4,7 +4,7 @@ import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { SEO_ROUTES, SITE_ORIGIN, generateSitemapXml, getFaqsForRoute, buildFaqPageSchema } from './src/lib/seoRoutes';
+import { SEO_ROUTES, SITE_ORIGIN, generateSitemapXml, generateSitemapIndexXml, getFaqsForRoute, buildFaqPageSchema } from './src/lib/seoRoutes';
 
 function escapeHtml(str: string): string {
   return str
@@ -25,8 +25,9 @@ function seoPrerenderPlugin(): Plugin {
 
       const template = fs.readFileSync(indexHtmlPath, 'utf-8');
 
-      // 1. Always emit an up-to-date Google Sitemap XML (with hreflang & image tags)
+      // 1. Always emit up-to-date Google Sitemap XML + Sitemap Index XML
       fs.writeFileSync(path.join(distDir, 'sitemap.xml'), generateSitemapXml(), 'utf-8');
+      fs.writeFileSync(path.join(distDir, 'sitemap_index.xml'), generateSitemapIndexXml(), 'utf-8');
 
       // 2. Build crawlable internal link nav & visible root FAQ section for static HTML bots (Googlebot / Bingbot)
       const crawlableNav = `<nav aria-label="Kenyan &amp; Diaspora Dating Routes" style="margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 32rem;">${SEO_ROUTES.map(
@@ -135,11 +136,11 @@ function seoPrerenderPlugin(): Plugin {
             `  ${breadcrumbJsonLd}\n  </head>`
           )
           .replace(
-            /(<h1[^>]*>)[\s\S]*?(<\/h1>)/g,
+            /(<main id="main-content"[\s\S]*?<h1[^>]*>)[\s\S]*?(<\/h1>)/,
             `$1${safeH1}$2`
           )
           .replace(
-            /(<p[^>]*>)[\s\S]*?(<\/p>)/g,
+            /(<main id="main-content"[\s\S]*?<p[^>]*>)[\s\S]*?(<\/p>)/,
             `$1${safeSubtitle}$2`
           )
           .replace(
@@ -151,7 +152,7 @@ function seoPrerenderPlugin(): Plugin {
         fs.mkdirSync(routeDir, { recursive: true });
         fs.writeFileSync(path.join(routeDir, 'index.html'), html, 'utf-8');
       }
-      console.log(`[SEO Prerender] Generated sitemap.xml + ${SEO_ROUTES.length} static route HTML pages in dist/`);
+      console.log(`[SEO Prerender] Generated sitemap.xml + sitemap_index.xml + ${SEO_ROUTES.length} static route HTML pages in dist/`);
     },
   };
 }
@@ -203,6 +204,18 @@ export default defineConfig({
           },
           workbox: {
             globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+            navigateFallbackDenylist: [
+              /^\/api\//,
+              /^\/\.well-known\//,
+              /^\/sitemap.*\.xml$/i,
+              /^\/robots\.txt$/i,
+              /^\/llms\.txt$/i,
+              /^\/ai-catalog\.json$/i,
+              /^\/manifest\.webmanifest$/i,
+              /^\/BingSiteAuth\.xml$/i,
+              /^\/google[a-z0-9]+\.html$/i,
+              /^\/[a-z0-9]{20,}\.txt$/i,
+            ],
             runtimeCaching: [
               {
                 urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

@@ -100,7 +100,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
   const [fareShieldStartingPoint, setFareShieldStartingPoint] = useState<string>('Roysambu');
   const [selectedFoodItems, setSelectedFoodItems] = useState<string[]>([]);
   const [billSplitOption, setBillSplitOption] = useState<string>('host');
-  const [customMpesaFare, setCustomMpesaFare] = useState<number>(500);
+  const [estimatedTravelCost, setEstimatedTravelCost] = useState<number>(500);
   const [fareShieldTime, setFareShieldTime] = useState<string>('Saturday 7:00 PM');
   const [generatingContract, setGeneratingContract] = useState<boolean>(false);
   const [contractResult, setContractResult] = useState<{
@@ -202,7 +202,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
     }
   }, [fareShieldMatchId, chats]);
 
-  // Synchronize dynamic transportation cost to custom M-Pesa fare
+  // Synchronize dynamic transportation estimate
   useEffect(() => {
     const travelCosts: Record<string, Record<string, number>> = {
       boda: { Roysambu: 250, Kilimani: 150, Westlands: 200, Langata: 300, Kileleshwa: 150, "South B": 200 },
@@ -213,7 +213,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
     
     const costMap = travelCosts[fareShieldTravelType] || travelCosts.uber;
     const cost = costMap[fareShieldStartingPoint] !== undefined ? costMap[fareShieldStartingPoint] : 500;
-    setCustomMpesaFare(cost);
+    setEstimatedTravelCost(cost);
   }, [fareShieldTravelType, fareShieldStartingPoint]);
 
   // Clean up media streams if testing is turned off or on unmount
@@ -405,9 +405,9 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
       }
       
       const result = await generateFareShieldContract(
-        hostInputName || "Sponsor",
+        hostInputName || "Host",
         guestInputName || "Dating Partner",
-        customMpesaFare,
+        estimatedTravelCost,
         fareShieldVenue,
         fareShieldTime
       );
@@ -430,11 +430,11 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
     
     const clausesSummary = contractResult.sections.map(sec => `📜 ${sec.title}: ${sec.clauses[0] || ""}`).join("\n");
     
-    const messageText = `👵📜 [OFFICIAL ELDERS COVENANT - FARE SHIELD CERTIFIED] 📜👵\n\n` +
+    const messageText = `👵📜 [OFFICIAL ELDERS DATE COVENANT] 📜👵\n\n` +
       `Covenant: "${contractResult.contractTitle}"\n` +
-      `Sponsor: ${contractResult.hostName} 💸\n` +
-      `Recipient: ${contractResult.guestName} 🚗\n` +
-      `Fare Amount: ${contractResult.fareAmount} KES (M-Pesa)\n` +
+      `Host: ${contractResult.hostName} ✨\n` +
+      `Guest: ${contractResult.guestName} 🚗\n` +
+      `Estimated Travel: ${contractResult.fareAmount} KES\n` +
       `Venue: ${contractResult.venueName}\n` +
       `Meetup Time: ${contractResult.meetTime}\n\n` +
       `${clausesSummary}\n\n` +
@@ -672,7 +672,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
           onClick={() => { stopHardwareVerification(); setActiveSubTab('fareShield'); }}
           className={`shrink-0 px-3.5 py-2 text-[11px] font-extrabold transition-all border-b-2 rounded-t-lg ${activeSubTab === 'fareShield' ? 'border-purple-600 text-purple-600 bg-purple-50/40' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
         >
-          🛡️ Fare Shield
+          🛡️ Date Planner
         </button>
         <button
           onClick={() => { setActiveSubTab('hardware'); }}
@@ -1255,10 +1255,10 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
             {/* Auntie Shosh Banner */}
             <div className="bg-gradient-to-br from-rose-600 via-purple-700 to-indigo-700 rounded-[24px] text-white p-5 shadow-lg relative overflow-hidden">
               <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/10 rounded-full blur-lg pointer-events-none"></div>
-              <p className="text-[9px] text-rose-200 font-bold tracking-widest uppercase mb-1">Auntie Shosh Protection Service</p>
-              <h2 className="text-base font-extrabold leading-tight">Nairobi Date Planner & Fare Shield</h2>
+              <p className="text-[9px] text-rose-200 font-bold tracking-widest uppercase mb-1">Auntie Shosh Date Helper</p>
+              <h2 className="text-base font-extrabold leading-tight">Nairobi Date Planner & Logistics</h2>
               <p className="text-[11px] text-rose-100 mt-1 leading-relaxed">
-                Plan a high-integrity meetup. Calculate the transport, draft an Elders-endorsed mobile money transport covenant, and stop "fare-eating" once and for all!
+                Plan a high-integrity meetup. Estimate your route, draft a friendly Kenyan date logistics covenant, and make sure everyone shows up on time!
               </p>
             </div>
 
@@ -1270,7 +1270,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-800 text-xs">Date Logistics & Covenant Parameters</h3>
-                  <p className="text-[9px] text-slate-400">Specify details to lock in mobile travel integrity.</p>
+                  <p className="text-[9px] text-slate-400">Specify details to align on travel and date expectations.</p>
                 </div>
               </div>
 
@@ -1300,7 +1300,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      Sponsor (You)
+                      Host (You)
                     </label>
                     <input
                       type="text"
@@ -1312,7 +1312,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      Recipient (Partner)
+                      Date Partner
                     </label>
                     <input
                       type="text"
@@ -1428,7 +1428,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
                   </label>
                   <div className="grid grid-cols-3 gap-1">
                     {[
-                      { key: 'host', label: 'Sponsor Pays 100%' },
+                      { key: 'host', label: 'Host Treats' },
                       { key: 'split', label: '50/50 Go Dutch' },
                       { key: 'guest', label: 'Guest Treats Me' }
                     ].map(split => (
@@ -1454,7 +1454,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
                   {/* Transport */}
                   <div className="flex justify-between items-center text-[11px]">
                     <span className="text-slate-500">Transport ({fareShieldTravelType.toUpperCase()} from {fareShieldStartingPoint}):</span>
-                    <span className="font-mono text-slate-800">{customMpesaFare} KES</span>
+                    <span className="font-mono text-slate-800">{estimatedTravelCost} KES</span>
                   </div>
 
                   {/* Food / Menu items */}
@@ -1477,8 +1477,8 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
 
                   {/* Split distribution description */}
                   <div className="flex justify-between items-center text-[11px] bg-white border border-slate-100 p-1.5 rounded-lg mt-1">
-                    <span className="text-slate-500">Suggested M-Pesa Transit Disbursal:</span>
-                    <span className="font-extrabold text-rose-600 font-mono">{customMpesaFare} KES</span>
+                    <span className="text-slate-500">Estimated Travel Budget:</span>
+                    <span className="font-extrabold text-rose-600 font-mono">{estimatedTravelCost} KES</span>
                   </div>
                 </div>
 
@@ -1511,7 +1511,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
                   ) : (
                     <>
                       <ShieldCheck size={14} />
-                      Draft Elders Fare-Integrity Covenant
+                      Draft Elders Date Logistics Covenant
                     </>
                   )}
                 </button>
@@ -1582,7 +1582,7 @@ export const MeetHub: React.FC<MeetHubProps> = ({ chats, onBack, onShareLinkInCh
                   <button
                     type="button"
                     onClick={() => {
-                      const textToCopy = `📜 ${contractResult.contractTitle}\n\nSponsor: ${contractResult.hostName}\nRecipient: ${contractResult.guestName}\nFare: ${contractResult.fareAmount} KES\n\n` + contractResult.sections.map(s => `📍 ${s.title}:\n- ${s.clauses.join("\n- ")}`).join("\n\n") + `\n\n⚖️ Elders Verdict: ${contractResult.eldersVerdict}`;
+                      const textToCopy = `📜 ${contractResult.contractTitle}\n\nHost: ${contractResult.hostName}\nGuest: ${contractResult.guestName}\nEstimated Travel: ${contractResult.fareAmount} KES\n\n` + contractResult.sections.map(s => `📍 ${s.title}:\n- ${s.clauses.join("\n- ")}`).join("\n\n") + `\n\n⚖️ Elders Verdict: ${contractResult.eldersVerdict}`;
                       safeCopyToClipboard(textToCopy);
                       setContractCopied(true);
                       setTimeout(() => setContractCopied(false), 2500);

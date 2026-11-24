@@ -1,30 +1,12 @@
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from './index.ts';
-import { mpesaTransactions, meetupRsvps, pushSubscriptions } from './schema.ts';
+import { meetupRsvps, pushSubscriptions } from './schema.ts';
 import { INITIAL_VIBE_MEETUPS } from '../lib/vibeCirclesData.ts';
 import { AppNotification, VibeMeetupEvent } from '../../types.ts';
-
-export interface MpesaCheckoutRecord {
-  checkoutRequestId: string;
-  merchantRequestId: string;
-  userId: string;
-  phone: string;
-  amountKes: number;
-  purpose: string;
-  itemName: string;
-  recipientName?: string | null;
-  receiptNumber?: string | null;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED';
-  resultDesc?: string | null;
-  mode: 'LIVE_DARAJA' | 'SANDBOX';
-  createdAt: number;
-  updatedAt: number;
-}
 
 const hasPostgresConfig = () => Boolean(process.env.DATABASE_URL || process.env.SQL_HOST);
 
 // Authoritative server memory state (backed by PostgreSQL when DATABASE_URL/SQL_HOST is set)
-const txMemoryStore = new Map<string, MpesaCheckoutRecord>();
 const rsvpMemoryStore = new Map<string, Set<string>>(); // eventId -> Set<userId>
 const notificationMemoryStore = new Map<string, AppNotification[]>(); // userId -> items
 const pushSubMemoryStore = new Map<string, { userId: string; endpoint: string; p256dh?: string; authKey?: string }>();
@@ -34,103 +16,6 @@ for (const evt of INITIAL_VIBE_MEETUPS) {
   if (!rsvpMemoryStore.has(evt.id)) {
     rsvpMemoryStore.set(evt.id, new Set());
   }
-}
-
-export async function recordMpesaCheckout(record: MpesaCheckoutRecord): Promise<MpesaCheckoutRecord> {
-  txMemoryStore.set(record.checkoutRequestId, record);
-
-  if (hasPostgresConfig()) {
-    try {
-      await db
-        .insert(mpesaTransactions)
-        .values({
-          checkoutRequestId: record.checkoutRequestId,
-          merchantRequestId: record.merchantRequestId,
-          userId: record.userId,
-          phone: record.phone,
-          amountKes: record.amountKes,
-          purpose: record.purpose,
-          itemName: record.itemName,
-          receiptNumber: record.receiptNumber || null,
-          status: record.status,
-          resultDesc: record.resultDesc || null,
-        })
-        .onConflictDoUpdate({
-          target: mpesaTransactions.checkoutRequestId,
-          set: {
-            status: record.status,
-            receiptNumber: record.receiptNumber || null,
-            resultDesc: record.resultDesc || null,
-            updatedAt: new Date(),
-          },
-        });
-    } catch (err) {
-      console.warn('[Ledger] PostgreSQL M-Pesa write fallback to memory:', (err as Error).message);
-    }
-  }
-  return record;
-}
-
-export async function getMpesaCheckout(checkoutRequestId: string): Promise<MpesaCheckoutRecord | null> {
-  const cached = txMemoryStore.get(checkoutRequestId);
-  if (cached) return cached;
-
-  if (hasPostgresConfig()) {
-    try {
-      const rows = await db
-        .select()
-        .from(mpesaTransactions)
-        .where(eq(mpesaTransactions.checkoutRequestId, checkoutRequestId))
-        .limit(1);
-      if (rows[0]) {
-        const row = rows[0];
-        const hydrated: MpesaCheckoutRecord = {
-          checkoutRequestId: row.checkoutRequestId,
-          merchantRequestId: row.merchantRequestId,
-          userId: row.userId,
-          phone: row.phone,
-          amountKes: row.amountKes,
-          purpose: row.purpose,
-          itemName: row.itemName,
-          receiptNumber: row.receiptNumber,
-          status: row.status as MpesaCheckoutRecord['status'],
-          resultDesc: row.resultDesc,
-          mode: 'LIVE_DARAJA',
-          createdAt: row.createdAt ? row.createdAt.getTime() : Date.now(),
-          updatedAt: row.updatedAt ? row.updatedAt.getTime() : Date.now(),
-        };
-        txMemoryStore.set(checkoutRequestId, hydrated);
-        return hydrated;
-      }
-    } catch (err) {
-      console.warn('[Ledger] PostgreSQL M-Pesa read fallback:', (err as Error).message);
-    }
-  }
-  return null;
-}
-
-export async function finalizeMpesaCheckout(
-  checkoutRequestId: string,
-  status: 'COMPLETED' | 'FAILED',
-  receiptNumber: string | null,
-  resultDesc: string
-): Promise<MpesaCheckoutRecord | null> {
-  const existing = await getMpesaCheckout(checkoutRequestId);
-  if (!existing) return null;
-
-  // Idempotency guard: do not re-overwrite an already COMPLETED receipt
-  if (existing.status === 'COMPLETED' && existing.receiptNumber) {
-    return existing;
-  }
-
-  const updated: MpesaCheckoutRecord = {
-    ...existing,
-    status,
-    receiptNumber: receiptNumber || existing.receiptNumber,
-    resultDesc,
-    updatedAt: Date.now(),
-  };
-  return recordMpesaCheckout(updated);
 }
 
 export async function listVibeMeetups(userId?: string): Promise<VibeMeetupEvent[]> {

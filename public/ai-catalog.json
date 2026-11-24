@@ -32,12 +32,6 @@
       "url": "https://www.pendo.website/kenyan-diaspora"
     },
     {
-      "identifier": "urn:air:pendo.website:mpesa-checkout",
-      "displayName": "M-Pesa Daraja 2.0 STK Push Integration",
-      "type": "api",
-      "url": "https://www.pendo.website/api/mpesa/stk-push"
-    },
-    {
       "identifier": "urn:air:pendo.website:safety-shield",
       "displayName": "Pendo Ngao Date Safety Check-In",
       "type": "api",

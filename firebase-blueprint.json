@@ -25,7 +25,6 @@
         "vibeQuizCompleted": { "type": "boolean" },
         "ageVerified": { "type": "boolean" },
         "dataSaverEnabled": { "type": "boolean" },
-        "mpesaPhone": { "type": "string" },
         "coordinates": {
           "type": "object",
           "properties": {
@@ -75,28 +74,9 @@
       },
       "required": ["userId", "targetId", "action", "createdAt"]
     },
-    "transaction": {
-      "title": "M-Pesa Transaction",
-      "description": "Records an M-Pesa Express STK Push payment for Boosts, Pendo Gold, or Virtual Gifts.",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "phone": { "type": "string" },
-        "amountKes": { "type": "number" },
-        "purpose": { "type": "string" },
-        "itemName": { "type": "string" },
-        "recipientId": { "type": "string" },
-        "recipientName": { "type": "string" },
-        "receiptNumber": { "type": "string" },
-        "status": { "type": "string" },
-        "createdAt": { "type": "number" }
-      },
-      "required": ["userId", "phone", "amountKes", "purpose", "itemName", "receiptNumber", "status", "createdAt"]
-    },
     "safetyCheckin": {
       "title": "Date Safety Check-In",
-      "description": "Live Date Safety Check-In and Matatu Fare Shield record.",
+      "description": "Live Date Safety Check-In record.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -107,7 +87,6 @@
         "city": { "type": "string" },
         "emergencyContactName": { "type": "string" },
         "emergencyContactPhone": { "type": "string" },
-        "fareShieldKes": { "type": "number" },
         "status": { "type": "string" },
         "createdAt": { "type": "number" },
         "checkInBy": { "type": "number" }
@@ -130,7 +109,7 @@
     },
     "notificationItem": {
       "title": "User Notification",
-      "description": "Real-time notification item for matches, Zawadi gifts, M-Pesa confirmations, and meetup RSVPs.",
+      "description": "Real-time notification item for matches, free Zawadi gifts, and meetup RSVPs.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -142,6 +121,20 @@
         "createdAt": { "type": "number" }
       },
       "required": ["id", "userId", "type", "title", "body", "read", "createdAt"]
+    },
+    "adminSettings": {
+      "title": "Admin Launch & Store State",
+      "description": "Private checklist and store configuration state strictly owned by Vincent Mwangangi.",
+      "type": "object",
+      "properties": {
+        "ownerEmail": { "type": "string" },
+        "updatedAt": { "type": "number" },
+        "completedSteps": { "type": "object" },
+        "androidSha256": { "type": "string" },
+        "appleTeamId": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["ownerEmail", "updatedAt", "completedSteps"]
     }
   },
   "firestore": {
@@ -157,10 +150,6 @@
       "schema": { "$ref": "#/entities/swipe" },
       "description": "Directional swipes by signed-in users."
     },
-    "/transactions/{txId}": {
-      "schema": { "$ref": "#/entities/transaction" },
-      "description": "M-Pesa STK Push receipts for Pendo Gold, Boosts, and Virtual Gifts."
-    },
     "/safetyCheckins/{checkinId}": {
       "schema": { "$ref": "#/entities/safetyCheckin" },
       "description": "Live Date Safety Check-In beacons created by users."
@@ -172,6 +161,10 @@
     "/notifications/{userId}/items/{itemId}": {
       "schema": { "$ref": "#/entities/notificationItem" },
       "description": "Private real-time user notification inbox."
+    },
+    "/adminSettings/{docId}": {
+      "schema": { "$ref": "#/entities/adminSettings" },
+      "description": "Private admin launch state strictly accessible only by verified admin email vincentmwangangi28@gmail.com."
     },
     "/test/connection": {
       "schema": "any",

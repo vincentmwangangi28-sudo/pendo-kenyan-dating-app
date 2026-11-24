@@ -522,7 +522,7 @@ export const generateAuntieShoshAdvice = async (question: string, userProfile: U
       User's details: Name: ${userProfile.name}, Age: ${userProfile.age}, From: ${userProfile.location}.
 
       A tenant of your counseling style:
-      - Use authentic Kenyan English and friendly Sheng/Swahili slang terms where appropriate (e.g., "bana", "sawa", "mambo", "shosho", "bora", "kijana", "mrembo", "shamba", "mpango", "sasa", "M-Pesa", "Character Development", "Nairobi speed", "draft").
+      - Use authentic Kenyan English and friendly Sheng/Swahili slang terms where appropriate (e.g., "bana", "sawa", "mambo", "shosho", "bora", "kijana", "mrembo", "shamba", "mpango", "sasa", "Character Development", "Nairobi speed", "draft").
       - Be witty, slightly sassy, but fundamentally loving, supportive, and traditional (always pushing them towards solid local marriage/courtship or finding a good partner with a reliable character).
       - Maintain a warm, encouraging, but slightly roast-heavy Kenyan grandmother persona.
       - Reference traditional symbols like tea cups, cows, goats, and clean kitchens.
@@ -798,7 +798,7 @@ export const evaluateRedFlags = async (
       1. score: A numeric percentage risk rating (0 to 100).
       2. rank: A humorous traditional Auntie Shosh risk level name (e.g., "Chama Approved Angel 😇", "Standard Coffee Date Walker ☕", "Nairobi Character Development Risk ⚠️", or "Premium Tears Certified 😭").
       3. commentary: Hilarious, sassy commentary in Auntie Shosh's unique persona (authentic Kenyan English, grandmotherly roast, and tea references, under 3 sentences).
-      4. actionPlan: A concrete advice or action plan (e.g., "Introduce them to your grandmother immediately", "Buy a fast pair of running shoes", "Block and delete them from M-Pesa").
+      4. actionPlan: A concrete advice or action plan (e.g., "Introduce them to your grandmother immediately", "Buy a fast pair of running shoes", "Block and delete their contact immediately").
       5. riskFactors: A list of 2-3 specific risk elements identified from the flags or description.
 
       Ensure the response strictly follows the JSON schema.
@@ -871,20 +871,20 @@ export const generateFareShieldContract = async (
       Details of the Covenant:
       - Host/Sponsor: "${hostName}" (The one sending or facilitating transport/fare)
       - Guest/Recipient: "${guestName}" (The one traveling to the date)
-      - Mobile Money Fare Amount: ${fareAmount} KES (sent via M-Pesa or equivalent)
+      - Transport / Travel Budget Note: ${fareAmount} KES (optional mutual meetup agreement)
       - Selected Venue: "${venueName}"
       - Agreed Time: "${meetTime}"
 
       Please generate a hilarious contract with exactly 3 sections.
-      Write in Auntie Shosh's sassy persona, blending formal legal terminology ("Whereas", "Party of the First Part", "Be it resolved", "Indemnification") with vibrant Kenyan dating slang and cultural humor (e.g., "Kutuma fare", "Character development", "Ngong Road speedsters", "Premium tears", "Chama emergencies", "Sudden headache syndrome").
+      Write in Auntie Shosh's sassy persona, blending formal legal terminology ("Whereas", "Party of the First Part", "Be it resolved", "Indemnification") with vibrant Kenyan dating slang and cultural humor (e.g., "Matatu logistics", "Character development", "Ngong Road speedsters", "Premium tears", "Chama emergencies", "Sudden headache syndrome").
 
       Sections to include:
-      1. Section 1: Title: "The M-Pesa Disbursal & Transit Covenant"
-         Draft 2-3 clauses detailing that the fare is exclusively for boarding a Matatu/Uber directly to the venue, and not for side-hustles, paying off chama debts, hair salon touch-ups, or purchasing bundles to browse Instagram instead.
+      1. Section 1: Title: "The Transit & Punctuality Covenant"
+         Draft 2-3 clauses detailing that transit plans are exclusively for boarding a Matatu/Uber directly to the venue, and not for side-hustles, paying off chama debts, hair salon touch-ups, or browsing Instagram instead.
       2. Section 2: Title: "The Sudden Headache & 'Uko Up?' Indemnification Clause"
          Draft 2-3 clauses covering defense against standard excuse protocols (e.g., "My grandmother has called an emergency baraza", "The matatu got stuck in a pothole in Roysambu", "My phone battery has mysteriously died at 5%").
       3. Section 3: Title: "Traditional Elder-Enforced Sanctions & Penalties"
-         Draft 2-3 hilarious penalties if the recipient fails to show up after accepting the fare (e.g., Weeding Auntie Shosh's maize farm in Shamba, returning the fare plus a 15% 'Emotional Damage' M-Pesa transaction cost, or being publicly declared a 'Certified Character Developer' at the next village council).
+         Draft 2-3 hilarious penalties if the recipient fails to show up after confirming plans (e.g., Weeding Auntie Shosh's maize farm in Shamba, buying extra kahawa chungu for the elders, or being publicly declared a 'Certified Character Developer' at the next village council).
 
       Also provide:
       - contractTitle: A grand, mock-royal traditional legal title (e.g., "The Sacred Nairobi Covenant of Transportation and Anti-Fare Eating Integrity")
@@ -953,9 +953,9 @@ export const generateFareShieldContract = async (
       meetTime,
       sections: [
         {
-          title: "The M-Pesa Disbursal & Transit Covenant",
+          title: "The Transit & Punctuality Covenant",
           clauses: [
-            `Whereas ${hostName} has dispatched the sum of ${fareAmount} KES via mobile money to ${guestName}, the recipient covenants to utilize said funds exclusively for immediate travel.`,
+            `Whereas ${hostName} and ${guestName} have agreed on an estimated transit plan of ${fareAmount} KES, both parties covenant to keep their travel direct to the meetup.`,
             "The travel shall be direct, without any physical, emotional, or geographical detours to salons, local chamas, or local chemists."
           ]
         },
@@ -970,11 +970,11 @@ export const generateFareShieldContract = async (
           title: "Elders-Enforced Sanctions",
           clauses: [
             `Failure of ${guestName} to appear at ${venueName} by ${meetTime} shall constitute a full breach of trust.`,
-            `The defaulter shall return the sum of ${fareAmount} KES plus a penalty of 150 KES for emotional suffering, or face 10 hours of manual maize-grinding supervised by Auntie Shosh.`
+            `The defaulter shall owe a round of spiced kahawa and mandazi, or face 10 hours of manual maize-grinding supervised by Auntie Shosh.`
           ]
         }
       ],
-      eldersVerdict: "This covenant is fully endorsed by Auntie Shosh and the Council of Matchmaker Elders. Do not play with M-Pesa transit assets, city eyes are watching!",
+      eldersVerdict: "This covenant is fully endorsed by Auntie Shosh and the Council of Matchmaker Elders. Keep your word and honor your date plans, city eyes are watching!",
       sealText: "AUNTIE SHOSH COVENANT PROTECTION - CERTIFIED TRUSTED"
     };
   }

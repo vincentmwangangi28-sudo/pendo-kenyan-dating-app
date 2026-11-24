@@ -4,7 +4,6 @@ interface AdSenseBannerProps {
   slotId?: string;
   format?: 'auto' | 'horizontal' | 'rectangle';
   className?: string;
-  isGoldMember?: boolean;
 }
 
 declare global {
@@ -17,13 +16,11 @@ export const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
   slotId = 'default',
   format = 'auto',
   className = '',
-  isGoldMember = false
 }) => {
   const adRef = useRef<HTMLModElement>(null);
   const isLoadedRef = useRef(false);
 
   useEffect(() => {
-    if (isGoldMember) return;
     if (isLoadedRef.current) return;
 
     try {
@@ -43,12 +40,7 @@ export const AdSenseBanner: React.FC<AdSenseBannerProps> = ({
     } catch (e) {
       // Ignore ad blocker or duplicate load errors gracefully
     }
-  }, [isGoldMember]);
-
-  // Pendo Gold and VIP members enjoy a 100% ad-free experience
-  if (isGoldMember) {
-    return null;
-  }
+  }, []);
 
   return (
     <aside aria-label="Sponsored Content" className={`w-full text-center overflow-hidden my-3 ${className}`}>

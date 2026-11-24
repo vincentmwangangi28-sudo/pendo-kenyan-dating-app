@@ -382,9 +382,9 @@ export const generateFareShieldContract = async (
       meetTime,
       sections: [
         {
-          title: "The M-Pesa Disbursal & Transit Covenant",
+          title: "The Transit & Punctuality Covenant",
           clauses: [
-            `Whereas ${hostName} has dispatched the sum of ${fareAmount} KES via mobile money to ${guestName}, the recipient covenants to utilize said funds exclusively for immediate travel.`,
+            `Whereas ${hostName} and ${guestName} have agreed on an estimated transit plan of ${fareAmount} KES, both parties covenant to keep their travel direct to the meetup.`,
             "The travel shall be direct, without any physical, emotional, or geographical detours to salons, local chamas, or local chemists."
           ]
         },
@@ -399,11 +399,11 @@ export const generateFareShieldContract = async (
           title: "Elders-Enforced Sanctions",
           clauses: [
             `Failure of ${guestName} to appear at ${venueName} by ${meetTime} shall constitute a full breach of trust.`,
-            `The defaulter shall return the sum of ${fareAmount} KES plus a penalty of 150 KES for emotional suffering, or face 10 hours of manual maize-grinding supervised by Auntie Shosh.`
+            `The defaulter shall owe a round of spiced kahawa and mandazi, or face 10 hours of manual maize-grinding supervised by Auntie Shosh.`
           ]
         }
       ],
-      eldersVerdict: "This covenant is fully endorsed by Auntie Shosh and the Council of Matchmaker Elders. Do not play with M-Pesa transit assets, city eyes are watching!",
+      eldersVerdict: "This covenant is fully endorsed by Auntie Shosh and the Council of Matchmaker Elders. Keep your word and honor your date plans, city eyes are watching!",
       sealText: "AUNTIE SHOSH COVENANT PROTECTION - CERTIFIED TRUSTED"
     };
   }

@@ -12,23 +12,6 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
-// M-Pesa Daraja 2.0 Transaction Ledger
-export const mpesaTransactions = pgTable('mpesa_transactions', {
-  id: serial('id').primaryKey(),
-  checkoutRequestId: text('checkout_request_id').notNull().unique(),
-  merchantRequestId: text('merchant_request_id').notNull(),
-  userId: text('user_id').notNull(),
-  phone: text('phone').notNull(),
-  amountKes: integer('amount_kes').notNull(),
-  purpose: text('purpose').notNull(),
-  itemName: text('item_name').notNull(),
-  receiptNumber: text('receipt_number'),
-  status: text('status').notNull().default('PENDING'), // PENDING | COMPLETED | FAILED
-  resultDesc: text('result_desc'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
 // Kenyan Vibe Circle Meetup RSVPs
 export const meetupRsvps = pgTable('meetup_rsvps', {
   id: serial('id').primaryKey(),

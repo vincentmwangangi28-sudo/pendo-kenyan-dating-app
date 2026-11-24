@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
-import { UserProfile, MatchProfile, AppView, ChatSession, ChatMessage, GroupProfile, HangoutSpot, VirtualGift, AppNotification } from './types';
+import { UserProfile, MatchProfile, AppView, ChatSession, ChatMessage, GroupProfile, HangoutSpot, AppNotification } from './types';
 import { GoogleAuthButton } from './components/GoogleAuthButton';
 import { AuthNotification } from './components/AuthNotification';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { AdSenseBanner } from './components/AdSenseBanner';
 import { calculateTrustScore } from './src/lib/trustScore';
+import { isVincentAdminUser } from './src/lib/adminAuth';
 import { SEO_ROUTES, SeoRouteConfig, findSeoRouteByPathOrHash, getFaqsForRoute, buildFaqPageSchema, KENYAN_VIBE_CIRCLES } from './src/lib/seoRoutes';
 import { useOnlineStatus } from './hooks/usePWAInstall';
 import { useRealtimeNotifications } from './hooks/useRealtimeNotifications';
-import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Phone, Shield, CheckCircle2, ShieldCheck, Crown, Sparkles, Globe, Check, WifiOff, Share2, Bell, Users, Gauge } from 'lucide-react';
+import { Heart, MessageCircle, User as UserIcon, Flame, MapPin, Mic, Loader2, Video, Phone, Shield, CheckCircle2, ShieldCheck, Sparkles, Globe, Check, WifiOff, Share2, Bell, Users, Gauge, Zap, Lock } from 'lucide-react';
 
 // Code-split heavy interactive modules for fast mobile FCP & 90+ Lighthouse Performance
 const ProfileSetup = lazy(() => import('./components/ProfileSetup').then(m => ({ default: m.ProfileSetup })));
@@ -20,12 +21,12 @@ const HangoutSpots = lazy(() => import('./components/HangoutSpots').then(m => ({
 const VoiceCoach = lazy(() => import('./components/VoiceCoach').then(m => ({ default: m.VoiceCoach })));
 const MeetHub = lazy(() => import('./components/MeetHub').then(m => ({ default: m.MeetHub })));
 const AuntieShosh = lazy(() => import('./components/AuntieShosh').then(m => ({ default: m.AuntieShosh })));
-const MpesaModal = lazy(() => import('./components/MpesaModal').then(m => ({ default: m.MpesaModal })));
 const SafetyVerificationModal = lazy(() => import('./components/SafetyVerificationModal').then(m => ({ default: m.SafetyVerificationModal })));
 const VoiceCallModal = lazy(() => import('./components/VoiceCallModal').then(m => ({ default: m.VoiceCallModal })));
 const AlikaRafikiModal = lazy(() => import('./components/AlikaRafikiModal').then(m => ({ default: m.AlikaRafikiModal })));
 const VibeCirclesHub = lazy(() => import('./components/VibeCirclesHub').then(m => ({ default: m.VibeCirclesHub })));
 const NotificationCenterModal = lazy(() => import('./components/NotificationCenterModal').then(m => ({ default: m.NotificationCenterModal })));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 import { findRealtimeEvents } from './services/geminiService';
 import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOut, getOrCreateGuestUser, AppAuthUser, checkFirestoreConnectivity } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -60,6 +61,7 @@ const MOCK_MATCHES: MatchProfile[] = [
     id: '1',
     name: 'Wanjiku',
     age: 24,
+    gender: 'Female',
     location: 'Nairobi',
     neighborhood: 'Kilimani',
     zodiacSign: 'Leo',
@@ -70,15 +72,16 @@ const MOCK_MATCHES: MatchProfile[] = [
     distance: 5,
     isVerified: true,
     trustScore: 96,
-    subscriptionTier: 'GOLD',
+    subscriptionTier: 'FREE',
     vibeCircle: 'Serious & Marriage',
-    badges: ['Verified', 'Top Pick', 'Pendo Gold'],
+    badges: ['Verified', 'Top Pick'],
     coordinates: { latitude: -1.2921, longitude: 36.8219 } // Nairobi
   },
   {
     id: '2',
     name: 'Achieng',
     age: 26,
+    gender: 'Female',
     location: 'Kisumu',
     neighborhood: 'Milimani',
     zodiacSign: 'Taurus',
@@ -96,6 +99,7 @@ const MOCK_MATCHES: MatchProfile[] = [
     id: '3',
     name: 'Zainab',
     age: 23,
+    gender: 'Female',
     location: 'Mombasa',
     neighborhood: 'Nyali',
     zodiacSign: 'Scorpio',
@@ -106,14 +110,15 @@ const MOCK_MATCHES: MatchProfile[] = [
     distance: 440,
     isVerified: true,
     trustScore: 94,
-    subscriptionTier: 'GOLD',
-    badges: ['Verified', 'Pendo Gold'],
+    subscriptionTier: 'FREE',
+    badges: ['Verified'],
     coordinates: { latitude: -4.0435, longitude: 39.6682 } // Mombasa
   },
   {
     id: '4',
     name: 'Nimo',
     age: 25,
+    gender: 'Female',
     location: 'Nairobi',
     neighborhood: 'Westlands',
     zodiacSign: 'Libra',
@@ -130,6 +135,7 @@ const MOCK_MATCHES: MatchProfile[] = [
     id: '5',
     name: 'Kamau',
     age: 28,
+    gender: 'Male',
     location: 'Nakuru',
     neighborhood: 'Milimani Nakuru',
     zodiacSign: 'Aries',
@@ -147,6 +153,7 @@ const MOCK_MATCHES: MatchProfile[] = [
     id: '6',
     name: 'Chebet',
     age: 24,
+    gender: 'Female',
     location: 'Eldoret',
     neighborhood: 'Elgon View',
     zodiacSign: 'Sagittarius',
@@ -164,6 +171,7 @@ const MOCK_MATCHES: MatchProfile[] = [
     id: '7',
     name: 'Muthoni',
     age: 25,
+    gender: 'Female',
     location: 'Thika',
     neighborhood: 'Section 9 Thika',
     zodiacSign: 'Virgo',
@@ -181,6 +189,7 @@ const MOCK_MATCHES: MatchProfile[] = [
     id: '8',
     name: 'Halima',
     age: 26,
+    gender: 'Female',
     location: 'Diani',
     neighborhood: 'Diani Beach Rd',
     zodiacSign: 'Pisces',
@@ -191,14 +200,15 @@ const MOCK_MATCHES: MatchProfile[] = [
     distance: 470,
     isVerified: true,
     trustScore: 95,
-    subscriptionTier: 'GOLD',
-    badges: ['Verified', 'Pendo Gold'],
+    subscriptionTier: 'FREE',
+    badges: ['Verified'],
     coordinates: { latitude: -4.2798, longitude: 39.5947 } // Diani
   },
   {
     id: '9',
     name: 'Kiprop',
     age: 29,
+    gender: 'Male',
     location: 'Diaspora',
     neighborhood: 'London / Nairobi',
     zodiacSign: 'Capricorn',
@@ -209,15 +219,16 @@ const MOCK_MATCHES: MatchProfile[] = [
     distance: 15,
     isVerified: true,
     trustScore: 97,
-    subscriptionTier: 'VIP',
+    subscriptionTier: 'FREE',
     vibeCircle: 'Serious & Marriage',
-    badges: ['Verified', 'Top Pick', 'Pendo Gold'],
+    badges: ['Verified', 'Top Pick'],
     coordinates: { latitude: -1.2667, longitude: 36.8042 }
   },
   {
     id: '10',
     name: 'Wangari',
     age: 41,
+    gender: 'Female',
     location: 'Nairobi',
     neighborhood: 'Kilimani',
     zodiacSign: 'Libra',
@@ -228,15 +239,16 @@ const MOCK_MATCHES: MatchProfile[] = [
     distance: 4,
     isVerified: true,
     trustScore: 95,
-    subscriptionTier: 'VIP',
+    subscriptionTier: 'FREE',
     vibeCircle: 'Kilimani Mums',
-    badges: ['Verified', 'Top Pick', 'Pendo Gold'],
+    badges: ['Verified', 'Top Pick'],
     coordinates: { latitude: -1.2896, longitude: 36.7872 }
   },
   {
     id: '11',
     name: 'Shiro',
     age: 38,
+    gender: 'Female',
     location: 'Nairobi',
     neighborhood: 'Kileleshwa',
     zodiacSign: 'Leo',
@@ -247,15 +259,16 @@ const MOCK_MATCHES: MatchProfile[] = [
     distance: 6,
     isVerified: true,
     trustScore: 94,
-    subscriptionTier: 'GOLD',
+    subscriptionTier: 'FREE',
     vibeCircle: 'Mama wa Harrier',
-    badges: ['Verified', 'Pendo Gold'],
+    badges: ['Verified'],
     coordinates: { latitude: -1.2812, longitude: 36.7779 }
   },
   {
     id: '12',
     name: 'Brayo',
     age: 23,
+    gender: 'Male',
     location: 'Nairobi',
     neighborhood: 'Westlands',
     zodiacSign: 'Aries',
@@ -266,7 +279,7 @@ const MOCK_MATCHES: MatchProfile[] = [
     distance: 7,
     isVerified: true,
     trustScore: 91,
-    subscriptionTier: 'GOLD',
+    subscriptionTier: 'FREE',
     vibeCircle: 'Ben 10',
     badges: ['Verified', 'Top Pick'],
     coordinates: { latitude: -1.2647, longitude: 36.8019 }
@@ -275,25 +288,27 @@ const MOCK_MATCHES: MatchProfile[] = [
     id: '13',
     name: 'Hon. Omondi',
     age: 46,
+    gender: 'Male',
     location: 'Nairobi',
     neighborhood: 'Runda',
     zodiacSign: 'Capricorn',
-    bio: 'Senior infrastructure consultant in Runda & Karen. Appreciate elegance, jazz nights, Diani flights, and spoiling someone special with M-Pesa Zawadi.',
+    bio: 'Senior infrastructure consultant in Runda & Karen. Appreciate elegance, jazz nights, Diani flights, and spoiling someone special with free Virtual Zawadi.',
     interests: ['Jazz & Wine', 'Fine Dining', 'Soft Life'],
     languages: ['English', 'Luo', 'Swahili'],
     photoUrl: 'https://picsum.photos/seed/omondi_runda/400/600',
     distance: 11,
     isVerified: true,
     trustScore: 96,
-    subscriptionTier: 'VIP',
+    subscriptionTier: 'FREE',
     vibeCircle: 'Wababa',
-    badges: ['Verified', 'Pendo Gold'],
+    badges: ['Verified'],
     coordinates: { latitude: -1.2175, longitude: 36.8170 }
   },
   {
     id: '14',
     name: 'Tasha',
     age: 27,
+    gender: 'Female',
     location: 'Nairobi',
     neighborhood: 'Lavington',
     zodiacSign: 'Taurus',
@@ -304,15 +319,16 @@ const MOCK_MATCHES: MatchProfile[] = [
     distance: 5,
     isVerified: true,
     trustScore: 93,
-    subscriptionTier: 'GOLD',
+    subscriptionTier: 'FREE',
     vibeCircle: 'Soft Life',
-    badges: ['Verified', 'Pendo Gold'],
+    badges: ['Verified'],
     coordinates: { latitude: -1.2794, longitude: 36.7712 }
   },
   {
     id: '15',
     name: 'Kevoh',
     age: 26,
+    gender: 'Male',
     location: 'Nairobi',
     neighborhood: 'Ngong Road',
     zodiacSign: 'Gemini',
@@ -326,6 +342,26 @@ const MOCK_MATCHES: MatchProfile[] = [
     vibeCircle: 'Sherehe Crew',
     badges: ['Verified'],
     coordinates: { latitude: -1.2990, longitude: 36.7830 }
+  },
+  {
+    id: '16',
+    name: 'Zuri',
+    age: 25,
+    gender: 'Non-binary',
+    location: 'Nairobi',
+    neighborhood: 'Lavington',
+    zodiacSign: 'Aquarius',
+    bio: 'Sound artist & specialty coffee curator in Nairobi. Always down for indie film nights, gallery hops, and honest conversations.',
+    interests: ['Art', 'Coffee', 'Afrobeats'],
+    languages: ['English', 'Swahili', 'Sheng'],
+    photoUrl: 'https://picsum.photos/seed/zuri_nairobi/400/600',
+    distance: 5,
+    isVerified: true,
+    trustScore: 92,
+    subscriptionTier: 'FREE',
+    vibeCircle: 'Soft Life',
+    badges: ['Verified'],
+    coordinates: { latitude: -1.2752, longitude: 36.7689 }
   }
 ];
 
@@ -405,7 +441,7 @@ const MOCK_GROUPS: ChatSession[] = [
   {
     matchId: 'g_wababa',
     isGroup: true,
-    matchName: 'Wababa & Soft Life VIP 👑',
+    matchName: 'Wababa & Soft Life Circle 👑',
     matchPhoto: 'https://picsum.photos/seed/softlifevip/400/300',
     lastMessage: 'Friday jazz night at Tribe Hotel — who is in Karen/Runda?',
     unreadCount: 1,
@@ -1137,15 +1173,7 @@ const App: React.FC = () => {
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [discoveryVibeOverride, setDiscoveryVibeOverride] = useState<string | null>(null);
 
-  // Connected Modals: M-Pesa Express & Pendo Ngao Trust/Safety
-  const [mpesaModal, setMpesaModal] = useState<{
-    isOpen: boolean;
-    tab: 'BOOST' | 'GOLD' | 'GIFT' | 'RESERVE';
-    recipientId?: string;
-    recipientName?: string;
-    reserveVenue?: any;
-  }>({ isOpen: false, tab: 'GOLD' });
-
+  // Pendo Ngao Trust/Safety Modal
   const [safetyModal, setSafetyModal] = useState<{
     isOpen: boolean;
     tab: 'TRUST' | 'CHECKIN';
@@ -1176,10 +1204,10 @@ const App: React.FC = () => {
       : "Pendo | Kenya's #1 Dating & Matchmaking App";
     const description = route
       ? route.description
-      : "Find authentic Kenyan singles for real relationships. Connect with verified matches through voice lounges, M-Pesa Zawadi, and safe video dates on Pendo.";
+      : "Find authentic Kenyan singles for real relationships 100% free. Connect with verified matches through voice lounges, free Virtual Zawadi, and safe video dates on Pendo.";
     const keywords = route
       ? route.keywords
-      : "Kenya dating app, Nairobi dating, Kenyan singles, African matchmaking, Pendo Kenya, Kenya video date, Matatu Fare Shield, Voice Lounge Kenya";
+      : "Kenya dating app, Nairobi dating, Kenyan singles, free Kenya dating app, Pendo Kenya, Kenya video date, Live Date Safety Check-In, Voice Lounge Kenya";
     const canonicalUrl = route
       ? `https://www.pendo.website${route.path}`
       : 'https://www.pendo.website/';
@@ -1236,11 +1264,25 @@ const App: React.FC = () => {
     applySeoRouteMetadata(route, route.city);
   };
 
-  // Pathname & Hash Routing Listener (SEO Canonical Routes, WhatsApp Invites & Kenyan Cities)
+  // Pathname & Hash Routing Listener (Admin Route Guard + SEO Canonical Routes & Cities)
   useEffect(() => {
     const syncLocation = () => {
-      const pathname = window.location.pathname || '/';
+      const pathname = (window.location.pathname || '/').toLowerCase().replace(/\/+$/, '') || '/';
       const hash = (window.location.hash || '').toLowerCase();
+
+      if (pathname === '/admin') {
+        const robotsMeta = document.querySelector('meta[name="robots"]');
+        if (robotsMeta) robotsMeta.setAttribute('content', 'noindex, nofollow');
+        document.title = 'Pendo Restricted Workspace';
+        setView(AppView.ADMIN);
+        return;
+      }
+
+      const robotsMeta = document.querySelector('meta[name="robots"]');
+      if (robotsMeta) {
+        robotsMeta.setAttribute('content', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+      }
+
       const matchedRoute = findSeoRouteByPathOrHash(pathname, hash);
 
       if (matchedRoute) {
@@ -1272,6 +1314,16 @@ const App: React.FC = () => {
       window.removeEventListener('popstate', syncLocation);
     };
   }, []);
+
+  useEffect(() => {
+    const robotsMeta = document.querySelector('meta[name="robots"]');
+    if (!robotsMeta) return;
+    if (view === AppView.ADMIN) {
+      robotsMeta.setAttribute('content', 'noindex, nofollow');
+    } else {
+      robotsMeta.setAttribute('content', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+    }
+  }, [view]);
 
   const handleReferralReward = async (type: 'BOOST' | 'TRUST') => {
     const newExpiresAt = Date.now() + 30 * 60 * 1000;
@@ -1325,6 +1377,7 @@ const App: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setAuthUser(user);
+        const onAdminPath = (window.location.pathname || '/').toLowerCase().replace(/\/+$/, '') === '/admin';
         // fetch user profile
         try {
           const profileDoc = await getDoc(doc(db, 'users', user.uid));
@@ -1332,10 +1385,10 @@ const App: React.FC = () => {
              const loadedProfile = profileDoc.data() as UserProfile;
              const computedTrust = calculateTrustScore(loadedProfile).total;
              setUserProfile({ ...loadedProfile, trustScore: loadedProfile.trustScore || computedTrust });
-             setView(AppView.DISCOVERY);
+             setView(onAdminPath && isVincentAdminUser(user) ? AppView.ADMIN : AppView.DISCOVERY);
           } else {
              setUserProfile(prev => ({ ...prev, uid: user.uid, name: user.displayName || prev.name, photoUrl: user.photoURL || prev.photoUrl }));
-             setView(AppView.PROFILE_SETUP);
+             setView(onAdminPath && isVincentAdminUser(user) ? AppView.ADMIN : AppView.PROFILE_SETUP);
           }
         } catch (e: any) {
           const errCode = String(e?.code || '').toLowerCase();
@@ -1356,7 +1409,7 @@ const App: React.FC = () => {
               name: user.displayName || prev.name || 'Pendo User',
               photoUrl: user.photoURL || prev.photoUrl,
             }));
-            setView(AppView.DISCOVERY);
+            setView(onAdminPath && isVincentAdminUser(user) ? AppView.ADMIN : AppView.DISCOVERY);
           } else {
             handleFirestoreError(e, OperationType.GET, 'users');
           }
@@ -1628,7 +1681,7 @@ const App: React.FC = () => {
         location: profile.location || 'Nairobi',
         bio: profile.bio || 'New member',
         trustScore: computedScore,
-        subscriptionTier: profile.subscriptionTier || 'FREE',
+        subscriptionTier: 'FREE',
         ageVerified: isAdult,
         dataSaverEnabled: Boolean(profile.dataSaverEnabled),
         ...(profile.vibeQuizCompleted ? { vibeQuizCompleted: true } : {}),
@@ -1664,6 +1717,7 @@ const App: React.FC = () => {
       ...profile,
       uid: activeUid,
       trustScore: computedScore,
+      subscriptionTier: 'FREE',
       ageVerified: isAdult,
       dataSaverEnabled: Boolean(profile.dataSaverEnabled),
     };
@@ -1741,42 +1795,6 @@ const App: React.FC = () => {
       const updated = { ...prev, boostExpiresAt: expiresAt };
       safeStorage.setItem('pendo_user_profile', JSON.stringify(updated));
       return updated;
-    });
-  };
-
-  const handleGoldUpgraded = (tier: 'GOLD' | 'VIP', mpesaPhone: string) => {
-    setUserProfile(prev => {
-      const updated: UserProfile = {
-        ...prev,
-        subscriptionTier: tier,
-        mpesaPhone,
-        trustScore: calculateTrustScore({ ...prev, subscriptionTier: tier, mpesaPhone }).total
-      };
-      safeStorage.setItem('pendo_user_profile', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const handleMpesaGiftSent = (gift: VirtualGift, receiptNumber: string) => {
-    setUserProfile(prev => {
-      const updated: UserProfile = {
-        ...prev,
-        giftsSent: (prev.giftsSent || 0) + 1
-      };
-      safeStorage.setItem('pendo_user_profile', JSON.stringify(updated));
-      return updated;
-    });
-
-    const targetChatId = mpesaModal.recipientId || activeChatId;
-    if (targetChatId) {
-      const giftMsg = `🎁 Sent M-Pesa Zawadi: **${gift.icon} ${gift.name}** (${gift.swahiliTag} · KES ${gift.priceKes}) — Receipt #${receiptNumber}`;
-      handleSendMessageToChat(targetChatId, giftMsg);
-    }
-    triggerNotification({
-      type: 'ZAWADI',
-      title: `Zawadi Sent · ${gift.name}`,
-      body: `KES ${gift.priceKes} M-Pesa Receipt #${receiptNumber} delivered.`,
-      targetView: AppView.CHAT_LIST,
     });
   };
 
@@ -2091,7 +2109,7 @@ const App: React.FC = () => {
 
             {/* Hero Section */}
             <div className="relative z-10 text-center pt-4 pb-6 w-full max-w-sm mx-auto">
-              <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/30 text-[11px] font-extrabold text-amber-300 shadow-sm">
                   <ShieldCheck size={14} className="text-emerald-400" />
                   <span>Kenya's #1 Verified Dating Community</span>
@@ -2110,6 +2128,19 @@ const App: React.FC = () => {
                   <Gauge size={13} />
                   <span>{userProfile.dataSaverEnabled ? 'Data Saver ON' : 'Save Data'}</span>
                 </button>
+                {isVincentAdminUser(authUser) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try { window.history.pushState({}, '', '/admin'); } catch {}
+                      setView(AppView.ADMIN);
+                    }}
+                    className="min-h-[34px] px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-slate-950 text-emerald-300 border border-emerald-400/50 hover:bg-slate-900 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Lock size={12} />
+                    <span>Admin Center</span>
+                  </button>
+                )}
               </div>
 
               <div className="w-16 h-16 bg-white/15 backdrop-blur-lg rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xl rotate-3 border border-white/25">
@@ -2122,7 +2153,7 @@ const App: React.FC = () => {
               <p className="text-xs text-white font-medium mb-5 leading-relaxed">
                 {activeSeoRoute
                   ? activeSeoRoute.heroSubtitle
-                  : 'Meet verified singles across Nairobi, Mombasa, Kisumu, Nakuru & Eldoret with M-Pesa Zawadi, Sheng AI & Live Date Safety Shield.'}
+                  : '100% free Kenyan dating — meet verified singles across Nairobi, Mombasa, Kisumu, Nakuru & Eldoret with free Virtual Zawadi, Sheng AI & Live Date Safety Check-In.'}
               </p>
 
               {/* Login Actions */}
@@ -2317,10 +2348,7 @@ const App: React.FC = () => {
               </section>
 
               {/* Google AdSense Responsive Display Slot */}
-              <AdSenseBanner
-                isGoldMember={userProfile.subscriptionTier === 'GOLD' || userProfile.subscriptionTier === 'VIP'}
-                className="max-w-sm mx-auto mt-4"
-              />
+              <AdSenseBanner className="max-w-sm mx-auto mt-4" />
             </div>
             
             <div className="relative z-10 text-center pb-2 text-[11px] text-white font-bold">
@@ -2386,18 +2414,19 @@ const App: React.FC = () => {
                     <span>{activeTrustScore}%</span>
                  </button>
 
-                 {/* Pendo Gold / M-Pesa Pass Button */}
+                 {/* 100% Free Instant Profile Boost Button */}
                  <button
-                    onClick={() => setMpesaModal({ isOpen: true, tab: 'GOLD' })}
+                    type="button"
+                    onClick={() => handleBoost(30 * 60 * 1000)}
                     className={`px-2.5 py-1.5 rounded-full font-black text-[11px] flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer ${
-                      userProfile.subscriptionTier && userProfile.subscriptionTier !== 'FREE'
-                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950'
-                        : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'
+                      userProfile.boostExpiresAt && userProfile.boostExpiresAt > Date.now()
+                        ? 'bg-gradient-to-r from-purple-600 to-rose-600 text-white'
+                        : 'bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200'
                     }`}
-                    title="Pendo Gold & M-Pesa Express"
+                    title="Free 30-Minute Profile Boost"
                  >
-                    <Crown size={12} className="text-amber-600" />
-                    <span>{userProfile.subscriptionTier && userProfile.subscriptionTier !== 'FREE' ? userProfile.subscriptionTier : 'Gold'}</span>
+                    <Zap size={12} className={userProfile.boostExpiresAt && userProfile.boostExpiresAt > Date.now() ? 'text-amber-300' : 'text-purple-600'} />
+                    <span>{userProfile.boostExpiresAt && userProfile.boostExpiresAt > Date.now() ? 'Boosted' : 'Free Boost'}</span>
                  </button>
 
                  {/* PWA Install Button Badge */}
@@ -2428,6 +2457,20 @@ const App: React.FC = () => {
                  >
                     <Mic size={16} />
                  </button>
+                 {isVincentAdminUser(authUser) && (
+                   <button
+                     type="button"
+                     onClick={() => {
+                       try { window.history.pushState({}, '', '/admin'); } catch {}
+                       setView(AppView.ADMIN);
+                     }}
+                     className="min-h-[36px] px-2.5 py-1 bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-slate-700 rounded-full text-[11px] font-extrabold flex items-center gap-1 cursor-pointer"
+                     title="Vincent Admin Copy & Store Center"
+                   >
+                     <Lock size={12} />
+                     <span className="hidden sm:inline">Admin</span>
+                   </button>
+                 )}
                  <button
                    onClick={() => setSafetyModal({ isOpen: true, tab: 'TRUST' })}
                    className={`w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-slate-300 relative cursor-pointer ${userProfile.boostExpiresAt && userProfile.boostExpiresAt > Date.now() ? 'ring-2 ring-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : ''}`}
@@ -2446,7 +2489,6 @@ const App: React.FC = () => {
               onLike={handleLike} 
               onPass={handlePass} 
               onBoost={() => handleBoost(30 * 60 * 1000)}
-              onOpenMpesaModal={(tab) => setMpesaModal({ isOpen: true, tab })}
               onOpenSafetyModal={() => setSafetyModal({ isOpen: true, tab: 'TRUST' })}
               onOpenAlikaModal={() => setIsAlikaModalOpen(true)}
             />
@@ -2482,9 +2524,17 @@ const App: React.FC = () => {
              <HangoutSpots
                venues={MOCK_VENUES}
                onCheckIn={handleCheckInVenue}
-               onReserveVenue={(venue) =>
-                 setMpesaModal({ isOpen: true, tab: 'RESERVE', reserveVenue: venue })
-               }
+               onReserveVenue={(venue) => {
+                 handleCheckInVenue(venue);
+                 handleSendMessageToChat(venue.id, `🍽️ Free Date Table Invite at ${venue.name} (${venue.location}) — who's free to link up?`);
+                 triggerNotification({
+                   type: 'CIRCLE',
+                   title: `Date Table Invite · ${venue.name}`,
+                   body: `Shared a free table invite inside ${venue.name} lounge.`,
+                   targetView: AppView.CHAT_ROOM,
+                   targetId: venue.id,
+                 });
+               }}
              />
            </main>
         );
@@ -2536,9 +2586,6 @@ const App: React.FC = () => {
               onDeleteMessage={handleDeleteMessage}
               onBlockUser={handleBlockUser}
               typingUsers={typingStatus[activeSession.matchId]}
-              onOpenMpesaGift={(recipientId, recipientName) =>
-                setMpesaModal({ isOpen: true, tab: 'GIFT', recipientId, recipientName })
-              }
               onOpenSafetyCheckin={(matchName) =>
                 setSafetyModal({ isOpen: true, tab: 'CHECKIN', matchName })
               }
@@ -2567,6 +2614,64 @@ const App: React.FC = () => {
                 />
               </main>
           );
+
+      case AppView.ADMIN:
+        if (!isVincentAdminUser(authUser)) {
+          return (
+            <main id="main-content" className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
+              <div className="max-w-sm w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
+                  <Lock size={22} />
+                </div>
+                <h1 className="text-lg font-extrabold tracking-tight">Restricted Workspace</h1>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Admin Center is strictly restricted to Vincent Mwangangi&apos;s verified Google account.
+                </p>
+                <div className="space-y-2">
+                  <GoogleAuthButton
+                    onClick={async () => {
+                      const signed = await signInWithGoogle();
+                      if (signed) {
+                        setAuthUser(signed);
+                        if (isVincentAdminUser(signed)) {
+                          setView(AppView.ADMIN);
+                        }
+                      }
+                    }}
+                    isLoading={isSigningInGoogle}
+                    text="Verify Owner Google Account"
+                    className="w-full"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try { window.history.pushState({}, '', '/'); } catch {}
+                      setView(AppView.LANDING);
+                    }}
+                    className="min-h-[42px] w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl cursor-pointer transition-colors"
+                  >
+                    Return to Pendo
+                  </button>
+                </div>
+              </div>
+            </main>
+          );
+        }
+        return (
+          <AdminDashboard
+            authUser={authUser}
+            onBackToApp={() => {
+              try { window.history.pushState({}, '', '/'); } catch {}
+              setView(authUser ? AppView.DISCOVERY : AppView.LANDING);
+            }}
+            onSignOut={async () => {
+              await signOut();
+              setAuthUser(null);
+              try { window.history.pushState({}, '', '/'); } catch {}
+              setView(AppView.LANDING);
+            }}
+          />
+        );
     }
   };
 
@@ -2574,7 +2679,7 @@ const App: React.FC = () => {
   const showNav = [AppView.DISCOVERY, AppView.VIBES, AppView.HANGOUTS, AppView.CHAT_LIST, AppView.MEET].includes(view);
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden flex flex-col">
+    <div className={`${view === AppView.DISCOVERY || view === AppView.ADMIN ? 'max-w-md lg:max-w-5xl xl:max-w-6xl' : 'max-w-md'} mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden flex flex-col`}>
       {(!isNetworkOnline || isOffline) && (
         <div className="bg-amber-600 text-white text-[11px] py-1.5 px-4 font-bold text-center z-50 flex items-center justify-center gap-1.5 shrink-0 shadow-sm">
           <span className="w-2 h-2 rounded-full bg-amber-200 animate-pulse shrink-0"></span>
@@ -2614,27 +2719,6 @@ const App: React.FC = () => {
               markAsRead(item.id);
               if (item.targetView) {
                 setView(item.targetView);
-              }
-            }}
-          />
-        )}
-
-        {/* M-Pesa Express (Daraja 2.0) Modal for Boosts, Pendo Gold, Virtual Zawadi & Date Table Reserve */}
-        {mpesaModal.isOpen && (
-          <MpesaModal
-            isOpen={mpesaModal.isOpen}
-            onClose={() => setMpesaModal(prev => ({ ...prev, isOpen: false }))}
-            initialTab={mpesaModal.tab}
-            userProfile={userProfile}
-            recipientId={mpesaModal.recipientId}
-            recipientName={mpesaModal.recipientName}
-            reserveVenue={mpesaModal.reserveVenue}
-            onBoostActivated={handleBoost}
-            onGoldUpgraded={handleGoldUpgraded}
-            onGiftSent={handleMpesaGiftSent}
-            onVenueReserved={(venueName, receipt, code) => {
-              if (activeChatId) {
-                handleSendMessageToChat(activeChatId, `🍽️ Reserved our date table at ${venueName}! (Booking Code: ${code})`);
               }
             }}
           />
@@ -2684,59 +2768,61 @@ const App: React.FC = () => {
       {showNav && (
         <nav
           aria-label="Primary App Navigation"
-          className="fixed bottom-0 w-full max-w-md bg-white border-t border-slate-100 flex justify-around items-center py-2 px-1 z-40 pb-3"
+          className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full ${view === AppView.DISCOVERY ? 'max-w-md lg:max-w-5xl xl:max-w-6xl' : 'max-w-md'} bg-white border-t border-slate-100 z-40 pb-3 pt-2 px-1`}
         >
-          <button 
-            onClick={() => setView(AppView.DISCOVERY)}
-            className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.DISCOVERY ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            <Heart size={20} fill={view === AppView.DISCOVERY ? "currentColor" : "none"} />
-            <span className="text-[10px] font-semibold">Discover</span>
-          </button>
+          <div className="max-w-md mx-auto flex justify-around items-center">
+            <button 
+              onClick={() => setView(AppView.DISCOVERY)}
+              className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.DISCOVERY ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <Heart size={20} fill={view === AppView.DISCOVERY ? "currentColor" : "none"} />
+              <span className="text-[10px] font-semibold">Discover</span>
+            </button>
 
-          <button 
-            onClick={() => setView(AppView.VIBES)}
-            className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.VIBES ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            <Users size={20} />
-            <span className="text-[10px] font-semibold">Vibes</span>
-          </button>
+            <button 
+              onClick={() => setView(AppView.VIBES)}
+              className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.VIBES ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <Users size={20} />
+              <span className="text-[10px] font-semibold">Vibes</span>
+            </button>
 
-          <button 
-            onClick={() => setView(AppView.HANGOUTS)}
-            className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.HANGOUTS ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            <MapPin size={20} fill={view === AppView.HANGOUTS ? "currentColor" : "none"} />
-            <span className="text-[10px] font-semibold">Hangouts</span>
-          </button>
+            <button 
+              onClick={() => setView(AppView.HANGOUTS)}
+              className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.HANGOUTS ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <MapPin size={20} fill={view === AppView.HANGOUTS ? "currentColor" : "none"} />
+              <span className="text-[10px] font-semibold">Hangouts</span>
+            </button>
 
-          <button 
-            onClick={() => setView(AppView.MEET)}
-            className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.MEET ? 'text-purple-600' : 'text-slate-500 hover:text-slate-800'}`}
-            title="Video Date Hub (Google Meet)"
-          >
-            <Video size={20} fill={view === AppView.MEET ? "currentColor" : "none"} className={view === AppView.MEET ? 'text-purple-600' : 'text-purple-500'} />
-            <span className={`text-[10px] font-bold ${view === AppView.MEET ? 'text-purple-600' : 'text-slate-500'}`}>VidDate</span>
-          </button>
-          
-          <button 
-            onClick={() => setView(AppView.CHAT_LIST)}
-            className={`relative min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.CHAT_LIST ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            <MessageCircle size={20} fill={view === AppView.CHAT_LIST ? "currentColor" : "none"} />
-            <span className="text-[10px] font-semibold">Chats</span>
-            {chats.some(c => c.unreadCount > 0) && (
-              <span className="absolute top-1.5 right-2.5 w-2 h-2 bg-rose-600 rounded-full"></span>
-            )}
-          </button>
-          
-          <button 
-            onClick={() => setView(AppView.PROFILE_SETUP)}
-            className="min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 text-slate-500 hover:text-slate-800 cursor-pointer"
-          >
-            <UserIcon size={20} />
-            <span className="text-[10px] font-semibold">Profile</span>
-          </button>
+            <button 
+              onClick={() => setView(AppView.MEET)}
+              className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.MEET ? 'text-purple-600' : 'text-slate-500 hover:text-slate-800'}`}
+              title="Video Date Hub (Google Meet)"
+            >
+              <Video size={20} fill={view === AppView.MEET ? "currentColor" : "none"} className={view === AppView.MEET ? 'text-purple-600' : 'text-purple-500'} />
+              <span className={`text-[10px] font-bold ${view === AppView.MEET ? 'text-purple-600' : 'text-slate-500'}`}>VidDate</span>
+            </button>
+            
+            <button 
+              onClick={() => setView(AppView.CHAT_LIST)}
+              className={`relative min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${view === AppView.CHAT_LIST ? 'text-rose-600' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <MessageCircle size={20} fill={view === AppView.CHAT_LIST ? "currentColor" : "none"} />
+              <span className="text-[10px] font-semibold">Chats</span>
+              {chats.some(c => c.unreadCount > 0) && (
+                <span className="absolute top-1.5 right-2.5 w-2 h-2 bg-rose-600 rounded-full"></span>
+              )}
+            </button>
+            
+            <button 
+              onClick={() => setView(AppView.PROFILE_SETUP)}
+              className="min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-0.5 text-slate-500 hover:text-slate-800 cursor-pointer"
+            >
+              <UserIcon size={20} />
+              <span className="text-[10px] font-semibold">Profile</span>
+            </button>
+          </div>
         </nav>
       )}
 

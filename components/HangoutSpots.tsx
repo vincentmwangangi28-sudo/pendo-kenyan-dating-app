@@ -444,7 +444,7 @@ export const HangoutSpots: React.FC<HangoutSpotsProps> = ({ venues: initialVenue
                   onClick={() => onReserveVenue ? onReserveVenue(venue) : null}
                   className="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-98 cursor-pointer shadow-xs"
                 >
-                  <span>🍽️</span> Reserve Table
+                  <span>🍽️</span> Date Table Invite
                 </button>
               </div>
             </div>

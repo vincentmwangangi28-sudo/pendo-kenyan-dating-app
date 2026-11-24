@@ -63,7 +63,6 @@ export const SafetyVerificationModal: React.FC<SafetyVerificationModalProps> = (
   const [emergencyName, setEmergencyName] = useState('Best Friend / Sister');
   const [emergencyPhone, setEmergencyPhone] = useState('0722000111');
   const [durationMins, setDurationMins] = useState<number>(120);
-  const [fareShieldKes, setFareShieldKes] = useState<number>(500);
   const [activeCheckin, setActiveCheckin] = useState<SafetyCheckin | null>(null);
   const [isSavingCheckin, setIsSavingCheckin] = useState(false);
 
@@ -172,7 +171,6 @@ export const SafetyVerificationModal: React.FC<SafetyVerificationModalProps> = (
       city: userProfile.location || 'Nairobi',
       emergencyContactName: emergencyName,
       emergencyContactPhone: emergencyPhone,
-      fareShieldKes,
       status: 'ACTIVE',
       createdAt: Date.now(),
       checkInBy: Date.now() + durationMins * 60 * 1000
@@ -229,7 +227,7 @@ export const SafetyVerificationModal: React.FC<SafetyVerificationModalProps> = (
           </div>
 
           <h2 className="text-xl font-extrabold tracking-tight">
-            {activeTab === 'TRUST' ? 'Explainable Trust Score & Selfie ID' : 'Live Date Safety & Fare Shield'}
+            {activeTab === 'TRUST' ? 'Explainable Trust Score & Selfie ID' : 'Live Date Safety Check-In'}
           </h2>
           <p className="text-xs text-slate-300 mt-0.5">
             Real-time selfie pose verification & public date venue check-ins across Kenya
@@ -402,7 +400,7 @@ export const SafetyVerificationModal: React.FC<SafetyVerificationModalProps> = (
                       <Lock size={10} /> Active Date Safety Beacon
                     </span>
                     <span className="text-xs font-mono font-bold text-emerald-800">
-                      Fare Shield: {activeCheckin.fareShieldKes} KES
+                      Timer: Active
                     </span>
                   </div>
 
@@ -419,7 +417,7 @@ export const SafetyVerificationModal: React.FC<SafetyVerificationModalProps> = (
                         type="button"
                         onClick={() => {
                           onShareSafetyBeaconToChat(
-                            `🛡️ [PENDO SAFETY BEACON ACTIVE]\n📍 Public Venue: ${activeCheckin.venueName}\n🚗 Matatu/Uber Fare Shield: ${activeCheckin.fareShieldKes} KES\n⏰ Check-in logged with trusted contact.`
+                            `🛡️ [PENDO SAFETY BEACON ACTIVE]\n📍 Public Venue: ${activeCheckin.venueName}\n⏰ Check-in logged with trusted contact.`
                           );
                           onClose();
                         }}
@@ -498,32 +496,19 @@ export const SafetyVerificationModal: React.FC<SafetyVerificationModalProps> = (
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                        <Clock size={11} className="inline mr-1" /> Check-In Timer
-                      </label>
-                      <select
-                        value={durationMins}
-                        onChange={(e) => setDurationMins(Number(e.target.value))}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-900 bg-white outline-none"
-                      >
-                        <option value={60}>60 Minutes</option>
-                        <option value={120}>2 Hours</option>
-                        <option value={180}>3 Hours</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                        Matatu/Uber Return Fare
-                      </label>
-                      <input
-                        type="number"
-                        value={fareShieldKes}
-                        onChange={(e) => setFareShieldKes(Number(e.target.value))}
-                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-mono font-bold text-emerald-700 outline-none"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                      <Clock size={11} className="inline mr-1" /> Check-In Timer
+                    </label>
+                    <select
+                      value={durationMins}
+                      onChange={(e) => setDurationMins(Number(e.target.value))}
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-900 bg-white outline-none"
+                    >
+                      <option value={60}>60 Minutes</option>
+                      <option value={120}>2 Hours</option>
+                      <option value={180}>3 Hours</option>
+                    </select>
                   </div>
 
                   <button

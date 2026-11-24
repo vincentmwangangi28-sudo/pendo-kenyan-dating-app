@@ -5,7 +5,7 @@
   "framework": "vite",
   "redirects": [
     {
-      "source": "/((?!cguyxqk3krxuvjeesrp67h8cmz7cvvmn\\.txt|8zvbpmffgtwz251x44qqw5h5ugnvyyva\\.txt|robots\\.txt).*)",
+      "source": "/((?!cguyxqk3krxuvjeesrp67h8cmz7cvvmn\\.txt|8zvbpmffgtwz251x44qqw5h5ugnvyyva\\.txt|robots\\.txt|sitemap\\.xml|sitemap_index\\.xml|\\.well-known/).*)",
       "has": [
         {
           "type": "host",
@@ -22,7 +22,7 @@
       "destination": "/api"
     },
     {
-      "source": "/((?!api|llms\\.txt|ai-catalog\\.json|robots\\.txt|sitemap\\.xml|cguyxqk3krxuvjeesrp67h8cmz7cvvmn\\.txt|8zvbpmffgtwz251x44qqw5h5ugnvyyva\\.txt|BingSiteAuth\\.xml|bingsiteauth\\.xml|google00332d67777e965d\\.html|assets/).*)",
+      "source": "/((?!api|\\.well-known|llms\\.txt|ai-catalog\\.json|robots\\.txt|sitemap\\.xml|sitemap_index\\.xml|manifest\\.webmanifest|sw\\.js|registerSW\\.js|workbox-.*\\.js|cguyxqk3krxuvjeesrp67h8cmz7cvvmn\\.txt|8zvbpmffgtwz251x44qqw5h5ugnvyyva\\.txt|BingSiteAuth\\.xml|bingsiteauth\\.xml|google00332d67777e965d\\.html|assets/|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2|xml|txt|json|webmanifest)).*)",
       "destination": "/index.html"
     }
   ],
@@ -33,6 +33,45 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(sitemap\\.xml|sitemap_index\\.xml|BingSiteAuth\\.xml|bingsiteauth\\.xml)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/manifest\\.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
+      "source": "/\\.well-known/(.*)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
         }
       ]
     },
@@ -59,6 +98,15 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/admin",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
         }
       ]
     },

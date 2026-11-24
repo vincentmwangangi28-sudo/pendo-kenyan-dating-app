@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Bell, BellRing, Heart, Gift, Calendar, Receipt, CheckCheck, Sparkles } from 'lucide-react';
+import { X, Bell, BellRing, Heart, Gift, Calendar, CheckCheck, Sparkles } from 'lucide-react';
 import { AppNotification, AppView } from '../types';
 
 interface NotificationCenterModalProps {
@@ -33,8 +33,6 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
         return <Gift size={18} className="text-amber-600" />;
       case 'MEETUP':
         return <Calendar size={18} className="text-emerald-600" />;
-      case 'MPESA':
-        return <Receipt size={18} className="text-emerald-700" />;
       default:
         return <Sparkles size={18} className="text-indigo-600" />;
     }
@@ -135,7 +133,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
               </div>
               <h3 className="text-sm font-bold text-slate-900">No alerts yet</h3>
               <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-                New mutual likes, M-Pesa Zawadi receipts, and Vibe Circle meetup RSVPs appear here in real time.
+                New mutual likes, free Virtual Zawadi gifts, and Vibe Circle meetup RSVPs appear here in real time.
               </p>
             </div>
           ) : (

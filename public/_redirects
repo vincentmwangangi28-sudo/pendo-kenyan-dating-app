@@ -1,7 +1,12 @@
 /llms.txt /llms.txt 200
 /ai-catalog.json /ai-catalog.json 200
 /sitemap.xml /sitemap.xml 200
+/sitemap_index.xml /sitemap_index.xml 200
 /robots.txt /robots.txt 200
+/manifest.webmanifest /manifest.webmanifest 200
+/sw.js /sw.js 200
+/registerSW.js /registerSW.js 200
+/.well-known/* /.well-known/:splat 200
 /BingSiteAuth.xml /BingSiteAuth.xml 200
 /bingsiteauth.xml /bingsiteauth.xml 200
 /google00332d67777e965d.html /google00332d67777e965d.html 200
