@@ -1204,7 +1204,7 @@ const App: React.FC = () => {
       : "Pendo | Kenya's #1 Dating & Matchmaking App";
     const description = route
       ? route.description
-      : "Find authentic Kenyan singles for real relationships 100% free. Connect with verified matches through voice lounges, free Virtual Zawadi, and safe video dates on Pendo.";
+      : "Meet verified Kenyan singles for real relationships 100% free. Enjoy voice lounges, Virtual Zawadi, and safe video dates on Pendo.";
     const keywords = route
       ? route.keywords
       : "Kenya dating app, Nairobi dating, Kenyan singles, free Kenya dating app, Pendo Kenya, Kenya video date, Live Date Safety Check-In, Voice Lounge Kenya";

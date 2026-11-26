@@ -27,7 +27,7 @@ export const KENYAN_VIBE_CIRCLES = [
 ] as const;
 
 export const SITE_ORIGIN = 'https://www.pendo.website';
-export const SITEMAP_LASTMOD = '2026-11-23';
+export const SITEMAP_LASTMOD = '2026-11-26';
 
 export const SEO_ROUTES: SeoRouteConfig[] = [
   {
@@ -263,7 +263,7 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     h1: 'Kilimani Mums — Nairobi Queens & Companionship',
     heroSubtitle: 'Connect with established, independent Kilimani, Kileleshwa, and Lavington queens 100% free for genuine fun, loyalty, and great vibes.',
     title: 'Kilimani Mums Dating | Meet Nairobi Queens — Pendo',
-    description: 'Meet verified, independent Kilimani Mums and established Nairobi women in Kilimani, Kileleshwa & Lavington 100% free for loyal companionship and soft-life dates.',
+    description: 'Meet verified Kilimani Mums and established Nairobi queens in Kilimani, Kileleshwa & Lavington 100% free for loyalty and soft-life dates.',
     keywords: 'Kilimani Mums, Nairobi mature women dating, Kilimani singles, Kileleshwa dating, Pendo Kilimani',
     badge: 'Kilimani & Kileleshwa Circle',
     priority: '0.90',
@@ -305,7 +305,7 @@ export const SEO_ROUTES: SeoRouteConfig[] = [
     h1: 'Wababa & Soft Life — Free Kenyan Matchmaking',
     heroSubtitle: 'Experience Runda, Karen & Westlands fine dining, Diani weekend flights, and Virtual Zawadi pampering with established Kenyan gentlemen — 100% free.',
     title: 'Wababa & Soft Life Kenya | Free Matchmaking — Pendo',
-    description: 'Meet established Kenyan Wababa gentlemen and Soft Life enthusiasts in Runda, Karen & Westlands 100% free for fine dinners, Diani trips, and Virtual Zawadi.',
+    description: 'Meet established Kenyan Wababa and Soft Life singles in Runda, Karen & Westlands 100% free for fine dinners, Diani trips & Virtual Zawadi.',
     keywords: 'Wababa Kenya, Soft Life dating Nairobi, Karen Runda dating, free Kenyan matchmaking, Virtual Zawadi',
     badge: 'Soft Life Circle',
     priority: '0.90',

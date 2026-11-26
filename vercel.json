@@ -3,6 +3,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "trailingSlash": false,
   "redirects": [
     {
       "source": "/((?!cguyxqk3krxuvjeesrp67h8cmz7cvvmn\\.txt|8zvbpmffgtwz251x44qqw5h5ugnvyyva\\.txt|robots\\.txt|sitemap\\.xml|sitemap_index\\.xml|\\.well-known/).*)",
@@ -125,6 +126,18 @@
         {
           "key": "X-Content-Type-Options",
           "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self), microphone=(self), geolocation=(self)"
         },
         {
           "key": "Cross-Origin-Opener-Policy",

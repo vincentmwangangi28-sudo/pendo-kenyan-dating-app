@@ -122,10 +122,38 @@ async function runUnitAndStaticChecks() {
   assert.ok(fs.existsSync(path.join(WORKDIR, 'dist', 'index.html')), 'dist/index.html missing');
   assert.ok(fs.existsSync(path.join(WORKDIR, 'dist', 'sitemap.xml')), 'dist/sitemap.xml missing');
   assert.ok(fs.existsSync(path.join(WORKDIR, 'dist', 'sitemap_index.xml')), 'dist/sitemap_index.xml missing');
-  for (const route of SEO_ROUTES) {
-    const slug = route.path.replace(/^\/+/, '');
-    const htmlPath = path.join(WORKDIR, 'dist', slug, 'index.html');
-    assert.ok(fs.existsSync(htmlPath), `Missing pre-rendered HTML for ${route.path}`);
+  const distHtmlPaths = [
+    { urlPath: '/', filePath: path.join(WORKDIR, 'dist', 'index.html') },
+    ...SEO_ROUTES.map((route) => ({
+      urlPath: route.path,
+      filePath: path.join(WORKDIR, 'dist', route.path.replace(/^\/+/, ''), 'index.html'),
+    })),
+  ];
+  const seenTitles = new Set<string>();
+  const seenCanonicals = new Set<string>();
+  for (const { urlPath, filePath } of distHtmlPaths) {
+    assert.ok(fs.existsSync(filePath), `Missing pre-rendered HTML for ${urlPath}`);
+    const html = fs.readFileSync(filePath, 'utf8');
+    const h1Count = (html.match(/<h1[\s>]/gi) || []).length;
+    assert.equal(h1Count, 1, `Expected strictly 1 <h1> on ${urlPath}, found ${h1Count}`);
+    assert.ok(/<h2[\s>]/i.test(html), `Expected <h2> heading hierarchy on ${urlPath}`);
+    assert.ok(html.includes('<a href="/"'), `Expected static internal link to / on ${urlPath}`);
+
+    const descMatch = html.match(/<meta\s+name="description"\s+content="([^"]*)"/i);
+    const decodedDesc = (descMatch?.[1] || '').replace(/&amp;/g, '&').replace(/&quot;/g, '"');
+    assert.ok(
+      decodedDesc.length >= 70 && decodedDesc.length <= 160,
+      `Meta description length on ${urlPath} out of range (got ${decodedDesc.length})`
+    );
+
+    const titleMatch = html.match(/<title>([\s\S]*?)<\/title>/i);
+    const canonicalMatch = html.match(/<link\s+rel="canonical"\s+href="([^"]*)"/i);
+    const titleVal = (titleMatch?.[1] || '').trim();
+    const canonicalVal = (canonicalMatch?.[1] || '').trim();
+    assert.ok(titleVal && !seenTitles.has(titleVal), `Duplicate or missing title on ${urlPath}`);
+    assert.ok(canonicalVal && !seenCanonicals.has(canonicalVal), `Duplicate or missing canonical on ${urlPath}`);
+    seenTitles.add(titleVal);
+    seenCanonicals.add(canonicalVal);
   }
   const nairobiHtml = fs.readFileSync(path.join(WORKDIR, 'dist', 'nairobi-dating', 'index.html'), 'utf8');
   assert.ok(nairobiHtml.includes('<noscript>') && nairobiHtml.includes('Find authentic Kenyan singles'), 'Prerender must preserve noscript fallback text');
@@ -190,12 +218,19 @@ async function runLiveServerE2E() {
     const appleAssocJson = (await appleAssocRes.json()) as any;
     assert.ok(JSON.stringify(appleAssocJson).includes('com.pendo.kenyandating'));
 
-    // Soft-404 protection & strict server-side Admin API guard
+    // Trailing-slash canonical 301 normalization + soft-404 protection & strict server-side Admin API guard
+    const trailingSlashRedirect = await httpGetRaw(`${BASE_URL}/nairobi-dating/?utm_source=test`);
+    assert.equal(trailingSlashRedirect.status, 301, 'Trailing slash URLs must 301 redirect to non-trailing-slash canonical');
+    assert.equal(trailingSlashRedirect.headers.location, '/nairobi-dating?utm_source=test');
+
     const missingPageRes = await fetch(`${BASE_URL}/this-route-does-not-exist-404`);
     assert.equal(missingPageRes.status, 404, 'Unknown paths must return real HTTP 404 instead of Soft-404 200');
 
     const unauthAdminAudit = await fetch(`${BASE_URL}/api/admin/seo-audit`);
     assert.equal(unauthAdminAudit.status, 401, '/api/admin/seo-audit must reject unauthenticated callers');
+
+    const unauthAdminAhrefs = await fetch(`${BASE_URL}/api/admin/ahrefs-issues`);
+    assert.equal(unauthAdminAhrefs.status, 401, '/api/admin/ahrefs-issues must reject unauthenticated callers');
 
     const unauthAdminIndexNow = await fetch(`${BASE_URL}/api/admin/indexnow`, { method: 'POST' });
     assert.equal(unauthAdminIndexNow.status, 401, '/api/admin/indexnow must reject unauthenticated callers');

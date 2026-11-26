@@ -92,8 +92,25 @@ async function startServer() {
       req.path === "/sitemap.xml" ||
       req.path === "/sitemap_index.xml" ||
       req.path.startsWith("/.well-known/");
+    const normalizedReqPath =
+      req.path.length > 1 && req.path.endsWith("/") && !req.path.startsWith("/api/")
+        ? req.path.replace(/\/+$/, "")
+        : req.path;
+    const querySuffix = req.originalUrl.includes("?")
+      ? req.originalUrl.slice(req.originalUrl.indexOf("?"))
+      : "";
+
     if (host === "pendo.website" && !isVerificationPath) {
-      return res.redirect(301, `https://www.pendo.website${req.originalUrl}`);
+      return res.redirect(301, `https://www.pendo.website${normalizedReqPath}${querySuffix}`);
+    }
+
+    if (
+      req.method === "GET" &&
+      req.path.length > 1 &&
+      req.path.endsWith("/") &&
+      !req.path.startsWith("/api/")
+    ) {
+      return res.redirect(301, `${normalizedReqPath}${querySuffix}`);
     }
 
     if (req.path === "/admin" || req.path.startsWith("/api/")) {
@@ -102,6 +119,7 @@ async function startServer() {
 
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "camera=(self), microphone=(self), geolocation=(self)");
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
     if (req.secure || req.headers["x-forwarded-proto"] === "https") {
       res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
@@ -391,9 +409,10 @@ async function startServer() {
     res.send(generateSitemapIndexXml());
   });
 
-  // Strict Vincent-Only Admin SEO Audit & IndexNow Endpoints
+  // Strict Vincent-Only Admin SEO Audit, Ahrefs Site Audit Proxy & IndexNow Endpoints
   app.get("/api/admin/seo-audit", requireVincentAdmin, (req: AuthRequest, res) => {
     const publicDir = path.join(process.cwd(), "public");
+    const distDir = path.join(process.cwd(), "dist");
     const sitemapXml = generateSitemapXml();
     const robotsPath = path.join(publicDir, "robots.txt");
     const robotsTxt = fs.existsSync(robotsPath) ? fs.readFileSync(robotsPath, "utf-8") : "";
@@ -408,6 +427,45 @@ async function startServer() {
       fs.existsSync(path.join(publicDir, "sitemap.xml")) &&
       fs.readFileSync(path.join(publicDir, "sitemap.xml"), "utf-8") === sitemapXml;
 
+    // Inspect HTML pages (dist/ if built, otherwise source index.html + SEO_ROUTES)
+    const htmlFiles: string[] = [];
+    if (fs.existsSync(path.join(distDir, "index.html"))) {
+      htmlFiles.push(path.join(distDir, "index.html"));
+      for (const route of SEO_ROUTES) {
+        const slug = route.path.replace(/^\/+/, "");
+        const candidate = path.join(distDir, slug, "index.html");
+        if (fs.existsSync(candidate)) htmlFiles.push(candidate);
+      }
+    } else if (fs.existsSync(path.join(process.cwd(), "index.html"))) {
+      htmlFiles.push(path.join(process.cwd(), "index.html"));
+    }
+
+    let singleH1AllPages = htmlFiles.length > 0;
+    let metaDescLengthOk = htmlFiles.length > 0 && SEO_ROUTES.every((r) => r.description.length >= 70 && r.description.length <= 160);
+    const seenTitles = new Set<string>();
+    const seenCanonicals = new Set<string>();
+    let uniqueTitlesAndCanonicals = htmlFiles.length > 0;
+
+    for (const filePath of htmlFiles) {
+      const html = fs.readFileSync(filePath, "utf-8");
+      const h1Matches = html.match(/<h1[\s>]/gi) || [];
+      if (h1Matches.length !== 1) singleH1AllPages = false;
+      const descMatch = html.match(/<meta\s+name="description"\s+content="([^"]*)"/i);
+      const decodedDesc = (descMatch?.[1] || "").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
+      if (!decodedDesc || decodedDesc.length < 70 || decodedDesc.length > 160) {
+        metaDescLengthOk = false;
+      }
+      const titleMatch = html.match(/<title>([\s\S]*?)<\/title>/i);
+      const canonicalMatch = html.match(/<link\s+rel="canonical"\s+href="([^"]*)"/i);
+      const t = (titleMatch?.[1] || "").trim();
+      const c = (canonicalMatch?.[1] || "").trim();
+      if (!t || !c || seenTitles.has(t) || seenCanonicals.has(c)) {
+        uniqueTitlesAndCanonicals = false;
+      }
+      seenTitles.add(t);
+      seenCanonicals.add(c);
+    }
+
     return res.json({
       adminEmail: req.user?.email,
       checkedAt: new Date().toISOString(),
@@ -416,6 +474,9 @@ async function startServer() {
         { id: "sitemap_xml", label: "Google Sitemap XML (25 URLs)", ok: publicSitemapSynced, url: "https://www.pendo.website/sitemap.xml" },
         { id: "sitemap_index", label: "Google Sitemap Index XML", ok: fs.existsSync(path.join(publicDir, "sitemap_index.xml")), url: "https://www.pendo.website/sitemap_index.xml" },
         { id: "robots_txt", label: "Clean robots.txt (No Invalid Directives, Blocks /admin)", ok: !robotsTxt.includes("Agentmap:") && robotsTxt.includes("Disallow: /admin"), url: "https://www.pendo.website/robots.txt" },
+        { id: "single_h1_per_page", label: `Single <h1> Tag Enforced (${htmlFiles.length} HTML Pages)`, ok: singleH1AllPages, url: "https://www.pendo.website/" },
+        { id: "meta_desc_length", label: "Meta Description 70-160 Chars Across All Routes", ok: metaDescLengthOk, url: "https://www.pendo.website/kilimani-mums" },
+        { id: "unique_titles_canonicals", label: "Unique Titles & Non-Trailing-Slash Canonicals (301)", ok: uniqueTitlesAndCanonicals, url: "https://www.pendo.website/nairobi-dating" },
         { id: "google_verif", label: "Google Search Console HTML Verification", ok: googleVerifExists, url: "https://www.pendo.website/google00332d67777e965d.html" },
         { id: "bing_verif", label: "Bing Webmaster Verification XML", ok: bingVerifExists, url: "https://www.pendo.website/BingSiteAuth.xml" },
         { id: "assetlinks", label: "Android TWA Digital Asset Links", ok: assetLinksExists, url: "https://www.pendo.website/.well-known/assetlinks.json" },
@@ -423,6 +484,83 @@ async function startServer() {
         { id: "pwa_icons", label: "PWA Store Icons (192, 512, Maskable)", ok: pwa192Exists && pwa512Exists && pwaMaskableExists, url: "https://www.pendo.website/pwa-512x512.png" },
       ],
     });
+  });
+
+  app.get("/api/admin/ahrefs-issues", requireVincentAdmin, async (req: AuthRequest, res) => {
+    const rawProjectId = typeof req.query.project_id === "string" ? req.query.project_id.trim() : "";
+    const projectId = /^\d{1,20}$/.test(rawProjectId)
+      ? rawProjectId
+      : (process.env.AHREFS_PROJECT_ID || "10647395").replace(/[^\d]/g, "") || "10647395";
+
+    const rawDate = typeof req.query.date === "string" ? req.query.date.trim() : "";
+    const date = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(rawDate)
+      ? rawDate
+      : "2026-11-25T21:29:43Z";
+
+    const rawDateCompared = typeof req.query.date_compared === "string" ? req.query.date_compared.trim() : "";
+    const dateCompared = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(rawDateCompared)
+      ? rawDateCompared
+      : "2026-11-24T21:14:54Z";
+
+    const apiKey = (process.env.AHREFS_API_KEY || "").trim();
+    if (!apiKey) {
+      return res.json({
+        configured: false,
+        projectId,
+        date,
+        dateCompared,
+        message: "Server environment variable AHREFS_API_KEY is not configured yet. Add AHREFS_API_KEY in your server environment settings to sync live issues from Ahrefs Project 10647395.",
+        issues: [],
+      });
+    }
+
+    try {
+      const upstreamUrl = new URL("https://api.ahrefs.com/v3/site-audit/issues");
+      upstreamUrl.searchParams.set("project_id", projectId);
+      upstreamUrl.searchParams.set("date", date);
+      upstreamUrl.searchParams.set("date_compared", dateCompared);
+
+      const response = await fetch(upstreamUrl.toString(), {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return res.status(response.status).json({
+          configured: true,
+          projectId,
+          date,
+          dateCompared,
+          error: payload?.error?.message || payload?.message || `Ahrefs API returned HTTP ${response.status}`,
+        });
+      }
+
+      const issues = Array.isArray(payload?.issues)
+        ? payload.issues
+        : Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+      return res.json({
+        configured: true,
+        projectId,
+        date,
+        dateCompared,
+        issues,
+        raw: payload,
+      });
+    } catch (err: any) {
+      return res.status(502).json({
+        configured: true,
+        projectId,
+        date,
+        dateCompared,
+        error: err?.message || "Failed to reach Ahrefs Site Audit API",
+      });
+    }
   });
 
   app.post("/api/admin/indexnow", requireVincentAdmin, async (req: AuthRequest, res) => {

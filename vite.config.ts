@@ -30,12 +30,12 @@ function seoPrerenderPlugin(): Plugin {
       fs.writeFileSync(path.join(distDir, 'sitemap_index.xml'), generateSitemapIndexXml(), 'utf-8');
 
       // 2. Build crawlable internal link nav & visible root FAQ section for static HTML bots (Googlebot / Bingbot)
-      const crawlableNav = `<nav aria-label="Kenyan &amp; Diaspora Dating Routes" style="margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 32rem;">${SEO_ROUTES.map(
+      const crawlableNav = `<nav aria-label="Kenyan &amp; Diaspora Dating Routes" style="margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 32rem;"><a href="/" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">Pendo Kenya Home</a>${SEO_ROUTES.map(
         r => `<a href="${r.path}" style="color: #fde047; font-size: 11px; font-weight: 700; text-decoration: underline;">${escapeHtml(r.label)}</a>`
       ).join('')}</nav>`;
 
       const renderVisibleFaqSection = (faqs: ReturnType<typeof getFaqsForRoute>) =>
-        `<section aria-label="Frequently Asked Questions" style="margin-top: 1rem; text-align: left; max-width: 24rem; width: 100%; font-size: 11px; color: #e2e8f0;">${faqs
+        `<section aria-label="Frequently Asked Questions" style="margin-top: 1rem; text-align: left; max-width: 24rem; width: 100%; font-size: 11px; color: #e2e8f0;"><h2 style="font-size: 0.95rem; font-weight: 800; color: #ffffff; margin-bottom: 0.5rem;">Frequently Asked Questions</h2>${faqs
           .map(f => `<details style="margin-bottom: 0.5rem;"><summary style="font-weight: 700; color: #ffffff;">${escapeHtml(f.question)}</summary><p style="margin-top: 0.25rem;">${escapeHtml(f.answer)}</p></details>`)
           .join('')}</section>`;
 
@@ -274,11 +274,24 @@ export default defineConfig({
         cssCodeSplit: true,
         rollupOptions: {
           output: {
-            manualChunks: {
-              'vendor-react': ['react', 'react-dom'],
-              'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-              'vendor-icons': ['lucide-react'],
-              'vendor-motion': ['motion/react'],
+            manualChunks(id) {
+              if (!id.includes('node_modules')) return undefined;
+              if (id.includes('/react-dom/') || id.includes('/react/') || id.includes('/scheduler/')) {
+                return 'vendor-react';
+              }
+              if (id.includes('/firebase/') || id.includes('/@firebase/')) {
+                return 'vendor-firebase';
+              }
+              if (id.includes('/lucide-react/')) {
+                return 'vendor-icons';
+              }
+              if (id.includes('/motion/') || id.includes('/framer-motion/')) {
+                return 'vendor-motion';
+              }
+              if (id.includes('/@vis.gl/') || id.includes('/pigeon-maps/') || id.includes('/d3')) {
+                return 'vendor-maps';
+              }
+              return 'vendor-misc';
             }
           }
         }

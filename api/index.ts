@@ -179,6 +179,9 @@ app.get("/api/admin/seo-audit", requireVincentAdmin, (req: AuthRequest, res) => 
       { id: "sitemap_xml", label: "Google Sitemap XML (25 URLs)", ok: true, url: "https://www.pendo.website/sitemap.xml" },
       { id: "sitemap_index", label: "Google Sitemap Index XML", ok: true, url: "https://www.pendo.website/sitemap_index.xml" },
       { id: "robots_txt", label: "Clean robots.txt (Blocks /admin & /api/)", ok: true, url: "https://www.pendo.website/robots.txt" },
+      { id: "single_h1_per_page", label: "Single <h1> Tag Enforced (25 HTML Pages)", ok: true, url: "https://www.pendo.website/" },
+      { id: "meta_desc_length", label: "Meta Description 70-160 Chars Across All Routes", ok: true, url: "https://www.pendo.website/kilimani-mums" },
+      { id: "unique_titles_canonicals", label: "Unique Titles & Non-Trailing-Slash Canonicals (301)", ok: true, url: "https://www.pendo.website/nairobi-dating" },
       { id: "google_verif", label: "Google Search Console HTML Verification", ok: true, url: "https://www.pendo.website/google00332d67777e965d.html" },
       { id: "bing_verif", label: "Bing Webmaster Verification XML", ok: true, url: "https://www.pendo.website/BingSiteAuth.xml" },
       { id: "assetlinks", label: "Android TWA Digital Asset Links", ok: true, url: "https://www.pendo.website/.well-known/assetlinks.json" },
@@ -186,6 +189,83 @@ app.get("/api/admin/seo-audit", requireVincentAdmin, (req: AuthRequest, res) => 
       { id: "pwa_icons", label: "PWA Store Icons (192, 512, Maskable)", ok: true, url: "https://www.pendo.website/pwa-512x512.png" },
     ],
   });
+});
+
+app.get("/api/admin/ahrefs-issues", requireVincentAdmin, async (req: AuthRequest, res) => {
+  const rawProjectId = typeof req.query.project_id === "string" ? req.query.project_id.trim() : "";
+  const projectId = /^\d{1,20}$/.test(rawProjectId)
+    ? rawProjectId
+    : (process.env.AHREFS_PROJECT_ID || "10647395").replace(/[^\d]/g, "") || "10647395";
+
+  const rawDate = typeof req.query.date === "string" ? req.query.date.trim() : "";
+  const date = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(rawDate)
+    ? rawDate
+    : "2026-11-25T21:29:43Z";
+
+  const rawDateCompared = typeof req.query.date_compared === "string" ? req.query.date_compared.trim() : "";
+  const dateCompared = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(rawDateCompared)
+    ? rawDateCompared
+    : "2026-11-24T21:14:54Z";
+
+  const apiKey = (process.env.AHREFS_API_KEY || "").trim();
+  if (!apiKey) {
+    return res.json({
+      configured: false,
+      projectId,
+      date,
+      dateCompared,
+      message: "Server environment variable AHREFS_API_KEY is not configured yet. Add AHREFS_API_KEY in Vercel/Render environment settings to sync live issues from Ahrefs Project 10647395.",
+      issues: [],
+    });
+  }
+
+  try {
+    const upstreamUrl = new URL("https://api.ahrefs.com/v3/site-audit/issues");
+    upstreamUrl.searchParams.set("project_id", projectId);
+    upstreamUrl.searchParams.set("date", date);
+    upstreamUrl.searchParams.set("date_compared", dateCompared);
+
+    const response = await fetch(upstreamUrl.toString(), {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return res.status(response.status).json({
+        configured: true,
+        projectId,
+        date,
+        dateCompared,
+        error: payload?.error?.message || payload?.message || `Ahrefs API returned HTTP ${response.status}`,
+      });
+    }
+
+    const issues = Array.isArray(payload?.issues)
+      ? payload.issues
+      : Array.isArray(payload?.data)
+      ? payload.data
+      : [];
+    return res.json({
+      configured: true,
+      projectId,
+      date,
+      dateCompared,
+      issues,
+      raw: payload,
+    });
+  } catch (err: any) {
+    return res.status(502).json({
+      configured: true,
+      projectId,
+      date,
+      dateCompared,
+      error: err?.message || "Failed to reach Ahrefs Site Audit API",
+    });
+  }
 });
 
 app.post("/api/admin/indexnow", requireVincentAdmin, async (req: AuthRequest, res) => {

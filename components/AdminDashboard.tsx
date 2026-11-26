@@ -41,6 +41,25 @@ interface SeoAuditCheck {
   url: string;
 }
 
+interface AhrefsIssueItem {
+  issue_id?: string;
+  name?: string;
+  severity?: string;
+  urls_count?: number;
+  urls_diff?: number;
+  [key: string]: unknown;
+}
+
+interface AhrefsReportResponse {
+  configured: boolean;
+  projectId: string;
+  date: string;
+  dateCompared: string;
+  message?: string;
+  error?: string;
+  issues?: AhrefsIssueItem[];
+}
+
 interface StoreTarget {
   id: string;
   name: string;
@@ -134,6 +153,15 @@ const INDEXNOW_PAYLOAD_JSON = JSON.stringify(
   null,
   2
 );
+
+const AHREFS_AUDIT_CURL = `curl --request GET \\
+  --header "Authorization: Bearer YOUR_API_KEY" \\
+  --header "Content-Type: application/json" \\
+  --url "https://api.ahrefs.com/v3/site-audit/issues" \\
+  --get \\
+  --data-urlencode 'project_id=10647395' \\
+  --data-urlencode 'date=2026-11-25T21:29:43Z' \\
+  --data-urlencode 'date_compared=2026-11-24T21:14:54Z'`;
 
 const CHECKLIST_ITEMS = [
   { id: 'gsc_verify', group: 'Google Search & Indexing', label: 'Verify pendo.website / https://www.pendo.website/ in Google Search Console' },
@@ -229,6 +257,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [auditError, setAuditError] = useState<string | null>(null);
   const [indexNowStatus, setIndexNowStatus] = useState<string | null>(null);
   const [indexNowLoading, setIndexNowLoading] = useState(false);
+  const [ahrefsLoading, setAhrefsLoading] = useState(false);
+  const [ahrefsReport, setAhrefsReport] = useState<AhrefsReportResponse | null>(null);
+  const [ahrefsError, setAhrefsError] = useState<string | null>(null);
 
   const sitemapXml = useMemo(() => generateSitemapXml(), []);
   const sitemapIndexXml = useMemo(() => generateSitemapIndexXml(), []);
@@ -406,6 +437,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setIndexNowStatus(`IndexNow error: ${err?.message || 'Failed to ping'}`);
     } finally {
       setIndexNowLoading(false);
+    }
+  };
+
+  const fetchAhrefsSiteAudit = async () => {
+    setAhrefsLoading(true);
+    setAhrefsError(null);
+    try {
+      const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+      const res = await fetch(
+        '/api/admin/ahrefs-issues?project_id=10647395&date=2026-11-25T21%3A29%3A43Z&date_compared=2026-11-24T21%3A14%3A54Z',
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+      const data = (await res.json()) as AhrefsReportResponse;
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      setAhrefsReport(data);
+    } catch (err: any) {
+      setAhrefsError(err?.message || 'Unable to query Ahrefs Site Audit proxy.');
+    } finally {
+      setAhrefsLoading(false);
     }
   };
 
@@ -812,6 +866,73 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   ))}
                 </div>
               )}
+            </section>
+
+            {/* Ahrefs Site Audit (Project 10647395) Integration */}
+            <section className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <Search size={16} className="text-rose-600" />
+                    Ahrefs Site Audit Sync (Project 10647395)
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Server-authenticated Ahrefs v3 issue check comparing 2026-11-25 against 2026-11-24 (uses server AHREFS_API_KEY env var).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchAhrefsSiteAudit}
+                  disabled={ahrefsLoading}
+                  className="min-h-[42px] px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-60 shrink-0"
+                >
+                  <RefreshCw size={14} className={ahrefsLoading ? 'animate-spin' : ''} />
+                  <span>{ahrefsLoading ? 'Syncing Ahrefs...' : 'Fetch Ahrefs Project 10647395 Issues'}</span>
+                </button>
+              </div>
+
+              {ahrefsError && (
+                <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-xs text-rose-800 flex items-center gap-2">
+                  <AlertTriangle size={15} />
+                  <span>{ahrefsError}</span>
+                </div>
+              )}
+
+              {ahrefsReport && !ahrefsReport.configured && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
+                  {ahrefsReport.message}
+                </div>
+              )}
+
+              {ahrefsReport && ahrefsReport.configured && (
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-emerald-800">
+                    Synced Ahrefs Project {ahrefsReport.projectId}: {(ahrefsReport.issues || []).length} issue entries returned.
+                  </p>
+                  {(ahrefsReport.issues || []).length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                      {(ahrefsReport.issues || []).map((iss, idx) => (
+                        <div key={String(iss.issue_id || idx)} className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs">
+                          <p className="font-bold text-slate-900">{String(iss.name || iss.issue_id || `Issue #${idx + 1}`)}</p>
+                          <p className="text-[11px] font-mono text-slate-600 mt-0.5">
+                            Severity: {String(iss.severity || 'notice')} · URLs: {String(iss.urls_count ?? 0)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <CopyFieldCard
+                id="ahrefs_curl_cmd"
+                label="Ahrefs Site Audit v3 Issues Command (Project 10647395)"
+                hint="Set AHREFS_API_KEY in server environment variables to fetch inside Admin, or run in terminal."
+                value={AHREFS_AUDIT_CURL}
+                multiline
+                copiedId={copiedId}
+                onCopy={handleCopy}
+              />
             </section>
 
             {/* Quick Links to Search Consoles */}
